@@ -1,0 +1,59 @@
+# ============================================================
+#  GARUDA — Anti-Drug Intelligence Platform
+#  Phase 1 · Spring Boot Configuration
+# ============================================================
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: garuda-backend
+
+  # ---- PostgreSQL DataSource ----
+  datasource:
+    url: jdbc:postgresql://localhost:5432/garuda_db
+    username: garuda_user
+    password: ${GARUDA_DB_PASSWORD:garuda_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  # ---- JPA / Hibernate ----
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway owns the schema
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        type:
+          preferred_enum_jdbc_type: 1111   # Maps Java enums to PG native ENUMs
+        jdbc:
+          time_zone: Asia/Kolkata
+
+  # ---- Flyway ----
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# ---- JWT Settings ----
+garuda:
+  jwt:
+    secret: ${GARUDA_JWT_SECRET:G4rud4-Ant1Drug-Pl4tf0rm-S3cur3-K3y-2026-M1n1mum-256-B1t-L3ngth!!}
+    access-token-expiry-ms: 28800000     # 8 hours
+    refresh-token-expiry-ms: 604800000   # 7 days
+
+# ---- Logging ----
+logging:
+  level:
+    com.garuda: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
