@@ -1,0 +1,562 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_logs {
+  id          BigInt       @id @default(autoincrement())
+  user_id     BigInt?
+  action      audit_action
+  entity_type String       @db.VarChar(50)
+  entity_id   BigInt?
+  ip_address  String?      @db.VarChar(45)
+  user_agent  String?      @db.VarChar(500)
+  details     String?
+  timestamp   DateTime     @default(now()) @db.Timestamp(6)
+  users       users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([action], map: "idx_audit_action")
+  @@index([entity_type, entity_id], map: "idx_audit_entity")
+  @@index([timestamp], map: "idx_audit_timestamp")
+  @@index([user_id], map: "idx_audit_user")
+}
+
+model case_accused {
+  id              BigInt           @id @default(autoincrement())
+  case_id         BigInt
+  offender_id     BigInt
+  previous_cr_no  String?          @db.VarChar(50)
+  previous_ps_id  BigInt?
+  arrest_status   arrest_status    @default(ARRESTED)
+  arrest_date     DateTime?        @db.Date
+  bail_date       DateTime?        @db.Date
+  bail_conditions String?
+  created_at      DateTime         @default(now()) @db.Timestamp(6)
+  cases           cases            @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  offenders       offenders        @relation(fields: [offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations police_stations? @relation(fields: [previous_ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([case_id, offender_id])
+  @@index([case_id], map: "idx_ca_case")
+  @@index([offender_id], map: "idx_ca_offender")
+}
+
+model cases {
+  id               BigInt          @id @default(autoincrement())
+  fir_no           String          @db.VarChar(50)
+  ps_id            BigInt
+  section_of_law   String?         @db.VarChar(300)
+  case_date        DateTime?       @db.Date
+  stage            case_stage      @default(FIR)
+  created_by       BigInt?
+  created_at       DateTime        @default(now()) @db.Timestamp(6)
+  is_history_sheet Boolean         @default(false)
+  is_rowdy_sheet   Boolean         @default(false)
+  updated_at       DateTime        @default(now()) @db.Timestamp(6)
+  case_accused     case_accused[]
+  users            users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations  police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seizures         seizures[]
+
+  @@index([case_date], map: "idx_cases_date")
+  @@index([fir_no], map: "idx_cases_fir")
+  @@index([ps_id], map: "idx_cases_ps")
+  @@index([stage], map: "idx_cases_stage")
+}
+
+model flyway_schema_history {
+  installed_rank Int      @id(map: "flyway_schema_history_pk")
+  version        String?  @db.VarChar(50)
+  description    String   @db.VarChar(200)
+  type           String   @db.VarChar(20)
+  script         String   @db.VarChar(1000)
+  checksum       Int?
+  installed_by   String   @db.VarChar(100)
+  installed_on   DateTime @default(now()) @db.Timestamp(6)
+  execution_time Int
+  success        Boolean
+
+  @@index([success], map: "flyway_schema_history_s_idx")
+}
+
+model intelligence_inputs {
+  id              BigInt          @id @default(autoincrement())
+  offender_id     BigInt?
+  ps_id           BigInt
+  source_type     source_type
+  input_text      String?
+  supply_route    String?
+  created_by      BigInt?
+  created_at      DateTime        @default(now()) @db.Timestamp(6)
+  users           users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  offenders       offenders?      @relation(fields: [offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "idx_ii_created_by")
+  @@index([offender_id], map: "idx_ii_offender")
+  @@index([ps_id], map: "idx_ii_ps")
+  @@index([source_type], map: "idx_ii_source")
+}
+
+model offender_contacts {
+  id           BigInt       @id @default(autoincrement())
+  offender_id  BigInt
+  contact_type contact_type
+  value        String       @db.VarChar(300)
+  notes        String?
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  offenders    offenders    @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([offender_id], map: "idx_oc_offender")
+  @@index([contact_type], map: "idx_oc_type")
+  @@index([value], map: "idx_oc_value")
+}
+
+model offender_drug_profile {
+  id                     BigInt                 @id @default(autoincrement())
+  offender_id            BigInt                 @unique
+  addiction_type         addiction_type?
+  consumption_frequency  consumption_frequency?
+  source_of_procurement  source_of_procurement?
+  mode_of_purchase       purchase_mode?
+  usual_consumption_spot String?                @db.VarChar(200)
+  created_at             DateTime               @default(now()) @db.Timestamp(6)
+  updated_at             DateTime               @default(now()) @db.Timestamp(6)
+  offenders              offenders              @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([offender_id], map: "idx_odp_offender")
+}
+
+model offender_financials {
+  id          BigInt    @id @default(autoincrement())
+  offender_id BigInt
+  fin_type    fin_type
+  value       String    @db.VarChar(300)
+  bank_name   String?   @db.VarChar(200)
+  notes       String?
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  offenders   offenders @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([offender_id], map: "idx_of_offender")
+  @@index([fin_type], map: "idx_of_type")
+}
+
+model offender_identity_docs {
+  id          BigInt    @id @default(autoincrement())
+  offender_id BigInt
+  aadhaar_no  String?   @db.VarChar(12)
+  voter_id    String?   @db.VarChar(30)
+  pan_card    String?   @db.VarChar(10)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  offenders   offenders @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([aadhaar_no], map: "idx_oid_aadhaar")
+  @@index([offender_id], map: "idx_oid_offender")
+}
+
+model offenders {
+  id                                                                  BigInt                   @id @default(autoincrement())
+  sl_no                                                               String?                  @db.VarChar(50)
+  ps_id                                                               BigInt
+  full_name                                                           String                   @db.VarChar(200)
+  alias                                                               String?                  @db.VarChar(200)
+  father_husband_name                                                 String?                  @db.VarChar(200)
+  age                                                                 Int?
+  gender                                                              gender_type?
+  category                                                            offender_category?
+  full_address                                                        String?
+  landmark_area                                                       String?                  @db.VarChar(200)
+  district                                                            String?                  @db.VarChar(100)
+  state                                                               String?                  @db.VarChar(100)
+  occupation                                                          String?                  @db.VarChar(100)
+  monthly_income                                                      Decimal?                 @db.Decimal(12, 2)
+  photo_url                                                           String?                  @db.VarChar(500)
+  created_by                                                          BigInt?
+  created_at                                                          DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at                                                          DateTime                 @default(now()) @db.Timestamp(6)
+  test_result                                                         test_result?
+  status                                                              offender_status          @default(ACTIVE)
+  risk_score                                                          risk_score?
+  case_accused                                                        case_accused[]
+  intelligence_inputs                                                 intelligence_inputs[]
+  offender_contacts                                                   offender_contacts[]
+  offender_drug_profile                                               offender_drug_profile?
+  offender_financials                                                 offender_financials[]
+  offender_identity_docs                                              offender_identity_docs[]
+  users                                                               users?                   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations                                                     police_stations          @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supply_chain_links_supply_chain_links_linked_offender_idTooffenders supply_chain_links[]     @relation("supply_chain_links_linked_offender_idTooffenders")
+  supply_chain_links_supply_chain_links_offender_idTooffenders        supply_chain_links[]     @relation("supply_chain_links_offender_idTooffenders")
+  surveillance_records                                                surveillance_records[]
+
+  @@index([alias], map: "idx_offenders_alias")
+  @@index([category], map: "idx_offenders_category")
+  @@index([district], map: "idx_offenders_district")
+  @@index([full_name], map: "idx_offenders_name")
+  @@index([ps_id], map: "idx_offenders_ps")
+  @@index([risk_score], map: "idx_offenders_risk")
+  @@index([status], map: "idx_offenders_status")
+}
+
+model police_stations {
+  id                  BigInt                @id @default(autoincrement())
+  name                String                @db.VarChar(200)
+  district            String                @db.VarChar(100)
+  state               String                @default("Andhra Pradesh") @db.VarChar(100)
+  ps_code             String                @unique @db.VarChar(20)
+  created_at          DateTime              @default(now()) @db.Timestamp(6)
+  case_accused        case_accused[]
+  cases               cases[]
+  intelligence_inputs intelligence_inputs[]
+  offenders           offenders[]
+  users               users[]
+
+  @@index([district], map: "idx_ps_district")
+}
+
+model refresh_tokens {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt
+  token       String   @unique @db.VarChar(512)
+  expiry_date DateTime @db.Timestamp(6)
+  revoked     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([token], map: "idx_rt_token")
+  @@index([user_id], map: "idx_rt_user")
+}
+
+model seizures {
+  id             BigInt    @id @default(autoincrement())
+  case_id        BigInt
+  contraband_kg  Decimal?  @db.Decimal(10, 3)
+  vehicles_count Int       @default(0)
+  cash_amount    Decimal   @default(0) @db.Decimal(15, 2)
+  parcels_count  Int       @default(0)
+  other_items    String?
+  seizure_date   DateTime? @db.Date
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  cases          cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([case_id], map: "idx_seizures_case")
+}
+
+model supply_chain_links {
+  id                                                         BigInt           @id @default(autoincrement())
+  offender_id                                                BigInt
+  link_type                                                  supply_link_type
+  linked_person_name                                         String?          @db.VarChar(200)
+  linked_person_contact                                      String?          @db.VarChar(100)
+  linked_offender_id                                         BigInt?
+  notes                                                      String?
+  created_at                                                 DateTime         @default(now()) @db.Timestamp(6)
+  offenders_supply_chain_links_linked_offender_idTooffenders offenders?       @relation("supply_chain_links_linked_offender_idTooffenders", fields: [linked_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  offenders_supply_chain_links_offender_idTooffenders        offenders        @relation("supply_chain_links_offender_idTooffenders", fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([linked_offender_id], map: "idx_scl_linked")
+  @@index([offender_id], map: "idx_scl_offender")
+  @@index([link_type], map: "idx_scl_type")
+}
+
+model surveillance_records {
+  id                  BigInt              @id @default(autoincrement())
+  offender_id         BigInt
+  scheduled_date      DateTime?           @db.Date
+  verified_by         BigInt?
+  verification_status verification_status @default(PENDING)
+  current_address     String?
+  current_occupation  String?             @db.VarChar(200)
+  associates_noted    String?
+  geo_lat             Decimal?            @db.Decimal(10, 7)
+  geo_lng             Decimal?            @db.Decimal(10, 7)
+  notes               String?
+  created_at          DateTime            @default(now()) @db.Timestamp(6)
+  offenders           offenders           @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               users?              @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([scheduled_date], map: "idx_sr_date")
+  @@index([offender_id], map: "idx_sr_offender")
+  @@index([verification_status], map: "idx_sr_status")
+  @@index([verified_by], map: "idx_sr_verified_by")
+}
+
+model users {
+  id                   BigInt                 @id @default(autoincrement())
+  username             String                 @unique @db.VarChar(50)
+  password_hash        String                 @db.VarChar(255)
+  full_name            String                 @db.VarChar(200)
+  role                 user_role
+  police_station_id    BigInt?
+  is_active            Boolean                @default(true)
+  last_login           DateTime?              @db.Timestamp(6)
+  created_at           DateTime               @default(now()) @db.Timestamp(6)
+  audit_logs           audit_logs[]
+  cases                cases[]
+  intelligence_inputs  intelligence_inputs[]
+  offenders            offenders[]
+  refresh_tokens       refresh_tokens[]
+  surveillance_records surveillance_records[]
+  police_stations      police_stations?       @relation(fields: [police_station_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Deletion request relations
+  deletion_requests_flagged    deletion_requests[] @relation("flagged_by_user")
+  deletion_requests_escalated  deletion_requests[] @relation("escalated_by_user")
+  deletion_requests_requested  deletion_requests[] @relation("requested_by_user")
+  deletion_requests_approved   deletion_requests[] @relation("approved_by_user")
+  deletion_requests_deleted    deletion_requests[] @relation("deleted_by_user")
+
+  // Edit request relations
+  edit_requests_created        edit_requests[] @relation("edit_requested_by_user")
+  edit_requests_approved       edit_requests[] @relation("edit_approved_by_user")
+
+  @@index([police_station_id], map: "idx_users_ps")
+  @@index([role], map: "idx_users_role")
+}
+
+// ============================================================
+// Deletion Approval Chain
+// ============================================================
+
+model deletion_requests {
+  id            BigInt                  @id @default(autoincrement())
+  entity_type   String                  @db.VarChar(50)
+  entity_id     BigInt
+  reason        String?
+  status        deletion_request_status @default(FLAGGED)
+
+  flagged_by    BigInt
+  flagged_at    DateTime                @default(now()) @db.Timestamp(6)
+
+  escalated_by  BigInt?
+  escalated_at  DateTime?               @db.Timestamp(6)
+
+  requested_by  BigInt?
+  requested_at  DateTime?               @db.Timestamp(6)
+
+  approved_by   BigInt?
+  approved_at   DateTime?               @db.Timestamp(6)
+
+  deleted_by    BigInt?
+  deleted_at    DateTime?               @db.Timestamp(6)
+
+  rejection_reason String?
+
+  created_at    DateTime                @default(now()) @db.Timestamp(6)
+  updated_at    DateTime                @default(now()) @db.Timestamp(6)
+
+  flagged_user    users  @relation("flagged_by_user", fields: [flagged_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  escalated_user  users? @relation("escalated_by_user", fields: [escalated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requested_user  users? @relation("requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approved_user   users? @relation("approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deleted_user    users? @relation("deleted_by_user", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status], map: "idx_dr_status")
+  @@index([entity_type, entity_id], map: "idx_dr_entity")
+  @@index([flagged_by], map: "idx_dr_flagged_by")
+}
+
+// ============================================================
+// Edit Request Workflow
+// ============================================================
+
+model edit_requests {
+  id              BigInt             @id @default(autoincrement())
+  entity_type     String             @db.VarChar(50)
+  entity_id       BigInt
+  changes_json    String
+  reason          String?
+  status          edit_request_status @default(PENDING)
+
+  requested_by    BigInt
+  requested_at    DateTime           @default(now()) @db.Timestamp(6)
+
+  approved_by     BigInt?
+  approved_at     DateTime?          @db.Timestamp(6)
+
+  rejection_reason String?
+
+  created_at      DateTime           @default(now()) @db.Timestamp(6)
+  updated_at      DateTime           @default(now()) @db.Timestamp(6)
+
+  requested_user  users  @relation("edit_requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approved_user   users? @relation("edit_approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status], map: "idx_er_status")
+  @@index([entity_type, entity_id], map: "idx_er_entity")
+  @@index([requested_by], map: "idx_er_requested_by")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum addiction_type {
+  GANJA_ONLY
+  GANJA_ALCOHOL
+  GANJA_OTHER_DRUGS
+  MULTIPLE
+}
+
+enum arrest_status {
+  ARRESTED
+  ABSCONDING
+  BAILED
+}
+
+enum audit_action {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+  LOGIN
+  LOGOUT
+  DELETION_FLAGGED
+  DELETION_ESCALATED
+  DELETION_REQUESTED
+  DELETION_APPROVED
+  DELETION_EXECUTED
+  DELETION_REJECTED
+  EDIT_REQUESTED
+  EDIT_APPROVED
+  EDIT_REJECTED
+}
+
+enum case_stage {
+  FIR
+  CHARGESHEET
+  TRIAL
+  CONVICTED
+  ACQUITTED
+  CLOSED
+}
+
+enum consumption_frequency {
+  DAILY
+  WEEKLY
+  OCCASIONAL
+}
+
+enum contact_type {
+  MOBILE_PRIMARY
+  MOBILE_SECONDARY
+  MOBILE_SIBLING
+  GMAIL
+  WHATSAPP
+  TELEGRAM
+  INSTAGRAM
+  FACEBOOK
+  OTHER_SOCIAL
+}
+
+enum fin_type {
+  UPI_ID
+  UPI_LINKED_MOBILE
+  BANK_NAME
+  BANK_ACCOUNT_NO
+  IFSC_CODE
+  ATM_CARD
+}
+
+enum gender_type {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum offender_category {
+  CONSUMER
+  LOCAL_PEDDLER
+  LOCAL_SUPPLIER
+  LOCAL_KINGPIN
+  TRANSPORTER
+  INTERSTATE_KINGPIN
+}
+
+enum offender_status {
+  ACTIVE
+  INACTIVE
+  ABSCONDING
+  ARRESTED
+  BAILED
+}
+
+enum purchase_mode {
+  CASH
+  UPI
+  CREDIT
+  BARTER
+  MIXED
+}
+
+enum risk_score {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum source_of_procurement {
+  LOCAL
+  OUTSIDE_DISTRICT
+  ONLINE
+  COURIER
+}
+
+enum source_type {
+  INFORMER
+  FIELD_OFFICER
+  SB
+  EXCISE
+  OTHER
+}
+
+enum supply_link_type {
+  CO_CONSUMER
+  PEDDLER
+  SUPPLIER
+  TRANSPORTER
+  KINGPIN
+}
+
+enum test_result {
+  POSITIVE
+  NEGATIVE
+  PENDING
+}
+
+// Updated role hierarchy: ADMIN > SP > DSP > CI > SI > CONSTABLE
+enum user_role {
+  ADMIN
+  SP
+  DSP
+  CI
+  SI
+  CONSTABLE
+}
+
+enum verification_status {
+  PENDING
+  COMPLETED
+  MISSED
+}
+
+enum deletion_request_status {
+  FLAGGED
+  ESCALATED
+  REQUESTED
+  APPROVED
+  DELETED
+  REJECTED
+}
+
+enum edit_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
