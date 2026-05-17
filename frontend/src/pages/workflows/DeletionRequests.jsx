@@ -1,24 +1,21 @@
 /**
- * GARUDA — Deletion Requests Page
- * 
- * Displays all deletion requests with role-appropriate actions:
- * - Constable: can flag new records
- * - SI/CI: can escalate flagged items
- * - DSP: can officially request deletion
- * - SP: can approve requests
- * - Admin: can execute final deletion
+ * GARUDA — Deletion Requests Process
+ * Stage 1: Constable/SI/CI Flag
+ * Stage 2: DSP reviews and formally Requests from SP
+ * Stage 3: SP reviews and Approves
+ * Stage 4: Admin Executes the physical deletion
  */
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 
 const STATUS_COLORS = {
-  FLAGGED:   { bg: 'rgba(234, 179, 8, 0.15)',  text: '#facc15', border: 'rgba(234, 179, 8, 0.3)' },
-  ESCALATED: { bg: 'rgba(249, 115, 22, 0.15)', text: '#f97316', border: 'rgba(249, 115, 22, 0.3)' },
-  REQUESTED: { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' },
-  APPROVED:  { bg: 'rgba(34, 197, 94, 0.15)',  text: '#4ade80', border: 'rgba(34, 197, 94, 0.3)' },
-  DELETED:   { bg: 'rgba(107, 114, 128, 0.15)', text: '#9ca3af', border: 'rgba(107, 114, 128, 0.3)' },
-  REJECTED:  { bg: 'rgba(239, 68, 68, 0.15)',  text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  FLAGGED:   { bg: 'rgba(249, 115, 22, 0.15)', text: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' }, // Orange
+  ESCALATED: { bg: 'rgba(236, 72, 153, 0.15)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' }, // Pink
+  REQUESTED: { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', border: 'rgba(168, 85, 247, 0.3)' }, // Purple
+  APPROVED:  { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' }, // Blue
+  DELETED:   { bg: 'rgba(239, 68, 68, 0.15)',  text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' }, // Red
+  REJECTED:  { bg: 'rgba(107, 114, 128, 0.15)',text: '#9ca3af', border: 'rgba(107, 114, 128, 0.3)' }  // Gray
 };
 
 export default function DeletionRequests() {
@@ -27,6 +24,7 @@ export default function DeletionRequests() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
   const perms = usePermissions();
+  const rawRole = perms.user?.role; // Need the exact role to map buttons correctly to DSP/SP/ADMIN
 
   useEffect(() => {
     fetchRequests();
@@ -35,8 +33,9 @@ export default function DeletionRequests() {
   const fetchRequests = async () => {
     try {
       const res = await api.get('/deletion-requests');
-      setRequests(res.data.data.content || []);
+      setRequests(res.data.data.content || res.data.data || []);
     } catch (err) {
+      console.error(err);
       setError('Failed to load deletion requests');
     } finally {
       setLoading(false);
@@ -55,33 +54,48 @@ export default function DeletionRequests() {
     }
   };
 
-  const getAvailableActions = (request) => {
-    const actions = [];
-    switch (request.status) {
-      case 'FLAGGED':
-        if (perms.canEscalateDeletion) actions.push({ action: 'escalate', label: 'Escalate', color: '#f97316' });
-        break;
-      case 'ESCALATED':
-        if (perms.canRequestDeletion) actions.push({ action: 'request', label: 'Request Deletion', color: '#3b82f6' });
-        break;
-      case 'REQUESTED':
-        if (perms.canApproveDeletion) actions.push({ action: 'approve', label: 'Approve', color: '#22c55e' });
-        break;
-      case 'APPROVED':
-        if (perms.canExecuteDeletion) actions.push({ action: 'execute', label: 'Execute Deletion', color: '#ef4444' });
-        break;
+  // Helper to determine the correct action button based on Role and Status
+  const renderActionContainer = (req) => {
+    if (rawRole === 'CI' || rawRole === 'SI') {
+       if (req.status === 'FLAGGED') {
+         return (
+             <button onClick={() => handleAction(req.id, 'escalate')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-pink-900/40 text-pink-400 border border-pink-700/50 hover:bg-pink-900/60 transition-colors">
+               Escalate to DSP
+             </button>
+         );
+       }
+    } else if (rawRole === 'DSP') {
+      if (req.status === 'ESCALATED') {
+         return (
+             <button onClick={() => handleAction(req.id, 'request')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-purple-900/40 text-purple-400 border border-purple-700/50 hover:bg-purple-900/60 transition-colors">
+               Request from SP
+             </button>
+         );
+      }
+    } else if (rawRole === 'SP') {
+       if (req.status === 'REQUESTED') {
+           return (
+               <button onClick={() => handleAction(req.id, 'approve')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-blue-900/40 text-blue-400 border border-blue-700/50 hover:bg-blue-900/60 transition-colors">
+                 Approve Delete
+               </button>
+           );
+       }
+    } else if (rawRole === 'ADMIN') {
+       if (req.status === 'APPROVED') {
+           return (
+               <button onClick={() => handleAction(req.id, 'execute')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-red-900/40 text-red-400 border border-red-700/50 hover:bg-red-900/60 transition-colors">
+                 Execute Delete
+               </button>
+           );
+       }
     }
-    // Reject is available for DSP and above on non-terminal states
-    if (!['DELETED', 'REJECTED'].includes(request.status) && perms.hasMinRole('DSP')) {
-      actions.push({ action: 'reject', label: 'Reject', color: '#6b7280' });
-    }
-    return actions;
+    return <span className="text-gray-500 text-xs italic">No actions</span>;
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading deletion requests...</div>
+        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading deletion workflows...</div>
       </div>
     );
   }
@@ -89,9 +103,9 @@ export default function DeletionRequests() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Deletion Requests</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Deletion Operations</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
-          Track the approval chain: Flag → Escalate → Request → Approve → Delete
+          Strict hierarchy: Flag (Constable/CI/SI) &rarr; Escalate (CI/SI) &rarr; Request (DSP) &rarr; Approve (SP) &rarr; Execute (Admin)
         </p>
       </div>
 
@@ -101,22 +115,8 @@ export default function DeletionRequests() {
         </div>
       )}
 
-      {/* Status Legend */}
-      <div className="flex flex-wrap gap-3">
-        {Object.entries(STATUS_COLORS).map(([status, colors]) => (
-          <span
-            key={status}
-            className="text-xs font-medium px-3 py-1 rounded-full"
-            style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
-          >
-            {status}
-          </span>
-        ))}
-      </div>
-
-      {/* Requests Table */}
       <div
-        className="rounded-xl overflow-hidden"
+        className="rounded-xl overflow-hidden shadow-lg"
         style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
       >
         <div className="overflow-x-auto">
@@ -126,7 +126,7 @@ export default function DeletionRequests() {
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>ID</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Entity</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Status</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Flagged By</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Initiator</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Reason</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Date</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Actions</th>
@@ -135,7 +135,6 @@ export default function DeletionRequests() {
             <tbody>
               {requests.map((req, i) => {
                 const statusColor = STATUS_COLORS[req.status] || STATUS_COLORS.FLAGGED;
-                const actions = getAvailableActions(req);
                 return (
                   <tr
                     key={req.id}
@@ -146,43 +145,29 @@ export default function DeletionRequests() {
                     }}
                   >
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>
-                      {req.entityType} #{req.entityId}
+                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
+                      {req.entityType} {req.entityId}
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                        className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
                         style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}
                       >
                         {req.status}
                       </span>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
-                      {req.flaggedBy?.name || '—'}
-                      <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>
-                        ({req.flaggedBy?.role})
-                      </span>
+                      {req.flaggedBy} 
+                      {req.station && <span className="block text-xs mt-0.5 opacity-60">{req.station}</span>}
                     </td>
-                    <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }}>
+                    <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }} title={req.reason}>
                       {req.reason || '—'}
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      {new Date(req.createdAt).toLocaleDateString('en-IN')}
+                      {req.requestDate ? new Date(req.requestDate).toLocaleDateString() : '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex gap-2 justify-end flex-wrap">
-                        {actions.map(({ action, label, color }) => (
-                          <button
-                            key={action}
-                            onClick={() => handleAction(req.id, action)}
-                            disabled={actionLoading === req.id}
-                            className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                            style={{ background: `${color}22`, color, border: `1px solid ${color}44` }}
-                          >
-                            {actionLoading === req.id ? '...' : label}
-                          </button>
-                        ))}
-                      </div>
+                       {renderActionContainer(req)}
                     </td>
                   </tr>
                 );
@@ -190,7 +175,7 @@ export default function DeletionRequests() {
               {requests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
-                    No deletion requests found
+                    No pending deletion workflows found for your role queue.
                   </td>
                 </tr>
               )}

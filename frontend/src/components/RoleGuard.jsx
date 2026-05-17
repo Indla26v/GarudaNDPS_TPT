@@ -25,7 +25,6 @@ export default function RoleGuard({ permission, minRole, children, fallback }) {
     return (
       <div className="flex items-center justify-center h-64 text-center">
         <div>
-          <div className="text-5xl mb-4">🔒</div>
           <h2 className="text-xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
             Access Denied
           </h2>

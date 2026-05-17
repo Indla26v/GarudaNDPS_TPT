@@ -11,14 +11,14 @@ function useNavItems() {
   const perms = usePermissions();
 
   const items = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊', show: true },
-    { path: '/offenders', label: 'Offenders', icon: '👤', show: true },
-    { path: '/cases', label: 'Cases', icon: '📁', show: true },
-    { path: '/deletion-requests', label: 'Deletions', icon: '🗑️', show: true },
-    { path: '/edit-requests', label: 'Edit Requests', icon: '✏️', show: perms.canApproveEdit || perms.canRequestEdit },
-    { path: '/district-analytics', label: 'District Analytics', icon: '📈', show: perms.canViewDistrictAnalytics },
-    { path: '/admin/users', label: 'User Management', icon: '👥', show: perms.canViewUserManagement },
-    { path: '/admin/audit-logs', label: 'Audit Logs', icon: '📋', show: perms.canViewAuditLogs },
+    { path: '/dashboard', label: 'Dashboard', icon: '', show: true },
+    { path: '/offenders', label: 'Offenders', icon: '', show: true },
+    { path: '/cases', label: 'Cases', icon: '', show: true },
+    { path: '/deletion-requests', label: 'Deletions', icon: '', show: true },
+    { path: '/edit-requests', label: 'Edit Requests', icon: '', show: perms.canApproveEdit || perms.canRequestEdit },
+    { path: '/district-analytics', label: 'District Analytics', icon: '', show: perms.canViewDistrictAnalytics },
+    { path: '/admin/users', label: 'User Management', icon: '', show: perms.canViewUserManagement },
+    { path: '/admin/audit-logs', label: 'Audit Logs', icon: '', show: perms.canViewAuditLogs },
   ];
 
   return items.filter(item => item.show);
@@ -29,8 +29,8 @@ function useNavItems() {
  */
 const ROLE_COLORS = {
   ADMIN:     { bg: '#ef4444', text: '#fff' },
-  SP:        { bg: '#8b5cf6', text: '#fff' },
-  DSP:       { bg: '#3b82f6', text: '#fff' },
+  SP:        { bg: '#3b82f6', text: '#fff' },
+  DSP:       { bg: '#8b5cf6', text: '#fff' },
   CI:        { bg: '#22c55e', text: '#fff' },
   SI:        { bg: '#f59e0b', text: '#000' },
   CONSTABLE: { bg: '#6b7280', text: '#fff' },

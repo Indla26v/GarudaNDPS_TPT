@@ -37,7 +37,6 @@ createRoot(document.getElementById('root')).render(
             <Route path="cases" element={
               <div className="flex items-center justify-center h-64 text-center">
                 <div>
-                  <div className="text-4xl mb-4">📁</div>
                   <h2 className="text-xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Cases Module</h2>
                   <p className="text-sm mt-2" style={{ color: 'var(--color-garuda-400)' }}>Coming in Phase 2</p>
                 </div>

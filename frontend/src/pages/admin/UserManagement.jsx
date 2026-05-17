@@ -3,7 +3,7 @@
  * 
  * Full CRUD for user accounts with role assignment and PS assignment.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../../api/axios';
 
 const ROLES = ['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE'];
@@ -21,6 +21,12 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter States
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+
+  // Form States
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [form, setForm] = useState({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '' });
@@ -34,7 +40,7 @@ export default function UserManagement() {
   const fetchData = async () => {
     try {
       const [usersRes, psRes] = await Promise.all([
-        api.get('/admin/users'),
+        api.get('/admin/users?size=500'), // Ensure we fetch enough or all
         api.get('/police-stations'),
       ]);
       setUsers(usersRes.data.data.content || []);
@@ -85,7 +91,7 @@ export default function UserManagement() {
   };
 
   const handleDeactivate = async (userId) => {
-    if (!confirm('Are you sure you want to deactivate this user?')) return;
+    if (!window.confirm('Are you sure you want to deactivate this user?')) return;
     try {
       await api.delete(`/admin/users/${userId}`);
       await fetchData();
@@ -93,6 +99,40 @@ export default function UserManagement() {
       alert(err.response?.data?.message || 'Failed to deactivate user');
     }
   };
+
+  // Derived filter options
+  const uniqueStates = useMemo(() => {
+    return [...new Set(stations.map(s => s.state).filter(Boolean))].sort();
+  }, [stations]);
+
+  const availableDistricts = useMemo(() => {
+    if (!selectedState) return [];
+    return [...new Set(stations.filter(s => s.state === selectedState).map(s => s.district).filter(Boolean))].sort();
+  }, [stations, selectedState]);
+
+  // Reset district if state changes
+  useEffect(() => {
+    setSelectedDistrict('');
+  }, [selectedState]);
+
+  const clearFilters = () => {
+    setSelectedState('');
+    setSelectedDistrict('');
+  };
+
+  // Grouped data structure
+  const districtStationsRaw = useMemo(() => {
+    if (!selectedState || !selectedDistrict) return [];
+    return stations.filter(s => s.state === selectedState && s.district === selectedDistrict);
+  }, [selectedState, selectedDistrict, stations]);
+
+  const stationsWithUsers = useMemo(() => {
+    return districtStationsRaw.map(station => ({
+      ...station,
+      users: users.filter(u => u.policeStationId === station.id),
+    }));
+  }, [districtStationsRaw, users]);
+
 
   if (loading) {
     return (
@@ -104,17 +144,17 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>User Management</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
-            Manage officers, assign roles, and assign Police Stations
+            Manage officers grouped by their assigned locations
           </p>
         </div>
         <button
-          id="btn-add-user"
           onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '' }); setShowForm(true); }}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+          className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap"
           style={{ background: 'var(--color-accent-500)', color: '#fff' }}
         >
           + Add Officer
@@ -134,7 +174,6 @@ export default function UserManagement() {
             <div>
               <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Username</label>
               <input
-                id="input-username"
                 type="text"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
@@ -149,7 +188,6 @@ export default function UserManagement() {
                 Password {editUser && '(leave blank to keep current)'}
               </label>
               <input
-                id="input-password"
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -161,7 +199,6 @@ export default function UserManagement() {
             <div>
               <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Full Name</label>
               <input
-                id="input-fullname"
                 type="text"
                 value={form.fullName}
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -173,7 +210,6 @@ export default function UserManagement() {
             <div>
               <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Role</label>
               <select
-                id="select-role"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-sm"
@@ -185,7 +221,6 @@ export default function UserManagement() {
             <div>
               <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station</label>
               <select
-                id="select-ps"
                 value={form.policeStationId}
                 onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg text-sm"
@@ -220,97 +255,178 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Users Table */}
-      <div
-        className="rounded-xl overflow-hidden"
+      {/* Cascading Filters */}
+      <div 
+        className="p-4 rounded-xl flex flex-col md:flex-row gap-4 items-end"
         style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
       >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--color-garuda-700)' }}>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Name</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Username</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Role</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Police Station</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Status</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Last Login</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u, i) => {
-                const roleColor = ROLE_COLORS[u.role] || ROLE_COLORS.CONSTABLE;
-                return (
-                  <tr
-                    key={u.id}
-                    className="transition-colors duration-150"
-                    style={{
-                      borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.3)',
-                    }}
-                  >
-                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{u.fullName}</td>
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>{u.username}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: roleColor.bg, color: roleColor.text }}
-                      >
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                      {u.policeStationName || '— District Level —'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                        style={{
-                          background: u.isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                          color: u.isActive ? '#4ade80' : '#f87171',
-                        }}
-                      >
-                        {u.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      {u.lastLogin ? new Date(u.lastLogin).toLocaleString('en-IN') : 'Never'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          onClick={() => handleEdit(u)}
-                          className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer"
-                          style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)' }}
-                        >
-                          Edit
-                        </button>
-                        {u.isActive && (
-                          <button
-                            onClick={() => handleDeactivate(u.id)}
-                            className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer"
-                            style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                          >
-                            Deactivate
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
-                    No users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="flex-1 w-full">
+          <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Select State</label>
+          <select
+            value={selectedState}
+            onChange={(e) => setSelectedState(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm"
+            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+          >
+            <option value="">— Select a State —</option>
+            {uniqueStates.map(state => <option key={state} value={state}>{state}</option>)}
+          </select>
+        </div>
+
+        <div className="flex-1 w-full">
+          <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Select District</label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            disabled={!selectedState}
+            className="w-full px-3 py-2 rounded-lg text-sm disabled:opacity-50"
+            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+          >
+            <option value="">— Select a District —</option>
+            {availableDistricts.map(district => <option key={district} value={district}>{district}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer h-[38px]"
+            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)', border: '1px solid var(--color-garuda-600)' }}
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
+
+      {/* Main Content Area */}
+      {!selectedState || !selectedDistrict ? (
+        // Empty State (No selection)
+        <div 
+          className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
+          style={{ background: 'var(--color-garuda-800)', border: '1px dashed var(--color-garuda-600)' }}
+        >
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--color-garuda-700)' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.43 4.07 15.95 4.07 12C4.07 11.83 4.08 11.66 4.09 11.5H11V19.93ZM13 19.93V11.5H19.91C19.92 11.66 19.93 11.83 19.93 12C19.93 15.95 16.95 19.43 13 19.93ZM19.74 9.5H13V4.26C16.39 5.05 19.04 7.54 19.74 9.5ZM11 4.26V9.5H4.26C4.96 7.54 7.61 5.05 11 4.26Z" fill="var(--color-garuda-400)"/>
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>Please select a State and District to view officers</h3>
+          <p className="text-sm mt-2" style={{ color: 'var(--color-garuda-400)' }}>Use the filters above to navigate through locations.</p>
+        </div>
+      ) : stationsWithUsers.length === 0 ? (
+        // Empty State (No stations/officers found)
+        <div 
+          className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
+          style={{ background: 'var(--color-garuda-800)', border: '1px dashed var(--color-garuda-600)' }}
+        >
+          <div className="text-4xl mb-3">🔍</div>
+          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>No police stations found for this district</h3>
+        </div>
+      ) : (
+        // Grid of Police Stations
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {stationsWithUsers.map(station => (
+            <div 
+              key={station.id} 
+              className="rounded-xl overflow-hidden flex flex-col h-full"
+              style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
+            >
+              {/* Card Header */}
+              <div 
+                className="px-5 py-4 flex justify-between items-center border-b"
+                style={{ background: 'rgba(26, 42, 74, 0.4)', borderColor: 'var(--color-garuda-700)' }}
+              >
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-garuda-50)' }}>
+                    PS: {station.name} <span className="opacity-60 font-normal">({station.psCode})</span>
+                  </h3>
+                </div>
+                <div className="text-xs font-semibold px-2.5 py-1 rounded-md" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
+                  {station.users.length} Officer(s)
+                </div>
+              </div>
+
+              {/* Card Body / Table */}
+              <div className="flex-1 p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: 'var(--color-garuda-900)' }}>
+                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Officer</th>
+                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Role</th>
+                      <th className="text-right px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {station.users.map((u, i) => {
+                      const roleColor = ROLE_COLORS[u.role] || ROLE_COLORS.CONSTABLE;
+                      return (
+                        <tr 
+                          key={u.id}
+                          style={{
+                            borderBottom: '1px solid var(--color-garuda-700)',
+                            background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.15)',
+                          }}
+                        >
+                          <td className="px-5 py-3">
+                            <div className="font-medium" style={{ color: 'var(--color-garuda-100)' }}>{u.fullName}</div>
+                            <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>{u.username}</div>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span
+                              className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
+                              style={{ background: roleColor.bg, color: roleColor.text }}
+                            >
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <div className="flex flex-col items-end gap-2">
+                              <span
+                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                                style={{
+                                  background: u.isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                  color: u.isActive ? '#4ade80' : '#f87171',
+                                }}
+                              >
+                                {u.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEdit(u)}
+                                  className="text-xs hover:underline"
+                                  style={{ color: '#60a5fa' }}
+                                >
+                                  Edit
+                                </button>
+                                {u.isActive && (
+                                  <button
+                                    onClick={() => handleDeactivate(u.id)}
+                                    className="text-xs hover:underline"
+                                    style={{ color: '#f87171' }}
+                                  >
+                                    Deactivate
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {station.users.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-5 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>
+                          No officers currently assigned to this station.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

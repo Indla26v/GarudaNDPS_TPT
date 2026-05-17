@@ -62,7 +62,7 @@ export const getOffenderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const o = await prisma.offenders.findUnique({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       include: {
         police_stations: true,
         users: true,
@@ -216,13 +216,13 @@ export const updateOffender = async (req: Request, res: Response) => {
     const data = req.body;
     
     // Find first
-    const existing = await prisma.offenders.findUnique({ where: { id: BigInt(id) } });
+    const existing = await prisma.offenders.findUnique({ where: { id: BigInt(id as string) } });
     if (!existing) return res.status(404).json({ message: 'Offender not found' });
 
     // Transaction for safe nested updates (delete then recreate)
     await prisma.$transaction(async (tx) => {
        await tx.offenders.update({
-          where: { id: BigInt(id) },
+          where: { id: BigInt(id as string) },
           data: {
             sl_no: data.slNo || data.sl_no,
             full_name: data.fullName || data.full_name,
@@ -246,17 +246,17 @@ export const updateOffender = async (req: Request, res: Response) => {
        });
 
        // Delete nested
-       await tx.offender_contacts.deleteMany({ where: { offender_id: BigInt(id) } });
-       await tx.offender_identity_docs.deleteMany({ where: { offender_id: BigInt(id) } });
-       await tx.offender_financials.deleteMany({ where: { offender_id: BigInt(id) } });
-       await tx.offender_drug_profile.deleteMany({ where: { offender_id: BigInt(id) } });
-       await tx.supply_chain_links.deleteMany({ where: { offender_id: BigInt(id) } });
+       await tx.offender_contacts.deleteMany({ where: { offender_id: BigInt(id as string) } });
+       await tx.offender_identity_docs.deleteMany({ where: { offender_id: BigInt(id as string) } });
+       await tx.offender_financials.deleteMany({ where: { offender_id: BigInt(id as string) } });
+       await tx.offender_drug_profile.deleteMany({ where: { offender_id: BigInt(id as string) } });
+       await tx.supply_chain_links.deleteMany({ where: { offender_id: BigInt(id as string) } });
 
        // Recreate nested (same logic as create)
        if (data.contacts) {
          await tx.offender_contacts.createMany({
            data: data.contacts.map((c: any) => ({
-             offender_id: BigInt(id),
+             offender_id: BigInt(id as string),
              contact_type: c.contactType || c.contact_type,
              value: c.value,
              notes: c.notes
@@ -266,7 +266,7 @@ export const updateOffender = async (req: Request, res: Response) => {
        if (data.identityDocs) {
          await tx.offender_identity_docs.create({
            data: {
-             offender_id: BigInt(id),
+             offender_id: BigInt(id as string),
              aadhaar_no: data.identityDocs.aadhaarNo,
              voter_id: data.identityDocs.voterId,
              pan_card: data.identityDocs.panCard
@@ -276,7 +276,7 @@ export const updateOffender = async (req: Request, res: Response) => {
        if (data.financials) {
          await tx.offender_financials.createMany({
            data: data.financials.map((f: any) => ({
-            offender_id: BigInt(id),
+            offender_id: BigInt(id as string),
             fin_type: f.finType || f.fin_type,
             value: f.value,
             bank_name: f.bankName || f.bank_name,
@@ -287,7 +287,7 @@ export const updateOffender = async (req: Request, res: Response) => {
        if (data.drugProfile) {
          await tx.offender_drug_profile.create({
            data: {
-             offender_id: BigInt(id),
+             offender_id: BigInt(id as string),
              addiction_type: data.drugProfile.addictionType,
              consumption_frequency: data.drugProfile.consumptionFrequency,
              source_of_procurement: data.drugProfile.sourceOfProcurement,
@@ -299,7 +299,7 @@ export const updateOffender = async (req: Request, res: Response) => {
        if (data.supplyChainLinks) {
          await tx.supply_chain_links.createMany({
           data: data.supplyChainLinks.map((s: any) => ({
-            offender_id: BigInt(id),
+            offender_id: BigInt(id as string),
             linked_offender_id: s.linkedOffenderId ? BigInt(s.linkedOffenderId) : null,
             link_type: s.linkType || s.link_type,
             linked_person_name: s.linkedPersonName || s.linked_person_name,

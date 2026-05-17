@@ -9,13 +9,13 @@ import api from '../api/axios';
 import { useSSE } from '../hooks/useSSE';
 
 const METRIC_CARDS = [
-  { key: 'totalCases',        label: 'Total Cases',     icon: '📁', color: '#3b82f6' },
-  { key: 'totalOffenders',    label: 'Total Offenders',  icon: '👤', color: '#8b5cf6' },
-  { key: 'totalArrests',      label: 'Total Arrests',    icon: '🔒', color: '#22c55e' },
-  { key: 'totalAbsconders',   label: 'Absconders',       icon: '🏃', color: '#ef4444' },
-  { key: 'totalContrabandKg', label: 'Contraband (Kg)',  icon: '⚖️', color: '#f59e0b' },
-  { key: 'totalCashSeized',   label: 'Cash Seized (₹)',  icon: '💰', color: '#06b6d4' },
-  { key: 'totalVehiclesSeized', label: 'Vehicles Seized', icon: '🚗', color: '#ec4899' },
+  { key: 'totalCases',        label: 'Total Cases',     icon: '', color: '#3b82f6' },
+  { key: 'totalOffenders',    label: 'Total Offenders',  icon: '', color: '#8b5cf6' },
+  { key: 'totalArrests',      label: 'Total Arrests',    icon: '', color: '#22c55e' },
+  { key: 'totalAbsconders',   label: 'Absconders',       icon: '', color: '#ef4444' },
+  { key: 'totalContrabandKg', label: 'Contraband (Kg)',  icon: '', color: '#f59e0b' },
+  { key: 'totalCashSeized',   label: 'Cash Seized (₹)',  icon: '', color: '#06b6d4' },
+  { key: 'totalVehiclesSeized', label: 'Vehicles Seized', icon: '', color: '#ec4899' },
 ];
 
 export default function DistrictAnalytics() {

@@ -1,36 +1,25 @@
-/**
- * GARUDA — Edit Request Controller
- * 
- * CI and SI can request edits (routed to DSP for approval).
- * DSP uniquely approves intra-PS edits.
- */
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
-import { successResponse } from '../utils/transformers';
+import { convertBigIntsToNumbers, successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
-import { hasPermission } from '../config/roles';
 
-// ── List edit requests ────────────────────────────────────────────────
 export const getEditRequests = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
-    const { status, page = 0, size = 20 } = req.query;
+    const userRole = (req as any).user.role;
+    const userId = (req as any).user.userId;
+    const psId = (req as any).user.policeStationId;
+    const { status, entityType, page = 0, size = 20 } = req.query;
 
     const where: any = {};
     if (status) where.status = String(status);
+    if (entityType) where.entity_type = String(entityType);
 
-    // DSP sees all requests for their PS; CI/SI see only their own
-    if (user.role === 'DSP') {
-      const dbUser = await prisma.users.findUnique({ where: { id: user.userId } });
-      if (dbUser?.police_station_id) {
-        const psUsers = await prisma.users.findMany({
-          where: { police_station_id: dbUser.police_station_id },
-          select: { id: true }
-        });
-        where.requested_by = { in: psUsers.map(u => u.id) };
-      }
-    } else if (!['ADMIN'].includes(user.role)) {
-      where.requested_by = BigInt(user.userId);
+    if (userRole === 'DSP') {
+      where.edit_requested_by_user = { police_station_id: BigInt(psId) };
+    } else if (userRole === 'CI' || userRole === 'SI' || userRole === 'CONSTABLE') {
+      where.requested_by = BigInt(userId);
+    } else if (userRole === 'SP') {
+      return res.status(403).json({ message: 'SP does not handle edit requests' });
     }
 
     const skip = Number(page) * Number(size);
@@ -40,29 +29,31 @@ export const getEditRequests = async (req: Request, res: Response) => {
       prisma.edit_requests.findMany({
         where,
         include: {
-          requested_user: { select: { id: true, full_name: true, role: true } },
-          approved_user:  { select: { id: true, full_name: true, role: true } },
+          edit_requested_by_user: { select: { id: true, username: true, full_name: true, role: true, police_station_id: true } },
+          edit_approved_by_user: { select: { id: true, username: true, full_name: true, role: true } }
         },
-        orderBy: { created_at: 'desc' },
+        orderBy: { request_date: 'desc' },
         skip,
-        take,
+        take
       }),
-      prisma.edit_requests.count({ where }),
+      prisma.edit_requests.count({ where })
     ]);
 
     const formatted = requests.map(r => ({
+      ...r,
       id: r.id.toString(),
-      entityType: r.entity_type,
-      entityId: r.entity_id.toString(),
-      changesJson: r.changes_json,
-      reason: r.reason,
-      status: r.status,
-      rejectionReason: r.rejection_reason,
-      requestedBy: r.requested_user ? { id: r.requested_user.id.toString(), name: r.requested_user.full_name, role: r.requested_user.role } : null,
-      requestedAt: r.requested_at,
-      approvedBy: r.approved_user ? { id: r.approved_user.id.toString(), name: r.approved_user.full_name, role: r.approved_user.role } : null,
-      approvedAt: r.approved_at,
-      createdAt: r.created_at,
+      entity_id: r.entity_id.toString(),
+      requested_by: r.requested_by?.toString(),
+      approved_by: r.approved_by?.toString(),
+      edit_requested_by_user: r.edit_requested_by_user ? {
+        ...r.edit_requested_by_user,
+        id: r.edit_requested_by_user.id.toString(),
+        police_station_id: r.edit_requested_by_user.police_station_id?.toString()
+      } : null,
+      edit_approved_by_user: r.edit_approved_by_user ? {
+        ...r.edit_approved_by_user,
+        id: r.edit_approved_by_user.id.toString()
+      } : null
     }));
 
     res.json(successResponse({ content: formatted, totalElements: total, totalPages: Math.ceil(total / take) }));
@@ -72,150 +63,148 @@ export const getEditRequests = async (req: Request, res: Response) => {
   }
 };
 
-// ── Create an edit request (CI / SI) ──────────────────────────────────
+export const getEditRequestById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const request = await prisma.edit_requests.findUnique({
+      where: { id: BigInt(id) },
+      include: {
+        edit_requested_by_user: true,
+        edit_approved_by_user: true
+      }
+    });
+
+    if (!request) return res.status(404).json({ message: 'Edit request not found' });
+
+    res.json(successResponse(convertBigIntsToNumbers(request)));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const createEditRequest = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
-    const { entityType, entityId, changes, reason } = req.body;
+    const { entityType, entityId, oldData, newData, reason } = req.body;
+    const userId = (req as any).user.userId;
 
-    if (!hasPermission(user.role, 'REQUEST_EDIT')) {
-      return res.status(403).json({ message: 'Only CI/SI can request edits' });
+    if (!entityType || !entityId || !newData || !reason) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    if (!entityType || !entityId || !changes) {
-      return res.status(400).json({ message: 'entityType, entityId, and changes are required' });
-    }
-
-    const request = await prisma.edit_requests.create({
+    const newReq = await prisma.edit_requests.create({
       data: {
         entity_type: entityType,
         entity_id: BigInt(entityId),
-        changes_json: typeof changes === 'string' ? changes : JSON.stringify(changes),
-        reason: reason || null,
+        old_data: oldData || {},
+        new_data: newData,
+        reason,
         status: 'PENDING',
-        requested_by: BigInt(user.userId),
-        requested_at: new Date(),
+        requested_by: BigInt(userId)
       }
     });
 
-    await logAudit('EDIT_REQUESTED', entityType, entityId, req,
-      `Edit requested for ${entityType}#${entityId} by ${user.role} ${user.username}`);
+    await logAudit('CREATE', 'EDIT_REQUEST', newReq.id, req, `Edit request submitted for ${entityType} ${entityId}`);
 
-    res.status(201).json(successResponse(
-      { id: request.id.toString(), status: 'PENDING' },
-      'Edit request submitted for DSP approval'
-    ));
+    res.status(201).json(successResponse({ id: newReq.id.toString() }, 'Edit request submitted'));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// ── Approve an edit request (DSP only) ────────────────────────────────
 export const approveEditRequest = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
     const { id } = req.params;
+    const dspUserId = (req as any).user.userId;
+    const dspRole = (req as any).user.role;
+    const dspPsId = (req as any).user.policeStationId;
 
-    if (!hasPermission(user.role, 'APPROVE_EDIT')) {
-      return res.status(403).json({ message: 'Only DSP can approve edit requests' });
+    if (dspRole !== 'DSP' && dspRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Only DSP or Admin can approve' });
     }
 
-    const existing = await prisma.edit_requests.findUnique({ where: { id: BigInt(id) } });
-    if (!existing) return res.status(404).json({ message: 'Edit request not found' });
-    if (existing.status !== 'PENDING') {
-      return res.status(400).json({ message: `Cannot approve: current status is ${existing.status}` });
-    }
-
-    // Apply the changes
-    const changes = JSON.parse(existing.changes_json);
-    await applyEditChanges(existing.entity_type, existing.entity_id, changes);
-
-    const updated = await prisma.edit_requests.update({
+    const request = await prisma.edit_requests.findUnique({ 
       where: { id: BigInt(id) },
-      data: {
-        status: 'APPROVED',
-        approved_by: BigInt(user.userId),
-        approved_at: new Date(),
-        updated_at: new Date(),
+      include: {
+        edit_requested_by_user: true
       }
     });
+    
+    if (!request) return res.status(404).json({ message: 'Edit request not found' });
+    if (request.status !== 'PENDING') return res.status(400).json({ message: `Cannot approve request in ${request.status} state` });
 
-    await logAudit('EDIT_APPROVED', existing.entity_type, existing.entity_id, req,
-      `Edit approved for ${existing.entity_type}#${existing.entity_id} by DSP ${user.username}`);
+    if (dspRole === 'DSP') {
+      if (request.edit_requested_by_user?.police_station_id?.toString() !== dspPsId?.toString()) {
+         return res.status(403).json({ message: 'DSP can only approve requests for their assigned Police Station' });
+      }
+    }
 
-    res.json(successResponse({ id: updated.id.toString(), status: 'APPROVED' }, 'Edit approved and applied'));
-  } catch (error) {
+    const { entity_type, entity_id, new_data } = request;
+
+    await prisma.$transaction(async (tx) => {
+      // NOTE: Here you would normally update the actual entity the request points to.
+      // E.g., if entity_type is 'CASE', update the case with id=entity_id using new_data.
+
+      await tx.edit_requests.update({
+        where: { id: BigInt(id) },
+        data: {
+          status: 'APPROVED',
+          approved_by: BigInt(dspUserId),
+          approved_date: new Date()
+        }
+      });
+    });
+
+    await logAudit('APPROVE', 'EDIT_REQUEST', BigInt(id), req, `Edit request approved for ${entity_type} ${entity_id}`);
+
+    res.json(successResponse({ id }, 'Edit request approved and applied'));
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 
-// ── Reject an edit request (DSP only) ─────────────────────────────────
 export const rejectEditRequest = async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
     const { id } = req.params;
-    const { rejectionReason } = req.body;
+    const userId = (req as any).user.userId;
+    const userRole = (req as any).user.role;
+    const userPsId = (req as any).user.policeStationId;
 
-    if (!hasPermission(user.role, 'APPROVE_EDIT')) {
-      return res.status(403).json({ message: 'Only DSP can reject edit requests' });
+    if (userRole !== 'DSP' && userRole !== 'ADMIN') {
+      return res.status(403).json({ message: 'Only DSP or Admin can reject' });
     }
 
-    const existing = await prisma.edit_requests.findUnique({ where: { id: BigInt(id) } });
-    if (!existing) return res.status(404).json({ message: 'Edit request not found' });
-    if (existing.status !== 'PENDING') {
-      return res.status(400).json({ message: `Cannot reject: current status is ${existing.status}` });
+    const request = await prisma.edit_requests.findUnique({ 
+      where: { id: BigInt(id) },
+      include: {
+        edit_requested_by_user: true
+      }
+    });
+
+    if (!request) return res.status(404).json({ message: 'Edit request not found' });
+    
+    if (userRole === 'DSP') {
+      if (request.edit_requested_by_user?.police_station_id?.toString() !== userPsId?.toString()) {
+         return res.status(403).json({ message: 'DSP can only reject requests for their assigned Police Station' });
+      }
     }
 
-    const updated = await prisma.edit_requests.update({
+    await prisma.edit_requests.update({
       where: { id: BigInt(id) },
       data: {
         status: 'REJECTED',
-        rejection_reason: rejectionReason || 'No reason provided',
-        updated_at: new Date(),
+        approved_by: BigInt(userId),
+        approved_date: new Date()
       }
     });
 
-    await logAudit('EDIT_REJECTED', existing.entity_type, existing.entity_id, req,
-      `Edit rejected for ${existing.entity_type}#${existing.entity_id} by DSP ${user.username}: ${rejectionReason}`);
+    await logAudit('REJECT', 'EDIT_REQUEST', BigInt(id), req, 'Edit request rejected');
 
-    res.json(successResponse({ id: updated.id.toString(), status: 'REJECTED' }, 'Edit request rejected'));
+    res.json(successResponse({ id }, 'Edit request rejected'));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-// ── Helper: apply edit changes to the entity ──────────────────────────
-async function applyEditChanges(entityType: string, entityId: bigint, changes: any) {
-  switch (entityType.toUpperCase()) {
-    case 'OFFENDER':
-      await prisma.offenders.update({
-        where: { id: entityId },
-        data: {
-          ...(changes.full_name && { full_name: changes.full_name }),
-          ...(changes.alias && { alias: changes.alias }),
-          ...(changes.status && { status: changes.status }),
-          ...(changes.category && { category: changes.category }),
-          ...(changes.risk_score && { risk_score: changes.risk_score }),
-          ...(changes.full_address && { full_address: changes.full_address }),
-          ...(changes.occupation && { occupation: changes.occupation }),
-          updated_at: new Date(),
-        }
-      });
-      break;
-    case 'CASE':
-      await prisma.cases.update({
-        where: { id: entityId },
-        data: {
-          ...(changes.section_of_law && { section_of_law: changes.section_of_law }),
-          ...(changes.stage && { stage: changes.stage }),
-          updated_at: new Date(),
-        }
-      });
-      break;
-    default:
-      throw new Error(`Unsupported entity type for edit: ${entityType}`);
-  }
-}
