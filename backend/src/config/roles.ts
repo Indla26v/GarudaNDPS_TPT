@@ -1,82 +1,128 @@
 /**
- * GARUDA — Role Hierarchy & Permission Matrix
+ * GARUDA — Role & Permission Configuration
  * 
- * Defines the exact role ranking and maps each role to its
- * allowed capabilities across the platform.
+ * Roles = Police Ranks: ADMIN, SP, ASP, DSP, CI, SI, CONSTABLE
+ * Departments = Organizational Units: ADMINISTRATION, OPERATIONS, INTELLIGENCE, FIN_CELL, TECH_CELL, ANALYST, LEGAL, STF
+ * Access = Role rank + Department membership
  */
 
-// Role hierarchy ranked from highest (0) to lowest (5)
+// ── Role hierarchy (rank order, lower = more powerful) ─────────────────
 export const ROLE_HIERARCHY: Record<string, number> = {
   ADMIN:     0,
   SP:        1,
-  DSP:       2,
-  CI:        3,
-  SI:        4,
-  CONSTABLE: 5,
+  ASP:       2,
+  DSP:       3,
+  CI:        4,
+  SI:        5,
+  CONSTABLE: 6,
 };
 
-export type UserRole = keyof typeof ROLE_HIERARCHY;
+export const ROLE_LABELS: Record<string, string> = {
+  ADMIN:     'Admin',
+  SP:        'SP',
+  ASP:       'ASP',
+  DSP:       'DSP',
+  CI:        'CI (SHO)',
+  SI:        'SI',
+  CONSTABLE: 'Constable',
+};
 
-/**
- * Returns true if `role` is at least as high as `minimumRole`
- * in the hierarchy (lower number = higher authority).
- */
-export function hasMinimumRole(role: string, minimumRole: string): boolean {
-  const roleRank = ROLE_HIERARCHY[role];
-  const minRank  = ROLE_HIERARCHY[minimumRole];
-  if (roleRank === undefined || minRank === undefined) return false;
-  return roleRank <= minRank;
-}
+export const DEPARTMENTS = [
+  'ADMINISTRATION',
+  'OPERATIONS',
+  'INTELLIGENCE',
+  'FIN_CELL',
+  'TECH_CELL',
+  'ANALYST',
+  'LEGAL',
+  'STF',
+] as const;
 
-/**
- * Feature-level permission matrix.
- * Each key is a capability; the value is the set of roles that have it.
- */
-export const PERMISSIONS: Record<string, Set<string>> = {
-  // Admin-only
-  USER_MANAGEMENT:     new Set(['ADMIN']),
-  AUDIT_LOGS:          new Set(['ADMIN']),
-  ASSIGN_PS:           new Set(['ADMIN']),
-  ASSIGN_SP:           new Set(['ADMIN']),
-  EXECUTE_DELETION:    new Set(['ADMIN']),
+export const DEPARTMENT_LABELS: Record<string, string> = {
+  ADMINISTRATION: 'Administration',
+  OPERATIONS:     'Operations',
+  INTELLIGENCE:   'Intelligence',
+  FIN_CELL:       'Financial Cell',
+  TECH_CELL:      'Tech Cell',
+  ANALYST:        'Analyst',
+  LEGAL:          'Legal',
+  STF:            'Special Task Force',
+};
 
-  // SP + Admin
-  DISTRICT_ANALYTICS:  new Set(['ADMIN', 'SP']),
-  VIEW_ALL_PS:         new Set(['ADMIN', 'SP']),
-  OFFICER_DIRECTORY:   new Set(['ADMIN', 'SP']),
-  APPROVE_DELETION:    new Set(['SP']),
+// ── Permission matrix ──────────────────────────────────────────────────
+// Access is determined by a combination of role rank AND department.
+// Page-level permissions keyed by page → which departments can see it.
 
-  // DSP and above
-  APPROVE_EDIT:        new Set(['DSP']),
-  REQUEST_DELETION:    new Set(['DSP']),
+export const PERMISSIONS = {
+  // Page 1: Dashboard — all roles can see their own level
+  DASHBOARD_VIEW:       { minRole: 'CONSTABLE' },
+  DASHBOARD_FULL:       { minRole: 'SP' },
 
-  // CI, SI can request edits (routed to DSP)
-  REQUEST_EDIT:        new Set(['CI', 'SI']),
+  // Page 2: Offender Database — all operational staff
+  OFFENDER_VIEW:        { minRole: 'CONSTABLE' },
+  OFFENDER_CREATE:      { minRole: 'SI' },
+  OFFENDER_EDIT:        { minRole: 'SI' },
 
-  // CI and above can escalate deletion flags
-  ESCALATE_DELETION:   new Set(['SI', 'CI']),
+  // Page 3: Case Management — operational departments
+  CASE_VIEW:            { minRole: 'CONSTABLE' },
+  CASE_CREATE:          { minRole: 'SI' },
+  CASE_APPROVE:         { minRole: 'CI' },
 
-  // Everyone can add cases
-  ADD_CASE:            new Set(['ADMIN', 'DSP', 'CI', 'SI', 'CONSTABLE']),
+  // Page 4: Field Staff — field personnel
+  FIELD_ENTRY:          { minRole: 'CONSTABLE', departments: ['OPERATIONS', 'STF'] },
+  FIELD_VERIFY:         { minRole: 'SI', departments: ['OPERATIONS', 'STF'] },
 
-  // Everyone can view own PS data
-  VIEW_OWN_PS:         new Set(['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE']),
+  // Page 5: Technical Surveillance — restricted to specific departments
+  TECH_VIEW_ALL:        { minRole: 'CONSTABLE', departments: ['TECH_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'] },
+  TECH_ADD:             { minRole: 'SI', departments: ['TECH_CELL', 'ANALYST', 'STF'] },
 
-  // Everyone can search entire database
-  SEARCH_DISTRICT:     new Set(['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE']),
+  // Page 6: Financial Analysis — restricted to specific departments
+  FIN_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['FIN_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'] },
+  FIN_ADD:              { minRole: 'SI', departments: ['FIN_CELL', 'STF'] },
 
-  // Everyone can flag for deletion
-  FLAG_DELETION:       new Set(['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE']),
+  // Page 7: Network & Chain Analysis — restricted to specific departments
+  NET_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['ANALYST', 'TECH_CELL', 'STF', 'INTELLIGENCE'] },
+  NET_BUILD:            { minRole: 'SI', departments: ['ANALYST', 'STF'] },
 
-  // Edit records: DSP approves, CI/SI request, Constable cannot
-  EDIT_RECORDS:        new Set(['ADMIN', 'DSP']),
+  // Page 8: Reports — mostly open for reads
+  REPORTS_VIEW:         { minRole: 'SI' },
+  REPORTS_CUSTOM:       { minRole: 'CI' },
+
+  // Page 9: Admin & User Management — ADMIN only
+  USER_MANAGEMENT:      { minRole: 'ADMIN' },
+  AUDIT_LOGS:           { minRole: 'ADMIN' },
+  TEAM_MANAGEMENT:      { minRole: 'ADMIN' },
+
+  // Workflows
+  DISTRICT_ANALYTICS:   { minRole: 'DSP' },
+  EDIT_APPROVE:         { minRole: 'CI' },
+  EDIT_REQUEST:         { minRole: 'SI' },
 };
 
 /**
- * Check if a role has a specific permission.
+ * Check if a user with the given role and department has a specific permission.
  */
-export function hasPermission(role: string, permission: string): boolean {
-  const allowed = PERMISSIONS[permission];
-  if (!allowed) return false;
-  return allowed.has(role);
+export function hasPermission(
+  userRole: string,
+  userDepartment: string,
+  permissionKey: keyof typeof PERMISSIONS
+): boolean {
+  const perm = PERMISSIONS[permissionKey];
+  if (!perm) return false;
+
+  // ADMIN bypasses all checks
+  if (userRole === 'ADMIN') return true;
+
+  // Check role rank
+  const userRank = ROLE_HIERARCHY[userRole];
+  const requiredRank = ROLE_HIERARCHY[perm.minRole];
+  if (userRank === undefined || requiredRank === undefined) return false;
+  if (userRank > requiredRank) return false;
+
+  // Check department restriction (if any)
+  if ('departments' in perm && perm.departments) {
+    if (!perm.departments.includes(userDepartment as any)) return false;
+  }
+
+  return true;
 }

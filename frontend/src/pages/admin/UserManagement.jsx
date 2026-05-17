@@ -6,11 +6,25 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../../api/axios';
 
-const ROLES = ['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE'];
+const ROLES = ['ADMIN', 'SP', 'ASP', 'DSP', 'CI', 'SI', 'CONSTABLE'];
+
+const ROLE_LABELS = {
+  ADMIN: 'Admin', SP: 'SP', ASP: 'ASP', DSP: 'DSP', CI: 'CI (SHO)', SI: 'SI', CONSTABLE: 'Constable',
+};
+
+const DEPARTMENTS = [
+  'ADMINISTRATION', 'OPERATIONS', 'INTELLIGENCE', 'FIN_CELL', 'TECH_CELL', 'ANALYST', 'LEGAL', 'STF',
+];
+
+const DEPT_LABELS = {
+  ADMINISTRATION: 'Administration', OPERATIONS: 'Operations', INTELLIGENCE: 'Intelligence',
+  FIN_CELL: 'Financial Cell', TECH_CELL: 'Tech Cell', ANALYST: 'Analyst', LEGAL: 'Legal', STF: 'Special Task Force',
+};
 
 const ROLE_COLORS = {
   ADMIN:     { bg: '#ef4444', text: '#fff' },
   SP:        { bg: '#8b5cf6', text: '#fff' },
+  ASP:       { bg: '#6366f1', text: '#fff' },
   DSP:       { bg: '#3b82f6', text: '#fff' },
   CI:        { bg: '#22c55e', text: '#fff' },
   SI:        { bg: '#f59e0b', text: '#000' },
@@ -29,7 +43,7 @@ export default function UserManagement() {
   // Form States
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [form, setForm] = useState({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '' });
+  const [form, setForm] = useState({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -61,6 +75,8 @@ export default function UserManagement() {
         await api.put(`/admin/users/${editUser.id}`, {
           fullName: form.fullName,
           role: form.role,
+          department: form.department,
+          badgeNumber: form.badgeNumber || null,
           policeStationId: form.policeStationId || null,
           ...(form.password && { password: form.password }),
         });
@@ -69,7 +85,7 @@ export default function UserManagement() {
       }
       setShowForm(false);
       setEditUser(null);
-      setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '' });
+      setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' });
       await fetchData();
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save user');
@@ -85,6 +101,8 @@ export default function UserManagement() {
       password: '',
       fullName: user.fullName,
       role: user.role,
+      department: user.department || 'OPERATIONS',
+      badgeNumber: user.badgeNumber || '',
       policeStationId: user.policeStationId || '',
     });
     setShowForm(true);
@@ -127,10 +145,22 @@ export default function UserManagement() {
   }, [selectedState, selectedDistrict, stations]);
 
   const stationsWithUsers = useMemo(() => {
-    return districtStationsRaw.map(station => ({
+    const psList = districtStationsRaw.map(station => ({
       ...station,
       users: users.filter(u => u.policeStationId === station.id),
     }));
+    
+    // Add a virtual station for users without a police station
+    const unassignedUsers = users.filter(u => !u.policeStationId);
+    if (unassignedUsers.length > 0) {
+      psList.unshift({
+        id: 'hq',
+        name: 'Headquarters / Specialized Units',
+        psCode: 'HQ',
+        users: unassignedUsers,
+      });
+    }
+    return psList;
   }, [districtStationsRaw, users]);
 
 
@@ -153,7 +183,7 @@ export default function UserManagement() {
           </p>
         </div>
         <button
-          onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '' }); setShowForm(true); }}
+          onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' }); setShowForm(true); }}
           className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap"
           style={{ background: 'var(--color-accent-500)', color: '#fff' }}
         >
@@ -163,95 +193,120 @@ export default function UserManagement() {
 
       {/* User Form Modal */}
       {showForm && (
-        <div
-          className="rounded-xl p-6"
-          style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
-        >
-          <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-garuda-100)' }}>
-            {editUser ? 'Edit Officer' : 'Add New Officer'}
-          </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Username</label>
-              <input
-                type="text"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                disabled={!!editUser}
-                required={!editUser}
-                className="w-full px-3 py-2 rounded-lg text-sm"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>
-                Password {editUser && '(leave blank to keep current)'}
-              </label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required={!editUser}
-                className="w-full px-3 py-2 rounded-lg text-sm"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Full Name</label>
-              <input
-                type="text"
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                required
-                className="w-full px-3 py-2 rounded-lg text-sm"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Role</label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
-              >
-                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station</label>
-              <select
-                value={form.policeStationId}
-                onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
-              >
-                <option value="">— None (District Level) —</option>
-                {stations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.psCode})</option>)}
-              </select>
-            </div>
-            <div className="flex items-end gap-3">
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
-                style={{ background: 'var(--color-accent-500)', color: '#fff' }}
-              >
-                {saving ? 'Saving...' : editUser ? 'Update' : 'Create'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setEditUser(null); }}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-          {formError && (
-            <p className="text-sm mt-3" style={{ color: '#f87171' }}>{formError}</p>
-          )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="absolute inset-0" onClick={() => { setShowForm(false); setEditUser(null); }}></div>
+          <div
+            className="rounded-xl p-6 relative w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
+          >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-garuda-100)' }}>
+              {editUser ? 'Edit Officer' : 'Add New Officer'}
+            </h2>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Username</label>
+                <input
+                  type="text"
+                  value={form.username}
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  disabled={!!editUser}
+                  required={!editUser}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>
+                  Password {editUser && '(leave blank to keep current)'}
+                </label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required={!editUser}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Full Name</label>
+                <input
+                  type="text"
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Role</label>
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                >
+                  {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Department</label>
+                <select
+                  value={form.department}
+                  onChange={(e) => setForm({ ...form, department: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                >
+                  {DEPARTMENTS.map(d => <option key={d} value={d}>{DEPT_LABELS[d] || d}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Badge Number</label>
+                <input
+                  type="text"
+                  value={form.badgeNumber}
+                  onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })}
+                  placeholder="Optional"
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station</label>
+                <select
+                  value={form.policeStationId}
+                  onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                >
+                  <option value="">— None (District Level) —</option>
+                  {stations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.psCode})</option>)}
+                </select>
+              </div>
+              <div className="md:col-span-2 flex justify-end gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowForm(false); setEditUser(null); }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
+                  style={{ background: 'var(--color-accent-500)', color: '#fff' }}
+                >
+                  {saving ? 'Saving...' : editUser ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+            {formError && (
+              <p className="text-sm mt-3" style={{ color: '#f87171' }}>{formError}</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -370,14 +425,27 @@ export default function UserManagement() {
                           <td className="px-5 py-3">
                             <div className="font-medium" style={{ color: 'var(--color-garuda-100)' }}>{u.fullName}</div>
                             <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>{u.username}</div>
+                            {u.teamName && (
+                              <div className="text-xs mt-1 font-medium" style={{ color: 'var(--color-garuda-300)' }}>
+                                🏢 {u.teamName}
+                              </div>
+                            )}
                           </td>
                           <td className="px-5 py-3">
-                            <span
-                              className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
-                              style={{ background: roleColor.bg, color: roleColor.text }}
-                            >
-                              {u.role}
-                            </span>
+                            <div className="flex flex-col gap-1 items-start">
+                              <span
+                                className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
+                                style={{ background: roleColor.bg, color: roleColor.text }}
+                              >
+                                {u.role}
+                              </span>
+                              <span
+                                className="text-[10px] font-medium tracking-wider px-2 py-0.5 rounded uppercase"
+                                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
+                              >
+                                {DEPT_LABELS[u.department] || u.department}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-5 py-3 text-right">
                             <div className="flex flex-col items-end gap-2">

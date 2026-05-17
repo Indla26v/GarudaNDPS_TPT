@@ -23,7 +23,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const [users, total] = await Promise.all([
       prisma.users.findMany({
         where,
-        include: { police_stations: true },
+        include: { police_stations: true, team: true },
         orderBy: { created_at: 'desc' },
         skip,
         take,
@@ -36,6 +36,11 @@ export const getUsers = async (req: Request, res: Response) => {
       username: u.username,
       fullName: u.full_name,
       role: u.role,
+      department: u.department,
+      badgeNumber: u.badge_number,
+      divisionId: u.division_id,
+      teamId: u.team_id?.toString() || null,
+      teamName: (u as any).team?.name || null,
       policeStationId: u.police_station_id?.toString() || null,
       policeStationName: u.police_stations?.name || null,
       policeStationDistrict: u.police_stations?.district || null,
@@ -54,7 +59,7 @@ export const getUsers = async (req: Request, res: Response) => {
 // ── Get single user ──────────────────────────────────────────────────
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const user = await prisma.users.findUnique({
       where: { id: BigInt(id) },
       include: { police_stations: true },
@@ -67,6 +72,9 @@ export const getUserById = async (req: Request, res: Response) => {
       username: user.username,
       fullName: user.full_name,
       role: user.role,
+      department: user.department,
+      badgeNumber: user.badge_number,
+      divisionId: user.division_id,
       policeStationId: user.police_station_id?.toString() || null,
       policeStationName: user.police_stations?.name || null,
       policeStationDistrict: user.police_stations?.district || null,
@@ -83,7 +91,7 @@ export const getUserById = async (req: Request, res: Response) => {
 // ── Create user ──────────────────────────────────────────────────────
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { username, password, fullName, role, policeStationId } = req.body;
+    const { username, password, fullName, role, policeStationId, department, badgeNumber, divisionId } = req.body;
 
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ message: 'username, password, fullName, and role are required' });
@@ -103,6 +111,9 @@ export const createUser = async (req: Request, res: Response) => {
         password_hash: passwordHash,
         full_name: fullName,
         role,
+        department: department || 'OPERATIONS',
+        badge_number: badgeNumber || null,
+        division_id: divisionId || null,
         police_station_id: policeStationId ? BigInt(policeStationId) : null,
         is_active: true,
       }
@@ -124,8 +135,8 @@ export const createUser = async (req: Request, res: Response) => {
 // ── Update user (role, PS assignment, active status) ─────────────────
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { fullName, role, policeStationId, isActive, password } = req.body;
+    const id = req.params.id as string;
+    const { fullName, role, policeStationId, isActive, password, department, badgeNumber, divisionId } = req.body;
 
     const existing = await prisma.users.findUnique({ where: { id: BigInt(id) } });
     if (!existing) return res.status(404).json({ message: 'User not found' });
@@ -133,6 +144,9 @@ export const updateUser = async (req: Request, res: Response) => {
     const updateData: any = {};
     if (fullName !== undefined) updateData.full_name = fullName;
     if (role !== undefined) updateData.role = role;
+    if (department !== undefined) updateData.department = department;
+    if (badgeNumber !== undefined) updateData.badge_number = badgeNumber || null;
+    if (divisionId !== undefined) updateData.division_id = divisionId || null;
     if (policeStationId !== undefined) updateData.police_station_id = policeStationId ? BigInt(policeStationId) : null;
     if (isActive !== undefined) updateData.is_active = isActive;
     if (password) updateData.password_hash = await bcrypt.hash(password, 12);
@@ -142,7 +156,7 @@ export const updateUser = async (req: Request, res: Response) => {
       data: updateData,
     });
 
-    await logAudit('UPDATE', 'USER', id, req,
+    await logAudit('UPDATE', 'USER', id, req as any,
       `User ${existing.username} updated: ${JSON.stringify(Object.keys(updateData))}`);
 
     res.json(successResponse({ id }, 'User updated successfully'));
@@ -155,7 +169,7 @@ export const updateUser = async (req: Request, res: Response) => {
 // ── Deactivate user ──────────────────────────────────────────────────
 export const deactivateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const existing = await prisma.users.findUnique({ where: { id: BigInt(id) } });
     if (!existing) return res.status(404).json({ message: 'User not found' });

@@ -24,20 +24,20 @@ export const getDeletionRequests = async (req: Request, res: Response) => {
     const requests = await prisma.deletion_requests.findMany({
       where,
       include: {
-        flagged_by_user: { select: { id: true, username: true, role: true, police_stations: true } }
+        flagged_user: { select: { id: true, username: true, role: true, police_stations: true } }
       },
-      orderBy: { request_date: 'desc' }
+      orderBy: { flagged_at: 'desc' }
     });
     
     // Filter manually for DSP and SP logic due to complex joins in schema limits 
     let filteredRequests = requests;
     if (userRole === 'DSP' && psId) {
-       filteredRequests = requests.filter(r => r.flagged_by_user?.police_stations?.id.toString() === psId.toString());
+       filteredRequests = requests.filter(r => r.flagged_user?.police_stations?.id.toString() === psId.toString());
     } else if (userRole === 'SP') {
       // Find SP's district
       const spUser = await prisma.users.findUnique({ where: { id: BigInt((req as any).user.userId) }, include: { police_stations: true } });
       const spDistrict = spUser?.police_stations?.district;
-      filteredRequests = requests.filter(r => r.flagged_by_user?.police_stations?.district === spDistrict);
+      filteredRequests = requests.filter(r => r.flagged_user?.police_stations?.district === spDistrict);
     }
 
     const formatted = filteredRequests.map(r => ({
@@ -46,9 +46,9 @@ export const getDeletionRequests = async (req: Request, res: Response) => {
       entityId: r.entity_id.toString(),
       reason: r.reason,
       status: r.status,
-      flaggedBy: r.flagged_by_user?.username,
-      station: r.flagged_by_user?.police_stations?.name,
-      requestDate: r.request_date
+      flaggedBy: r.flagged_user?.username,
+      station: r.flagged_user?.police_stations?.name,
+      requestDate: r.flagged_at
     }));
 
     res.json(successResponse(formatted));
@@ -70,7 +70,6 @@ export const flagForDeletion = async (req: Request, res: Response) => {
         reason,
         status: 'FLAGGED',
         flagged_by: BigInt(userId),
-        request_date: new Date()
       }
     });
 

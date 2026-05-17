@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
         username: data.username,
         fullName: data.fullName,
         role: data.role,
+        department: data.department || null,
         policeStationId: data.policeStationId || null,
       };
       localStorage.setItem('garuda_user', JSON.stringify(userData));

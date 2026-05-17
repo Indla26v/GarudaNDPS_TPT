@@ -291,9 +291,16 @@ model users {
   password_hash        String                 @db.VarChar(255)
   full_name            String                 @db.VarChar(200)
   role                 user_role
+  department           department_type        @default(OPERATIONS)
+  badge_number         String?                @db.VarChar(50)
   police_station_id    BigInt?
+  division_id          String?                @db.VarChar(100)
+  team_id              BigInt?
   is_active            Boolean                @default(true)
   last_login           DateTime?              @db.Timestamp(6)
+  failed_login_count   Int                    @default(0)
+  locked_until         DateTime?              @db.Timestamp(6)
+  password_changed_at  DateTime?              @db.Timestamp(6)
   created_at           DateTime               @default(now()) @db.Timestamp(6)
   audit_logs           audit_logs[]
   cases                cases[]
@@ -302,6 +309,7 @@ model users {
   refresh_tokens       refresh_tokens[]
   surveillance_records surveillance_records[]
   police_stations      police_stations?       @relation(fields: [police_station_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  team                 teams?                 @relation(fields: [team_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Deletion request relations
   deletion_requests_flagged    deletion_requests[] @relation("flagged_by_user")
@@ -316,6 +324,8 @@ model users {
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
+  @@index([department], map: "idx_users_dept")
+  @@index([team_id], map: "idx_users_team")
 }
 
 // ============================================================
@@ -530,14 +540,41 @@ enum test_result {
   PENDING
 }
 
-// Updated role hierarchy: ADMIN > SP > DSP > CI > SI > CONSTABLE
+// Roles = Police Ranks only
 enum user_role {
   ADMIN
   SP
+  ASP
   DSP
   CI
   SI
   CONSTABLE
+}
+
+// Departments = Organizational Units
+enum department_type {
+  ADMINISTRATION
+  OPERATIONS
+  INTELLIGENCE
+  FIN_CELL
+  TECH_CELL
+  ANALYST
+  LEGAL
+  STF
+}
+
+// Teams — created by Admin, assigned to a department
+model teams {
+  id            BigInt          @id @default(autoincrement())
+  name          String          @db.VarChar(200)
+  department    department_type
+  description   String?
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  updated_at    DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  members       users[]
+
+  @@unique([name])
 }
 
 enum verification_status {

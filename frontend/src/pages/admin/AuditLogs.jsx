@@ -80,10 +80,10 @@ export default function AuditLogs() {
           style={{ background: 'var(--color-garuda-800)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
         >
           <option value="">All Entities</option>
-          <option value="USER">USER</option>
-          <option value="OFFENDER">OFFENDER</option>
-          <option value="CASE">CASE</option>
+          <option value="ADMINISTRATION">ADMINISTRATION</option>
           <option value="INTELLIGENCE">INTELLIGENCE</option>
+          <option value="OPERATIONS">OPERATIONS</option>
+          <option value="REPORTS_ANALYSIS">REPORTS ANALYSIS</option>
         </select>
       </div>
 
