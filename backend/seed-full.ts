@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const ROUNDS = 12;
+  const ROUNDS = 10;
 
   // ── Police Stations ──────────────────────────────────────────────────
   const stations = [
@@ -53,49 +53,67 @@ async function main() {
 
   const users = [
     // Admin (no team, ADMINISTRATION dept)
-    { username: 'admin', password: 'Admin@12345', full_name: 'System Administrator', role: 'ADMIN' as const, department: 'ADMINISTRATION' as const, team_id: null },
+    { username: 'admin', password: 'password123', full_name: 'System Administrator', role: 'ADMIN' as const, department: 'ADMINISTRATION' as const, team_id: null },
 
     // SP — Operations
-    { username: 'sp_tirupati', password: 'SP@2026#Garuda', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'OPERATIONS' as const, team_id: null },
+    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'OPERATIONS' as const, team_id: null },
 
     // ASP — Operations
-    { username: 'asp_narcotics', password: 'ASP@2026#Garuda', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
+    { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
 
     // DSP — Operations
-    { username: 'dsp_east', password: 'DSP@2026#Garuda', full_name: 'P. Venkatesh (DSP East)', role: 'DSP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
+    { username: 'dsp', password: 'password123', full_name: 'P. Venkatesh (DSP East)', role: 'DSP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
 
     // CI — Operations
-    { username: 'ci_east', password: 'CI@2026#Garuda', full_name: 'M. Suresh (CI East)', role: 'CI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    { username: 'ci', password: 'password123', full_name: 'M. Suresh (CI East)', role: 'CI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
     // SI — Operations
-    { username: 'si_field01', password: 'SI@2026#Garuda', full_name: 'A. Rajesh (SI)', role: 'SI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    { username: 'si', password: 'password123', full_name: 'A. Rajesh (SI)', role: 'SI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
     // Constable — Operations
-    { username: 'const_field01', password: 'Const@2026#Garuda', full_name: 'B. Krishna (Constable)', role: 'CONSTABLE' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    { username: 'constable', password: 'password123', full_name: 'B. Krishna (Constable)', role: 'CONSTABLE' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
     // ── Cyber Crime / Intelligence Teams ──────────────────────────────
     // Tech Cell
-    { username: 'tech_surv01', password: 'Surv@2026#Garuda', full_name: 'Ravi Kumar - Tech Surveillance', role: 'SI' as const, department: 'TECH_CELL' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'TC-001' },
+    { username: 'tech_si', password: 'password123', full_name: 'Ravi Kumar - Tech Surveillance', role: 'SI' as const, department: 'TECH_CELL' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'TC-001' },
 
     // Fin Cell
-    { username: 'fin_analyst01', password: 'Finance@2026#Garuda', full_name: 'Priya Sharma - Financial Analyst', role: 'SI' as const, department: 'FIN_CELL' as const, team_id: teamMap['Financial Intelligence Unit'], badge: 'FC-001' },
+    { username: 'fin_si', password: 'password123', full_name: 'Priya Sharma - Financial Analyst', role: 'SI' as const, department: 'FIN_CELL' as const, team_id: teamMap['Financial Intelligence Unit'], badge: 'FC-001' },
 
     // Analyst
-    { username: 'net_analyst01', password: 'Network@2026#Garuda', full_name: 'Arjun Reddy - Network Analyst', role: 'SI' as const, department: 'ANALYST' as const, team_id: teamMap['Data Analytics Team'], badge: 'AN-001' },
+    { username: 'net_si', password: 'password123', full_name: 'Arjun Reddy - Network Analyst', role: 'SI' as const, department: 'ANALYST' as const, team_id: teamMap['Data Analytics Team'], badge: 'AN-001' },
 
     // STF
-    { username: 'stf_narco01', password: 'STF@2026#Garuda', full_name: 'Vijay Singh - STF Officer', role: 'DSP' as const, department: 'STF' as const, team_id: teamMap['Special Task Force'], badge: 'STF-001' },
+    { username: 'stf_dsp', password: 'password123', full_name: 'Vijay Singh - STF Officer', role: 'DSP' as const, department: 'STF' as const, team_id: teamMap['Special Task Force'], badge: 'STF-001' },
   ];
 
-  for (const u of users) {
-    const existing = await prisma.users.findUnique({ where: { username: u.username } });
-    if (existing) {
-      console.log(`  ⚠️  ${u.username} exists — skipping`);
-      continue;
+  // Delete old-format users if they exist
+  const oldUsernames = [
+    'sp_tirupati', 'asp_narcotics', 'dsp_east', 'ci_east',
+    'si_field01', 'const_field01', 'tech_surv01',
+    'fin_analyst01', 'net_analyst01', 'stf_narco01'
+  ];
+  await prisma.users.deleteMany({
+    where: {
+      username: { in: oldUsernames }
     }
+  });
+
+  for (const u of users) {
     const hash = await bcrypt.hash(u.password, ROUNDS);
-    await prisma.users.create({
-      data: {
+    await prisma.users.upsert({
+      where: { username: u.username },
+      update: {
+        password_hash: hash,
+        full_name: u.full_name,
+        role: u.role,
+        department: u.department,
+        badge_number: (u as any).badge || null,
+        team_id: u.team_id || null,
+        police_station_id: (u as any).ps_id || null,
+        is_active: true,
+      },
+      create: {
         username: u.username,
         password_hash: hash,
         full_name: u.full_name,
@@ -107,7 +125,7 @@ async function main() {
         is_active: true,
       },
     });
-    console.log(`  ✅ Created: ${u.username} (${u.role} / ${u.department})`);
+    console.log(`  ✅ Seeded user: ${u.username} (${u.role} / ${u.department})`);
   }
 
   console.log('\n═══════════════════════════════════════════════════════');
