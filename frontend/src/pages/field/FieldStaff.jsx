@@ -8,8 +8,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 
 const TABS = [
   { id: 'quick-entry', label: 'Quick Case Entry', icon: '📝', perm: 'FIELD_ENTRY' },
-  { id: 'verify', label: 'Accused Verification', icon: '🔍', perm: 'ACCUSED_VERIFY' },
-  { id: 'surveillance', label: 'Surveillance Report', icon: '📡', perm: 'SURVEILLANCE_REPORT' },
+  { id: 'verify', label: 'Accused Verification', icon: '🔍', perm: 'FIELD_VERIFY' },
+  { id: 'surveillance', label: 'Surveillance Report', icon: '📡', perm: 'FIELD_ENTRY' },
   { id: 'informer', label: 'Informer Mgmt', icon: '🤫', perm: null },
   { id: 'checkpoint', label: 'Checkpoint Log', icon: '🚧', perm: 'FIELD_ENTRY' },
 ];
@@ -19,7 +19,7 @@ export default function FieldStaff() {
   const perms = usePermissions();
 
   const visibleTabs = TABS.filter(t => {
-    if (t.id === 'informer') return perms.canManageInformers || perms.canReadInformers;
+    if (t.id === 'informer') return perms.hasMinRole('SI') && perms.inDepartment('OPERATIONS', 'STF', 'INTELLIGENCE');
     if (t.perm) return perms.hasPermission(t.perm);
     return true;
   });

@@ -87,7 +87,9 @@ export default function Dashboard() {
             Command Dashboard
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
-            NDPS Operations — Tirupati District
+            NDPS Operations{summary?.isStationLevel
+              ? ` — ${summary?.psWiseData?.[0]?.psName || 'Your Station'}`
+              : ' — Tirupati District'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -214,7 +216,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Station-wise Bar Chart ───────────────────────────────────── */}
-      {(perms.canViewDashboardFull || perms.isSP || perms.isDSP) && summary?.psWiseData?.length > 0 && (
+      {summary?.psWiseData?.length > 1 && (
         <div className="rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Station-wise Cases & Arrests
@@ -287,7 +289,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── PS-wise Data Table (for SP/Admin) ────────────────────────── */}
-      {(perms.isAdmin || perms.isSP) && summary?.psWiseData?.length > 0 && (
+      {summary?.psWiseData?.length > 1 && (
         <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
             <h2 className="text-sm font-semibold" style={{ color: 'var(--color-garuda-200)' }}>

@@ -3,7 +3,12 @@
  * 
  * Roles = Police Ranks: ADMIN, SP, ASP, DSP, CI, SI, CONSTABLE
  * Departments = Organizational Units: ADMINISTRATION, OPERATIONS, INTELLIGENCE, FIN_CELL, TECH_CELL, ANALYST, LEGAL, STF
- * Access = Role rank + Department membership
+ * 
+ * ACCESS RULES:
+ *   - Role rank determines base capability (higher rank = more power)
+ *   - Department membership determines which modules a user can access
+ *   - SP/ASP are NOT exempt from department restrictions on Intelligence pages
+ *   - ADMIN bypasses all checks
  */
 
 // ── Role hierarchy (rank order, lower = more powerful) ─────────────────
@@ -51,7 +56,8 @@ export const DEPARTMENT_LABELS: Record<string, string> = {
 
 // ── Permission matrix ──────────────────────────────────────────────────
 // Access is determined by a combination of role rank AND department.
-// Page-level permissions keyed by page → which departments can see it.
+// If `departments` is specified, the user's department MUST match one of them.
+// SP/ASP are NOT exempt from department checks.
 
 export const PERMISSIONS = {
   // Page 1: Dashboard — all roles can see their own level
@@ -70,9 +76,9 @@ export const PERMISSIONS = {
   CASE_APPROVE:         { minRole: 'CI' },
   // Legacy route keys (Phase 0 alignment)
   ADD_CASE:             { minRole: 'SI' },
-  EDIT_RECORDS:           { minRole: 'SI' },
+  EDIT_RECORDS:         { minRole: 'SI' },
 
-  // Page 4: Field Staff — field personnel
+  // Page 4: Field Staff — field personnel (department-restricted)
   FIELD_ENTRY:          { minRole: 'CONSTABLE', departments: ['OPERATIONS', 'STF'] },
   FIELD_VERIFY:         { minRole: 'SI', departments: ['OPERATIONS', 'STF'] },
 
@@ -98,13 +104,16 @@ export const PERMISSIONS = {
   TEAM_MANAGEMENT:      { minRole: 'ADMIN' },
 
   // Workflows
-  DISTRICT_ANALYTICS:   { minRole: 'DSP' },
+  DISTRICT_ANALYTICS:   { minRole: 'ASP' },
   EDIT_APPROVE:         { minRole: 'CI' },
   EDIT_REQUEST:         { minRole: 'SI' },
 };
 
 /**
  * Check if a user with the given role and department has a specific permission.
+ * 
+ * IMPORTANT: SP/ASP are NOT exempt from department restrictions.
+ * Only ADMIN bypasses all checks.
  */
 export function hasPermission(
   userRole: string,
@@ -123,7 +132,7 @@ export function hasPermission(
   if (userRank === undefined || requiredRank === undefined) return false;
   if (userRank > requiredRank) return false;
 
-  // Check department restriction (if any)
+  // Check department restriction (if any) — applies to ALL roles including SP/ASP
   if ('departments' in perm && perm.departments) {
     if (!perm.departments.includes(userDepartment as any)) return false;
   }

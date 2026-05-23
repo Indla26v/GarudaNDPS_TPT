@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 
 /**
- * Build navigation items dynamically based on user permissions.
- * Items only appear if the user has the required permission.
+ * Build navigation items dynamically based on user permissions AND department.
+ * Items only appear if the user has the required permission + department.
+ * SP/ASP do NOT get blanket access to Intelligence items — they must be
+ * in the correct department.
  * Grouped by section for visual clarity.
  */
 function useNavItems() {
@@ -27,6 +29,7 @@ function useNavItems() {
   }
 
   // All other roles see operational sections (but NOT Administration)
+  // Department-restricted items check the user's actual department
   const sections = [
     {
       title: 'Operations',
@@ -35,25 +38,25 @@ function useNavItems() {
         { path: '/offenders', label: 'Offenders', icon: '👤', show: true },
         { path: '/cases', label: 'Cases', icon: '📋', show: true },
         { path: '/mobile', label: 'Field Staff', icon: '📱',
-          show: perms.canFieldEntry || perms.canSurveillanceReport || perms.canVerifyAccused || perms.hasMinRole('SP') },
+          show: perms.canFieldEntry || perms.canSurveillanceReport || perms.canVerifyAccused },
       ],
     },
     {
       title: 'Intelligence',
       items: [
         { path: '/surveillance', label: 'Surveillance', icon: '📡',
-          show: perms.canViewAllTech || perms.canAddTechIntel || perms.hasMinRole('CI') },
+          show: perms.canViewAllTech || perms.canAddTechIntel },
         { path: '/finance', label: 'Financial', icon: '💰',
-          show: perms.canViewAllFinance || perms.isFinCell || perms.hasMinRole('DSP') },
+          show: perms.canViewAllFinance },
         { path: '/network', label: 'Network Map', icon: '🕸️',
-          show: perms.canViewAllNetwork || perms.canBuildNetwork || perms.hasMinRole('DSP') },
+          show: perms.canViewAllNetwork || perms.canBuildNetwork },
       ],
     },
     {
       title: 'Reports',
       items: [
         { path: '/reports', label: 'Reports', icon: '📄',
-          show: perms.canViewAllReports || perms.canBuildCustomReport || perms.hasMinRole('SI') },
+          show: perms.canViewAllReports || perms.canBuildCustomReport },
         { path: '/district-analytics', label: 'District Analytics', icon: '🗺️',
           show: perms.canViewDistrictAnalytics },
       ],
@@ -100,6 +103,18 @@ const ROLE_LABELS = {
   CONSTABLE: 'Constable',
 };
 
+/** Display-friendly department labels */
+const DEPT_LABELS = {
+  ADMINISTRATION: 'Admin',
+  OPERATIONS:     'Ops',
+  INTELLIGENCE:   'Intel',
+  FIN_CELL:       'FinCell',
+  TECH_CELL:      'TechCell',
+  ANALYST:        'Analyst',
+  LEGAL:          'Legal',
+  STF:            'STF',
+};
+
 export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -107,6 +122,7 @@ export default function Layout() {
   const navSections = useNavItems();
   const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.CONSTABLE;
   const roleLabel = ROLE_LABELS[user?.role] || user?.role;
+  const deptLabel = DEPT_LABELS[user?.department] || user?.department;
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -131,7 +147,7 @@ export default function Layout() {
           )}
         </div>
 
-        {/* Nav Items — grouped by section, conditionally rendered based on role */}
+        {/* Nav Items — grouped by section, conditionally rendered based on role + department */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navSections.map((section, si) => (
             <div key={section.title} className={si > 0 ? 'mt-4' : ''}>
@@ -190,13 +206,25 @@ export default function Layout() {
           <div />
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>{user?.fullName}</p>
-              <span
-                className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: roleColor.bg, color: roleColor.text }}
-              >
-                {roleLabel}
-              </span>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>
+                {user?.fullName}
+              </p>
+              <div className="flex items-center gap-1.5 justify-end">
+                <span
+                  className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: roleColor.bg, color: roleColor.text }}
+                >
+                  {roleLabel}
+                </span>
+                {deptLabel && (
+                  <span
+                    className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                    style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
+                  >
+                    {deptLabel}
+                  </span>
+                )}
+              </div>
             </div>
             <button
               id="btn-logout"

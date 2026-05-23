@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import NoAccess from './pages/NoAccess';
 import Dashboard from './pages/Dashboard';
 import OffenderList from './pages/offenders/OffenderList';
 import OffenderForm from './pages/offenders/OffenderForm';
@@ -55,6 +56,9 @@ createRoot(document.getElementById('root')).render(
             <Route index element={<IndexRedirect />} />
             <Route path="dashboard" element={<DashboardRoute />} />
 
+            {/* No Access page — for direct navigation */}
+            <Route path="no-access" element={<NoAccess />} />
+
             {/* Offenders — viewable by all, edit/create guarded in backend */}
             <Route path="offenders" element={<OffenderList />} />
             <Route path="offenders/new" element={<OffenderForm />} />
@@ -66,42 +70,50 @@ createRoot(document.getElementById('root')).render(
             <Route path="cases/:id" element={<CaseDetail />} />
             <Route path="cases/:id/edit" element={<CaseForm />} />
 
-            {/* Field Staff Module (Page 4) */}
-            <Route path="mobile" element={<FieldStaff />} />
+            {/* Field Staff Module (Page 4) — Department-restricted: OPERATIONS, STF */}
+            <Route path="mobile" element={
+              <RoleGuard permission="FIELD_ENTRY">
+                <FieldStaff />
+              </RoleGuard>
+            } />
 
-            {/* Technical Surveillance (Page 5) — Cyber Crime: TECH_CELL, ANALYST, STF */}
+            {/* Technical Surveillance (Page 5) — Department-restricted: TECH_CELL, ANALYST, STF, INTELLIGENCE */}
             <Route path="surveillance" element={
               <RoleGuard permission="TECH_VIEW_ALL">
                 <Surveillance />
               </RoleGuard>
             } />
 
-            {/* Financial Analysis (Page 6) — Cyber Crime: FIN_CELL, STF */}
+            {/* Financial Analysis (Page 6) — Department-restricted: FIN_CELL, ANALYST, STF, INTELLIGENCE */}
             <Route path="finance" element={
               <RoleGuard permission="FIN_VIEW_ALL">
                 <FinancialAnalysis />
               </RoleGuard>
             } />
 
-            {/* Network & Chain Analysis (Page 7) — Cyber Crime: ANALYST, TECH_CELL, STF */}
+            {/* Network & Chain Analysis (Page 7) — Department-restricted: ANALYST, TECH_CELL, STF, INTELLIGENCE */}
             <Route path="network" element={
               <RoleGuard permission="NET_VIEW_ALL">
                 <NetworkMap />
               </RoleGuard>
             } />
 
-            {/* Reports & Intelligence (Page 8) */}
-            <Route path="reports" element={<Reports />} />
+            {/* Reports & Intelligence (Page 8) — Role-restricted: SI and above */}
+            <Route path="reports" element={
+              <RoleGuard permission="REPORTS_VIEW">
+                <Reports />
+              </RoleGuard>
+            } />
 
             {/* Workflow Routes */}
             <Route path="deletion-requests" element={<DeletionRequests />} />
             <Route path="edit-requests" element={
-              <RoleGuard minRole="CI">
+              <RoleGuard minRole="SI">
                 <EditRequests />
               </RoleGuard>
             } />
 
-            {/* District Analytics — SP & Admin only */}
+            {/* District Analytics — DSP and above */}
             <Route path="district-analytics" element={
               <RoleGuard permission="DISTRICT_ANALYTICS">
                 <DistrictAnalytics />
@@ -129,6 +141,9 @@ createRoot(document.getElementById('root')).render(
                 <DataImport />
               </RoleGuard>
             } />
+
+            {/* Catch-all: any unknown route within the layout → No Access */}
+            <Route path="*" element={<NoAccess />} />
           </Route>
         </Routes>
       </BrowserRouter>

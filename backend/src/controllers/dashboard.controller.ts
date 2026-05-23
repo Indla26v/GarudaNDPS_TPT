@@ -1,38 +1,59 @@
 /**
  * GARUDA — Command Dashboard Controller
  * 
- * Provides aggregated KPI data for the dashboard:
- *  - Total cases, offenders, arrests, absconders
- *  - Pending charge sheets, convictions
- *  - Year-wise case trend (2016–2026)
- *  - Station-wise breakdown
- *  - Drug type breakdown (from seizure categories)
- *  - Case stage distribution
- *  - Recent alerts (new cases, absconders)
+ * Provides aggregated KPI data for the dashboard.
+ * 
+ * DATA SCOPING:
+ *   Station-level (DSP, CI, SI, Constable) → only their PS data
+ *   District-level (SP, ASP) → all PS data in the district
+ *   ADMIN → all data
  */
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse } from '../utils/transformers';
+import { getDashboardScope, ScopeUser } from '../utils/scope';
 
 export const getDashboardSummary = async (req: Request, res: Response) => {
   try {
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter, isStationLevel } = getDashboardScope(user);
+
+    // Build case/offender/seizure where clauses based on scope
+    const caseWhere: any = { ...psFilter };
+    const offenderWhere: any = { ...psFilter };
+    const caseAccusedWhere: any = psFilter.ps_id
+      ? { cases: { ps_id: psFilter.ps_id } }
+      : {};
+    const seizureWhere: any = psFilter.ps_id
+      ? { cases: { ps_id: psFilter.ps_id } }
+      : {};
+
     // ── Core KPIs ──────────────────────────────────────────────────────
-    const totalCases = await prisma.cases.count();
-    const totalOffenders = await prisma.offenders.count();
-    const totalArrests = await prisma.case_accused.count({ where: { arrest_status: 'ARRESTED' } });
-    const totalAbsconders = await prisma.case_accused.count({ where: { arrest_status: 'ABSCONDING' } });
+    const totalCases = await prisma.cases.count({ where: caseWhere });
+    const totalOffenders = await prisma.offenders.count({ where: offenderWhere });
+    const totalArrests = await prisma.case_accused.count({
+      where: { ...caseAccusedWhere, arrest_status: 'ARRESTED' },
+    });
+    const totalAbsconders = await prisma.case_accused.count({
+      where: { ...caseAccusedWhere, arrest_status: 'ABSCONDING' },
+    });
 
     // Pending charge sheets = cases in FIR stage
-    const pendingChargeSheets = await prisma.cases.count({ where: { stage: 'FIR' } });
+    const pendingChargeSheets = await prisma.cases.count({
+      where: { ...caseWhere, stage: 'FIR' },
+    });
 
     // Pending court cases = cases under TRIAL
-    const pendingCourtCases = await prisma.cases.count({ where: { stage: 'TRIAL' } });
+    const pendingCourtCases = await prisma.cases.count({
+      where: { ...caseWhere, stage: 'TRIAL' },
+    });
 
     // Convictions this year
     const currentYear = new Date().getFullYear();
     const yearStart = new Date(`${currentYear}-01-01`);
     const convictionsThisYear = await prisma.cases.count({
       where: {
+        ...caseWhere,
         stage: 'CONVICTED',
         updated_at: { gte: yearStart },
       },
@@ -40,17 +61,19 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
 
     // ── Seizure aggregation ────────────────────────────────────────────
     const seizureAgg = await prisma.seizures.aggregate({
+      where: seizureWhere,
       _sum: {
         contraband_kg: true,
         cash_amount: true,
         vehicles_count: true,
-      }
+      },
     });
 
     const totalContraband = seizureAgg._sum.contraband_kg || 0;
     const totalCash = seizureAgg._sum.cash_amount || 0;
     const totalVehicles = seizureAgg._sum.vehicles_count || 0;
 
+    // ── Year-wise trend ────────────────────────────────────────────────
     const historicalBaseline: Record<number, { cases: number; arrests: number }> = {
       2016: { cases: 2, arrests: 2 },
       2017: { cases: 6, arrests: 5 },
@@ -64,21 +87,24 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       2025: { cases: 65, arrests: 58 },
     };
 
-    const casesByYear = await prisma.$queryRaw<{ year: number; count: bigint }[]>`
-      SELECT EXTRACT(YEAR FROM case_date)::int AS year, COUNT(*)::bigint AS count
-      FROM cases
-      WHERE case_date IS NOT NULL
-      GROUP BY 1
-      ORDER BY 1
-    `;
-    const arrestsByYear = await prisma.$queryRaw<{ year: number; count: bigint }[]>`
-      SELECT EXTRACT(YEAR FROM c.case_date)::int AS year, COUNT(*)::bigint AS count
-      FROM case_accused ca
-      JOIN cases c ON c.id = ca.case_id
-      WHERE ca.arrest_status = 'ARRESTED' AND c.case_date IS NOT NULL
-      GROUP BY 1
-      ORDER BY 1
-    `;
+    // Build dynamic SQL for year-wise trend, scoped by PS
+    const psCondition = psFilter.ps_id ? `AND c.ps_id = ${psFilter.ps_id}` : '';
+
+    const casesByYear = await prisma.$queryRawUnsafe<{ year: number; count: bigint }[]>(
+      `SELECT EXTRACT(YEAR FROM case_date)::int AS year, COUNT(*)::bigint AS count
+       FROM cases c
+       WHERE case_date IS NOT NULL ${psCondition}
+       GROUP BY 1
+       ORDER BY 1`
+    );
+    const arrestsByYear = await prisma.$queryRawUnsafe<{ year: number; count: bigint }[]>(
+      `SELECT EXTRACT(YEAR FROM c.case_date)::int AS year, COUNT(*)::bigint AS count
+       FROM case_accused ca
+       JOIN cases c ON c.id = ca.case_id
+       WHERE ca.arrest_status = 'ARRESTED' AND c.case_date IS NOT NULL ${psCondition}
+       GROUP BY 1
+       ORDER BY 1`
+    );
 
     const caseYearMap = new Map(casesByYear.map((r) => [Number(r.year), Number(r.count)]));
     const arrestYearMap = new Map(arrestsByYear.map((r) => [Number(r.year), Number(r.count)]));
@@ -89,10 +115,12 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       const dbCases = caseYearMap.get(y) ?? 0;
       const dbArrests = arrestYearMap.get(y) ?? 0;
       const baseline = historicalBaseline[y];
+      // Only use baseline for district-level / admin (station-level users shouldn't see district baselines)
+      const useFallback = !isStationLevel;
       yearWiseTrend.push({
         year: y,
-        cases: dbCases > 0 ? dbCases : (baseline?.cases ?? 0),
-        arrests: dbArrests > 0 ? dbArrests : (baseline?.arrests ?? 0),
+        cases: dbCases > 0 ? dbCases : (useFallback ? (baseline?.cases ?? 0) : 0),
+        arrests: dbArrests > 0 ? dbArrests : (useFallback ? (baseline?.arrests ?? 0) : 0),
         fromDatabase: dbCases > 0 || dbArrests > 0,
       });
     }
@@ -100,6 +128,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     // ── Case stage distribution ─────────────────────────────────────────
     const stageDistribution = await prisma.cases.groupBy({
       by: ['stage'],
+      where: caseWhere,
       _count: { id: true },
     });
 
@@ -108,6 +137,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       count: s._count.id,
     }));
 
+    // ── Drug type breakdown ─────────────────────────────────────────────
     const contrabandColors: Record<string, string> = {
       DRY_GANJA: '#22c55e',
       GANJA_OIL: '#84cc16',
@@ -132,8 +162,8 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     };
     const contrabandGroups = await prisma.cases.groupBy({
       by: ['contraband_type'],
+      where: { ...caseWhere, contraband_type: { not: null } },
       _count: { id: true },
-      where: { contraband_type: { not: null } },
     });
     const drugTypeBreakdown = contrabandGroups.length > 0
       ? contrabandGroups.map((g) => ({
@@ -147,9 +177,18 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         ];
 
     // ── Station-wise breakdown ──────────────────────────────────────────
-    const allPs = await prisma.police_stations.findMany();
+    // Station-level users: only show their own PS
+    // District-level/Admin: show all
+    let stationsToQuery;
+    if (isStationLevel && psFilter.ps_id) {
+      stationsToQuery = await prisma.police_stations.findMany({
+        where: { id: psFilter.ps_id as bigint },
+      });
+    } else {
+      stationsToQuery = await prisma.police_stations.findMany();
+    }
 
-    const psWiseData = await Promise.all(allPs.map(async (ps) => {
+    const psWiseData = await Promise.all(stationsToQuery.map(async (ps) => {
       const psId = ps.id;
 
       const psCases = await prisma.cases.count({ where: { ps_id: psId } });
@@ -158,19 +197,19 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       const psArrests = await prisma.case_accused.count({
         where: {
           cases: { ps_id: psId },
-          arrest_status: 'ARRESTED'
-        }
+          arrest_status: 'ARRESTED',
+        },
       });
       const psAbsconding = await prisma.case_accused.count({
         where: {
           cases: { ps_id: psId },
-          arrest_status: 'ABSCONDING'
-        }
+          arrest_status: 'ABSCONDING',
+        },
       });
 
       const psSeizureAgg = await prisma.seizures.aggregate({
         where: { cases: { ps_id: psId } },
-        _sum: { contraband_kg: true, cash_amount: true }
+        _sum: { contraband_kg: true, cash_amount: true },
       });
 
       return {
@@ -182,12 +221,13 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         totalArrests: psArrests,
         totalAbsconders: psAbsconding,
         totalContrabandKg: psSeizureAgg._sum.contraband_kg || 0,
-        totalCashSeized: psSeizureAgg._sum.cash_amount || 0
+        totalCashSeized: psSeizureAgg._sum.cash_amount || 0,
       };
     }));
 
-    // ── Recent activity / alerts ─────────────────────────────────────────
+    // ── Recent activity / alerts (scoped) ────────────────────────────────
     const recentCases = await prisma.cases.findMany({
+      where: caseWhere,
       take: 5,
       orderBy: { created_at: 'desc' },
       include: { police_stations: { select: { name: true } } },
@@ -200,9 +240,9 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       date: c.created_at,
     }));
 
-    // Add absconder alerts
+    // Add absconder alerts (scoped)
     const recentAbsconders = await prisma.case_accused.findMany({
-      where: { arrest_status: 'ABSCONDING' },
+      where: { ...caseAccusedWhere, arrest_status: 'ABSCONDING' },
       take: 5,
       orderBy: { created_at: 'desc' },
       include: {
@@ -227,9 +267,9 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       orderBy: { created_at: 'desc' },
     });
 
-    // ── Absconder list for ticker ────────────────────────────────────────
+    // ── Absconder list for ticker (scoped) ───────────────────────────────
     const absconders = await prisma.case_accused.findMany({
-      where: { arrest_status: 'ABSCONDING' },
+      where: { ...caseAccusedWhere, arrest_status: 'ABSCONDING' },
       take: 10,
       include: {
         offenders: { select: { full_name: true } },
@@ -270,6 +310,9 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
 
       // Station data
       psWiseData,
+
+      // Scope info for frontend
+      isStationLevel,
 
       // Alerts & activity
       recentAlerts: recentAlerts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
