@@ -36,6 +36,7 @@ model case_accused {
   bail_date       DateTime?        @db.Date
   bail_conditions String?
   created_at      DateTime         @default(now()) @db.Timestamp(6)
+  bail_records    bail_records[]
   cases           cases            @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   offenders       offenders        @relation(fields: [offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   police_stations police_stations? @relation(fields: [previous_ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -46,26 +47,40 @@ model case_accused {
 }
 
 model cases {
-  id               BigInt          @id @default(autoincrement())
-  fir_no           String          @db.VarChar(50)
-  ps_id            BigInt
-  section_of_law   String?         @db.VarChar(300)
-  case_date        DateTime?       @db.Date
-  stage            case_stage      @default(FIR)
-  created_by       BigInt?
-  created_at       DateTime        @default(now()) @db.Timestamp(6)
-  is_history_sheet Boolean         @default(false)
-  is_rowdy_sheet   Boolean         @default(false)
-  updated_at       DateTime        @default(now()) @db.Timestamp(6)
-  case_accused     case_accused[]
-  users            users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  police_stations  police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  seizures         seizures[]
+  id                   BigInt            @id @default(autoincrement())
+  fir_no               String            @db.VarChar(50)
+  ps_id                BigInt
+  section_of_law       String?           @db.VarChar(300)
+  case_date            DateTime?         @db.Date
+  stage                case_stage        @default(FIR)
+  nature_of_offence    String?           @db.VarChar(500)
+  contraband_type      contraband_type?
+  quantity             Decimal?          @db.Decimal(12, 3)
+  quantity_unit        quantity_unit?
+  street_value         Decimal?          @db.Decimal(15, 2)
+  source_location      String?           @db.VarChar(300)
+  destination_location String?           @db.VarChar(300)
+  intelligence_notes   String?
+  department           case_department   @default(POLICE)
+  created_by           BigInt?
+  created_at           DateTime          @default(now()) @db.Timestamp(6)
+  is_history_sheet     Boolean           @default(false)
+  is_rowdy_sheet       Boolean           @default(false)
+  updated_at           DateTime          @default(now()) @db.Timestamp(6)
+  case_accused         case_accused[]
+  users                users?            @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations      police_stations   @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seizures             seizures[]
+  charge_sheets        charge_sheets?
+  court_hearings       court_hearings[]
+  bail_records         bail_records[]
+  interrogation_sessions interrogation_sessions[]
 
   @@index([case_date], map: "idx_cases_date")
   @@index([fir_no], map: "idx_cases_fir")
   @@index([ps_id], map: "idx_cases_ps")
   @@index([stage], map: "idx_cases_stage")
+  @@index([contraband_type], map: "idx_cases_contraband")
 }
 
 model flyway_schema_history {
@@ -192,6 +207,7 @@ model offenders {
   supply_chain_links_supply_chain_links_linked_offender_idTooffenders supply_chain_links[]     @relation("supply_chain_links_linked_offender_idTooffenders")
   supply_chain_links_supply_chain_links_offender_idTooffenders        supply_chain_links[]     @relation("supply_chain_links_offender_idTooffenders")
   surveillance_records                                                surveillance_records[]
+  interrogation_sessions                                              interrogation_sessions[]
 
   @@index([alias], map: "idx_offenders_alias")
   @@index([category], map: "idx_offenders_category")
@@ -202,12 +218,87 @@ model offenders {
   @@index([status], map: "idx_offenders_status")
 }
 
+model charge_sheets {
+  id                      BigInt    @id @default(autoincrement())
+  case_id                 BigInt    @unique
+  expected_submission_date DateTime? @db.Date
+  actual_submission_date  DateTime? @db.Date
+  missing_documents       String?
+  prosecutor_name         String?   @db.VarChar(200)
+  notes                   String?
+  created_at              DateTime  @default(now()) @db.Timestamp(6)
+  updated_at              DateTime  @default(now()) @db.Timestamp(6)
+  cases                   cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([case_id], map: "idx_cs_case")
+}
+
+model court_hearings {
+  id                BigInt    @id @default(autoincrement())
+  case_id           BigInt
+  sc_number         String?   @db.VarChar(100)
+  court_name        String?   @db.VarChar(200)
+  hearing_date      DateTime? @db.Date
+  judge_name        String?   @db.VarChar(200)
+  order_text        String?
+  next_hearing_date DateTime? @db.Date
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  cases             cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([case_id], map: "idx_ch_case")
+  @@index([next_hearing_date], map: "idx_ch_next")
+}
+
+model bail_records {
+  id               BigInt      @id @default(autoincrement())
+  case_id          BigInt
+  case_accused_id  BigInt?
+  application_date DateTime?   @db.Date
+  status           bail_status @default(PENDING)
+  granted_date     DateTime?   @db.Date
+  court_name       String?     @db.VarChar(200)
+  surety_details   String?
+  conditions       String?
+  cancelled_at     DateTime?   @db.Timestamp(6)
+  notes            String?
+  created_at       DateTime    @default(now()) @db.Timestamp(6)
+  cases            cases       @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  case_accused     case_accused? @relation(fields: [case_accused_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([case_id], map: "idx_br_case")
+}
+
+model interrogation_sessions {
+  id               BigInt    @id @default(autoincrement())
+  offender_id      BigInt
+  case_id          BigInt?
+  officer_id       BigInt?
+  session_at       DateTime  @default(now()) @db.Timestamp(6)
+  source_info      String?
+  purchase_price   String?   @db.VarChar(200)
+  selling_price    String?   @db.VarChar(200)
+  delivery_mode    String?   @db.VarChar(200)
+  payment_mode     String?   @db.VarChar(200)
+  network_members  String?
+  mobiles_disclosed String?
+  intel_inputs     String?
+  notes            String?
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  offenders        offenders @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cases            cases?    @relation(fields: [case_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users            users?    @relation(fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([offender_id], map: "idx_is_offender")
+  @@index([case_id], map: "idx_is_case")
+}
+
 model police_stations {
   id                  BigInt                @id @default(autoincrement())
   name                String                @db.VarChar(200)
   district            String                @db.VarChar(100)
   state               String                @default("Andhra Pradesh") @db.VarChar(100)
   ps_code             String                @unique @db.VarChar(20)
+  station_type        station_type          @default(POLICE)
   created_at          DateTime              @default(now()) @db.Timestamp(6)
   case_accused        case_accused[]
   cases               cases[]
@@ -321,6 +412,7 @@ model users {
   // Edit request relations
   edit_requests_created        edit_requests[] @relation("edit_requested_by_user")
   edit_requests_approved       edit_requests[] @relation("edit_approved_by_user")
+  interrogation_sessions       interrogation_sessions[]
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
@@ -435,6 +527,44 @@ enum audit_action {
   EDIT_REQUESTED
   EDIT_APPROVED
   EDIT_REJECTED
+}
+
+enum station_type {
+  POLICE
+  EXCISE
+}
+
+enum case_department {
+  POLICE
+  EXCISE
+}
+
+enum contraband_type {
+  DRY_GANJA
+  GANJA_OIL
+  BROWN_SUGAR
+  HEROIN
+  MDMA
+  SYNTHETIC
+  COCAINE
+  OPIUM
+  OTHER
+}
+
+enum quantity_unit {
+  KG
+  GRAMS
+  ML
+  TABLETS
+  STRIPS
+  PACKETS
+}
+
+enum bail_status {
+  PENDING
+  GRANTED
+  REJECTED
+  CANCELLED
 }
 
 enum case_stage {

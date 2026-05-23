@@ -51,21 +51,51 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const totalCash = seizureAgg._sum.cash_amount || 0;
     const totalVehicles = seizureAgg._sum.vehicles_count || 0;
 
-    // ── Year-wise case trend (pre-populated + from DB) ─────────────────
-    // Historical data from spec (2016–2026)
-    const historicalData = [
-      { year: 2016, cases: 2, arrests: 2 },
-      { year: 2017, cases: 6, arrests: 5 },
-      { year: 2018, cases: 13, arrests: 11 },
-      { year: 2019, cases: 18, arrests: 16 },
-      { year: 2020, cases: 16, arrests: 14 },
-      { year: 2021, cases: 47, arrests: 42 },
-      { year: 2022, cases: 34, arrests: 30 },
-      { year: 2023, cases: 46, arrests: 41 },
-      { year: 2024, cases: 85, arrests: 78 },
-      { year: 2025, cases: 65, arrests: 58 },
-      { year: 2026, cases: totalCases, arrests: totalArrests },
-    ];
+    const historicalBaseline: Record<number, { cases: number; arrests: number }> = {
+      2016: { cases: 2, arrests: 2 },
+      2017: { cases: 6, arrests: 5 },
+      2018: { cases: 13, arrests: 11 },
+      2019: { cases: 18, arrests: 16 },
+      2020: { cases: 16, arrests: 14 },
+      2021: { cases: 47, arrests: 42 },
+      2022: { cases: 34, arrests: 30 },
+      2023: { cases: 46, arrests: 41 },
+      2024: { cases: 85, arrests: 78 },
+      2025: { cases: 65, arrests: 58 },
+    };
+
+    const casesByYear = await prisma.$queryRaw<{ year: number; count: bigint }[]>`
+      SELECT EXTRACT(YEAR FROM case_date)::int AS year, COUNT(*)::bigint AS count
+      FROM cases
+      WHERE case_date IS NOT NULL
+      GROUP BY 1
+      ORDER BY 1
+    `;
+    const arrestsByYear = await prisma.$queryRaw<{ year: number; count: bigint }[]>`
+      SELECT EXTRACT(YEAR FROM c.case_date)::int AS year, COUNT(*)::bigint AS count
+      FROM case_accused ca
+      JOIN cases c ON c.id = ca.case_id
+      WHERE ca.arrest_status = 'ARRESTED' AND c.case_date IS NOT NULL
+      GROUP BY 1
+      ORDER BY 1
+    `;
+
+    const caseYearMap = new Map(casesByYear.map((r) => [Number(r.year), Number(r.count)]));
+    const arrestYearMap = new Map(arrestsByYear.map((r) => [Number(r.year), Number(r.count)]));
+
+    const trendEndYear = new Date().getFullYear();
+    const yearWiseTrend = [];
+    for (let y = 2016; y <= trendEndYear; y++) {
+      const dbCases = caseYearMap.get(y) ?? 0;
+      const dbArrests = arrestYearMap.get(y) ?? 0;
+      const baseline = historicalBaseline[y];
+      yearWiseTrend.push({
+        year: y,
+        cases: dbCases > 0 ? dbCases : (baseline?.cases ?? 0),
+        arrests: dbArrests > 0 ? dbArrests : (baseline?.arrests ?? 0),
+        fromDatabase: dbCases > 0 || dbArrests > 0,
+      });
+    }
 
     // ── Case stage distribution ─────────────────────────────────────────
     const stageDistribution = await prisma.cases.groupBy({
@@ -78,15 +108,43 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       count: s._count.id,
     }));
 
-    // ── Drug type breakdown (from offender categories) ──────────────────
-    // Since we don't have a separate drug type on cases, use hardcoded for now
-    const drugTypeBreakdown = [
-      { type: 'Dry Ganja', value: 45, color: '#22c55e' },
-      { type: 'Ganja Oil', value: 15, color: '#84cc16' },
-      { type: 'Brown Sugar', value: 12, color: '#f59e0b' },
-      { type: 'MDMA', value: 8, color: '#ef4444' },
-      { type: 'Others', value: 20, color: '#6b7280' },
-    ];
+    const contrabandColors: Record<string, string> = {
+      DRY_GANJA: '#22c55e',
+      GANJA_OIL: '#84cc16',
+      BROWN_SUGAR: '#f59e0b',
+      HEROIN: '#dc2626',
+      MDMA: '#ef4444',
+      SYNTHETIC: '#8b5cf6',
+      COCAINE: '#ec4899',
+      OPIUM: '#78716c',
+      OTHER: '#6b7280',
+    };
+    const contrabandLabels: Record<string, string> = {
+      DRY_GANJA: 'Dry Ganja',
+      GANJA_OIL: 'Ganja Oil',
+      BROWN_SUGAR: 'Brown Sugar',
+      HEROIN: 'Heroin',
+      MDMA: 'MDMA',
+      SYNTHETIC: 'Synthetic',
+      COCAINE: 'Cocaine',
+      OPIUM: 'Opium',
+      OTHER: 'Others',
+    };
+    const contrabandGroups = await prisma.cases.groupBy({
+      by: ['contraband_type'],
+      _count: { id: true },
+      where: { contraband_type: { not: null } },
+    });
+    const drugTypeBreakdown = contrabandGroups.length > 0
+      ? contrabandGroups.map((g) => ({
+          type: contrabandLabels[g.contraband_type as string] || g.contraband_type,
+          value: g._count.id,
+          color: contrabandColors[g.contraband_type as string] || '#6b7280',
+        }))
+      : [
+          { type: 'Dry Ganja', value: 0, color: '#22c55e' },
+          { type: 'Others', value: 0, color: '#6b7280' },
+        ];
 
     // ── Station-wise breakdown ──────────────────────────────────────────
     const allPs = await prisma.police_stations.findMany();
@@ -206,7 +264,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       totalVehiclesSeized: totalVehicles,
 
       // Charts
-      yearWiseTrend: historicalData,
+      yearWiseTrend,
       drugTypeBreakdown,
       caseStages,
 

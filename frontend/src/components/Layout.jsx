@@ -20,6 +20,7 @@ function useNavItems() {
           { path: '/admin/users', label: 'User Management', icon: '👥', show: true },
           { path: '/admin/teams', label: 'Team Management', icon: '🏢', show: true },
           { path: '/admin/audit-logs', label: 'Audit Logs', icon: '📜', show: true },
+          { path: '/admin/import', label: 'DPR Import', icon: '📥', show: true },
         ],
       },
     ];

@@ -6,7 +6,13 @@ import prisma from '../config/prisma';
 import { convertBigIntsToNumbers, successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'G4rud4-Ant1Drug-Pl4tf0rm-S3cur3-K3y-2026-M1n1mum-256-B1t-L3ngth!!';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.warn('JWT_SECRET not set — using development fallback. Set JWT_SECRET in production.');
+}
+const JWT_KEY = JWT_SECRET || 'G4rud4-Ant1Drug-Pl4tf0rm-S3cur3-K3y-2026-M1n1mum-256-B1t-L3ngth!!';
+const MAX_FAILED_LOGINS = 5;
+const LOCKOUT_MINUTES = 15;
 
 function generateRefreshToken() {
   return crypto.randomBytes(40).toString('hex');
@@ -22,21 +28,31 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    if (user.locked_until && new Date() < user.locked_until) {
+      return res.status(423).json({ message: 'Account locked. Try again later.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     
     if (!isMatch) {
-       return res.status(401).json({ message: 'Invalid credentials' });
+      const failed = (user.failed_login_count || 0) + 1;
+      const updateData: { failed_login_count: number; locked_until?: Date } = { failed_login_count: failed };
+      if (failed >= MAX_FAILED_LOGINS) {
+        updateData.locked_until = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
+      }
+      await prisma.users.update({ where: { id: user.id }, data: updateData });
+      await logAudit('LOGIN', 'USER', user.id, req, 'Login failed');
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
     await prisma.users.update({
       where: { id: user.id },
-      data: { last_login: new Date() }
+      data: { last_login: new Date(), failed_login_count: 0, locked_until: null }
     });
 
     const accessToken = jwt.sign(
       { userId: Number(user.id), username: user.username, role: user.role, department: user.department, policeStationId: user.police_station_id ? Number(user.police_station_id) : null },
-      JWT_SECRET,
+      JWT_KEY,
       { expiresIn: '8h' }
     );
 
@@ -96,7 +112,7 @@ export const refresh = async (req: Request, res: Response) => {
 
     const newAccessToken = jwt.sign(
       { userId: Number(user.id), username: user.username, role: user.role, department: user.department, policeStationId: user.police_station_id ? Number(user.police_station_id) : null },
-      JWT_SECRET,
+      JWT_KEY,
       { expiresIn: '8h' }
     );
 

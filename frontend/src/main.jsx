@@ -22,6 +22,7 @@ import EditRequests from './pages/workflows/EditRequests';
 import UserManagement from './pages/admin/UserManagement';
 import TeamManagement from './pages/admin/TeamManagement';
 import AuditLogs from './pages/admin/AuditLogs';
+import DataImport from './pages/admin/DataImport';
 import DistrictAnalytics from './pages/DistrictAnalytics';
 import { usePermissions } from './hooks/usePermissions';
 import './index.css';
@@ -121,6 +122,11 @@ createRoot(document.getElementById('root')).render(
             <Route path="admin/teams" element={
               <RoleGuard permission="TEAM_MANAGEMENT">
                 <TeamManagement />
+              </RoleGuard>
+            } />
+            <Route path="admin/import" element={
+              <RoleGuard permission="USER_MANAGEMENT">
+                <DataImport />
               </RoleGuard>
             } />
           </Route>

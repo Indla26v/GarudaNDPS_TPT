@@ -2,13 +2,15 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
+import { getOffenderWhere } from '../utils/scope';
+import { paramId } from '../utils/params';
+import { maskAadhaar, canRevealAadhaar } from '../utils/pii';
 
 export const getOffenders = async (req: Request, res: Response) => {
   try {
     const { query, psId, page = 0, size = 10 } = req.query;
     
-    // Build where clause
-    let whereClause: any = {};
+    let whereClause: any = { ...getOffenderWhere((req as any).user) };
     if (psId) {
       whereClause.ps_id = BigInt(psId as string);
     }
@@ -76,6 +78,14 @@ export const getOffenderById = async (req: Request, res: Response) => {
     });
 
     if (!o) return res.status(404).json({ message: 'Offender not found' });
+
+    const userRole = (req as any).user?.role || '';
+    const reveal = req.query.reveal === 'true' && canRevealAadhaar(userRole);
+    const rawAadhaar = o.offender_identity_docs?.[0]?.aadhaar_no ?? null;
+
+    if (reveal && rawAadhaar) {
+      await logAudit('VIEW', 'OFFENDER', o.id, req, 'PII_REVEALED: aadhaar');
+    }
     
     // Transform to response like OffenderResponse
     const response = {
@@ -102,7 +112,17 @@ export const getOffenderById = async (req: Request, res: Response) => {
       createdByName: o.users?.full_name,
       createdAt: o.created_at,
       updatedAt: o.updated_at,
-      identityDocs: o.offender_identity_docs?.[0] || null,
+      identityDocs: o.offender_identity_docs?.[0]
+        ? {
+            ...o.offender_identity_docs[0],
+            id: o.offender_identity_docs[0].id.toString(),
+            aadhaarNo: reveal ? rawAadhaar : maskAadhaar(rawAadhaar),
+            aadhaarMasked: !reveal,
+            voterId: o.offender_identity_docs[0].voter_id,
+            panCard: o.offender_identity_docs[0].pan_card,
+          }
+        : null,
+      aadhaarNo: reveal ? rawAadhaar : maskAadhaar(rawAadhaar),
       contacts: o.offender_contacts.map(c => ({...c, id: c.id.toString(), offender_id: undefined})),
       financials: o.offender_financials.map(f => ({...f, id: f.id.toString(), offender_id: undefined})),
       drugProfile: o.offender_drug_profile || null,

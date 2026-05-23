@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { usePermissions } from '../../hooks/usePermissions';
+import { OffenderCaseHistory, OffenderInterrogationPanel } from '../../components/OffenderPhase1Panels';
 
-const TABS = ['Basic Info', 'Address', 'Contacts', 'Drug Profile', 'Criminal History', 'Supply Chain'];
-const CATEGORIES = ['CONSUMER','LOCAL_PEDDLER','SUPPLIER','LOCAL_KINGPIN','TRANSPORTER','INTERSTATE_KINGPIN'];
+const BASE_TABS = ['Basic Info', 'Address', 'Contacts', 'Drug Profile', 'Criminal History', 'Supply Chain'];
+const EDIT_EXTRA_TABS = ['Case History', 'Interrogation'];
+const CATEGORIES = ['CONSUMER','LOCAL_PEDDLER','LOCAL_SUPPLIER','LOCAL_KINGPIN','TRANSPORTER','INTERSTATE_KINGPIN'];
 const GENDERS = ['MALE','FEMALE','OTHER'];
 const PURCHASE_MODES = ['CASH','UPI','CREDIT','BARTER','OTHER'];
-const CONTACT_TYPES = ['MOBILE_1','MOBILE_2','SIBLING_MOBILE','GMAIL','WHATSAPP','TELEGRAM','INSTAGRAM','FACEBOOK','UPI_ID','UPI_MOBILE','BANK_ACCOUNT','BANK_NAME','IFSC_CODE','ATM_CARD','IMEI'];
-const LINK_TYPES = ['CO_CONSUMER','ASSOCIATE','PEDDLER','SUPPLIER','TRANSPORTER','KINGPIN','OTHER'];
+const CONTACT_TYPES = ['MOBILE_PRIMARY','MOBILE_SECONDARY','MOBILE_SIBLING','GMAIL','WHATSAPP','TELEGRAM','INSTAGRAM','FACEBOOK','OTHER_SOCIAL'];
+const LINK_TYPES = ['CO_CONSUMER','PEDDLER','SUPPLIER','TRANSPORTER','KINGPIN'];
 
 const inputStyle = {
   background: 'var(--color-garuda-700)',
@@ -29,7 +32,10 @@ export default function OffenderForm() {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const perms = usePermissions();
   const [activeTab, setActiveTab] = useState(0);
+  const [aadhaarRevealed, setAadhaarRevealed] = useState(false);
+  const [aadhaarMasked, setAadhaarMasked] = useState(true);
   const [stations, setStations] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +57,7 @@ export default function OffenderForm() {
   useEffect(() => { fetchStations(); if (isEdit) fetchOffender(); }, []);
 
   const fetchStations = async () => {
-    try { const r = await api.get('/ps'); setStations(r.data.data || []); } catch {}
+    try { const r = await api.get('/police-stations'); setStations(r.data.data || []); } catch {}
   };
 
   const fetchOffender = async () => {
@@ -68,12 +74,48 @@ export default function OffenderForm() {
         addictionType: d.addictionType||'', consumptionFrequency: d.consumptionFrequency||'',
         sourceOfProcurement: d.sourceOfProcurement||'', testResult: d.testResult||'',
         modeOfPurchase: d.modeOfPurchase||'', usualConsumptionSpot: d.usualConsumptionSpot||'',
-        aadhaarNo: d.aadhaarNo||'', voterId: d.voterId||'', panCard: d.panCard||'',
+        aadhaarNo: d.identityDocs?.aadhaarNo || d.aadhaarNo || '',
+        voterId: d.identityDocs?.voterId || d.voterId || '',
+        panCard: d.identityDocs?.panCard || d.panCard || '',
         photoUrl: d.photoUrl||'',
         previousCrimeHistory: d.previousCrimeHistory||false, historySheetStatus: d.historySheetStatus||'',
         contacts: d.contacts||[], criminalHistories: d.criminalHistories||[], supplyChainLinks: d.supplyChainLinks||[],
       });
+      setAadhaarMasked(d.identityDocs?.aadhaarMasked ?? !!String(d.aadhaarNo || '').includes('XXXX'));
     } catch { setError('Failed to load offender data'); }
+  };
+
+  const revealAadhaar = async () => {
+    try {
+      const r = await api.get(`/offenders/${id}`, { params: { reveal: 'true' } });
+      const a = r.data.data?.identityDocs?.aadhaarNo || r.data.data?.aadhaarNo;
+      set('aadhaarNo', a || '');
+      setAadhaarRevealed(true);
+      setAadhaarMasked(false);
+    } catch {
+      setError('Not authorized to view Aadhaar');
+    }
+  };
+
+  const printHistorySheet = async () => {
+    try {
+      const r = await api.get(`/offenders/${id}/history-sheet`);
+      const d = r.data;
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.write(`<html><head><title>History Sheet - ${d.offender.fullName}</title></head><body style="font-family:sans-serif;padding:24px">`);
+      w.document.write(`<h1>NDPS History Sheet</h1><p><strong>${d.offender.fullName}</strong> — ${d.offender.psName || ''}</p>`);
+      w.document.write(`<p>Father: ${d.offender.fatherHusbandName || '—'} | Age: ${d.offender.age || '—'}</p>`);
+      w.document.write('<h2>Case Timeline</h2><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th>FIR</th><th>PS</th><th>Date</th><th>Stage</th></tr>');
+      (d.timeline || []).forEach((c) => {
+        w.document.write(`<tr><td>${c.firNo}</td><td>${c.psName || ''}</td><td>${c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : ''}</td><td>${c.stage}</td></tr>`);
+      });
+      w.document.write('</table></body></html>');
+      w.document.close();
+      w.print();
+    } catch {
+      setError('Failed to generate history sheet');
+    }
   };
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
@@ -95,7 +137,7 @@ export default function OffenderForm() {
   };
 
   // Contact helpers
-  const addContact = () => set('contacts', [...form.contacts, { contactType:'MOBILE_1', value:'', notes:'' }]);
+  const addContact = () => set('contacts', [...form.contacts, { contactType:'MOBILE_PRIMARY', value:'', notes:'' }]);
   const removeContact = (i) => set('contacts', form.contacts.filter((_, j) => j !== i));
   const updateContact = (i, key, val) => {
     const c = [...form.contacts]; c[i] = { ...c[i], [key]: val }; set('contacts', c);
@@ -117,6 +159,7 @@ export default function OffenderForm() {
 
   const inp = "w-full px-3 py-2 rounded-lg text-sm outline-none";
   const sel = "w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer";
+  const TABS = isEdit ? [...BASE_TABS, ...EDIT_EXTRA_TABS] : BASE_TABS;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
@@ -127,8 +170,14 @@ export default function OffenderForm() {
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>Fill in all proforma sections</p>
         </div>
-        <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
-          style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>← Back</button>
+        <div className="flex gap-2">
+          {isEdit && (
+            <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
+              style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>Print History Sheet</button>
+          )}
+          <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
+            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>← Back</button>
+        </div>
       </div>
 
       {error && (
@@ -176,7 +225,16 @@ export default function OffenderForm() {
             </Field>
             <Field label="Occupation"><input className={inp} style={inputStyle} value={form.occupation} onChange={e => set('occupation', e.target.value)} /></Field>
             <Field label="Monthly Income (₹)"><input type="number" className={inp} style={inputStyle} value={form.monthlyIncome} onChange={e => set('monthlyIncome', e.target.value)} /></Field>
-            <Field label="Aadhaar No"><input maxLength={12} className={inp} style={inputStyle} value={form.aadhaarNo} onChange={e => set('aadhaarNo', e.target.value)} /></Field>
+            <Field label="Aadhaar No">
+              <div className="flex gap-2">
+                <input maxLength={12} className={`${inp} flex-1`} style={inputStyle} value={form.aadhaarNo} onChange={e => set('aadhaarNo', e.target.value)} readOnly={aadhaarMasked && !aadhaarRevealed} />
+                {isEdit && aadhaarMasked && perms.hasMinRole('CI') && (
+                  <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded text-xs whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>
+                    Reveal
+                  </button>
+                )}
+              </div>
+            </Field>
             <Field label="Voter ID"><input className={inp} style={inputStyle} value={form.voterId} onChange={e => set('voterId', e.target.value)} /></Field>
             <Field label="PAN Card"><input maxLength={10} className={inp} style={inputStyle} value={form.panCard} onChange={e => set('panCard', e.target.value)} /></Field>
             <Field label="Photo URL"><input className={inp} style={inputStyle} value={form.photoUrl} onChange={e => set('photoUrl', e.target.value)} /></Field>
@@ -268,6 +326,14 @@ export default function OffenderForm() {
             <button onClick={addLink} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
               style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-200)' }}>+ Add Link</button>
           </div>
+        )}
+
+        {isEdit && activeTab === 6 && (
+          <OffenderCaseHistory offenderId={id} />
+        )}
+
+        {isEdit && activeTab === 7 && (
+          <OffenderInterrogationPanel offenderId={id} />
         )}
       </div>
 

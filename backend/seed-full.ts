@@ -10,22 +10,39 @@ async function main() {
   const ROUNDS = 10;
 
   // ── Police Stations ──────────────────────────────────────────────────
-  const stations = [
-    { name: 'Tirupati East PS', ps_code: 'TP-EAST', district: 'Tirupati' },
-    { name: 'Tirupati West PS', ps_code: 'TP-WEST', district: 'Tirupati' },
-    { name: 'Tiruchanoor PS', ps_code: 'TCR', district: 'Tirupati' },
-    { name: 'Renigunta PS', ps_code: 'RGT', district: 'Tirupati' },
-    { name: 'Chandragiri PS', ps_code: 'CGR', district: 'Tirupati' },
+  const policeStations = [
+    { name: 'Tirupati East PS', ps_code: 'TP-EAST', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Tirupati West PS', ps_code: 'TP-WEST', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Tiruchanoor PS', ps_code: 'TCR', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Renigunta PS', ps_code: 'RGT', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Chandragiri PS', ps_code: 'CGR-PS', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Alipiri PS', ps_code: 'ALP', district: 'Tirupati', station_type: 'POLICE' as const },
+    { name: 'Sri City PS', ps_code: 'SRC', district: 'Tirupati', station_type: 'POLICE' as const },
   ];
 
-  for (const s of stations) {
+  const exciseStations = [
+    { name: 'Excise PS Tirupati Urban', ps_code: 'EX-TPT-U', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS Tirupati Rural', ps_code: 'EX-TPT-R', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS SKHT', ps_code: 'EX-SKHT', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS PTR', ps_code: 'EX-PTR', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS NGLP', ps_code: 'EX-NGLP', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS CGR', ps_code: 'EX-CGR', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS TML', ps_code: 'EX-TML', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS GDR', ps_code: 'EX-GDR', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS NDP', ps_code: 'EX-NDP', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS SLPT', ps_code: 'EX-SLPT', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS VKD', ps_code: 'EX-VKD', district: 'Tirupati', station_type: 'EXCISE' as const },
+    { name: 'Excise PS VGR', ps_code: 'EX-VGR', district: 'Tirupati', station_type: 'EXCISE' as const },
+  ];
+
+  for (const s of [...policeStations, ...exciseStations]) {
     await prisma.police_stations.upsert({
       where: { ps_code: s.ps_code },
-      update: {},
+      update: { station_type: s.station_type },
       create: s,
     });
   }
-  console.log('✅ Police stations seeded');
+  console.log('✅ Police & Excise stations seeded');
 
   // ── Teams ────────────────────────────────────────────────────────────
   const teams = [

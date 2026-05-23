@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { getOffenders, getOffenderById, createOffender, updateOffender } from '../controllers/offenders.controller';
+import { getInterrogations, addInterrogation } from '../controllers/case_lifecycle.controller';
+import { exportOffendersCsv, getOffenderHistorySheet } from '../controllers/export.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize, requirePermission } from '../middleware/authorize.middleware';
 
@@ -9,6 +11,10 @@ router.use(authenticate);
 
 // All authenticated users can view & search (scoped by PS in controller)
 router.get('/', getOffenders);
+router.get('/export', exportOffendersCsv);
+router.get('/:offenderId/interrogations', getInterrogations);
+router.get('/:id/history-sheet', getOffenderHistorySheet);
+router.post('/:offenderId/interrogations', requirePermission('EDIT_RECORDS'), addInterrogation);
 router.get('/:id', getOffenderById);
 
 // Create: all roles except SP (SP is district-level, doesn't add data directly)

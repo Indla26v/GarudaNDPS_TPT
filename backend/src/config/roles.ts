@@ -66,7 +66,11 @@ export const PERMISSIONS = {
   // Page 3: Case Management — operational departments
   CASE_VIEW:            { minRole: 'CONSTABLE' },
   CASE_CREATE:          { minRole: 'SI' },
+  CASE_EDIT:            { minRole: 'SI' },
   CASE_APPROVE:         { minRole: 'CI' },
+  // Legacy route keys (Phase 0 alignment)
+  ADD_CASE:             { minRole: 'SI' },
+  EDIT_RECORDS:           { minRole: 'SI' },
 
   // Page 4: Field Staff — field personnel
   FIELD_ENTRY:          { minRole: 'CONSTABLE', departments: ['OPERATIONS', 'STF'] },

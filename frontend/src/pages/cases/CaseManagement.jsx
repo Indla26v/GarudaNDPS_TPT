@@ -36,7 +36,8 @@ export default function CaseManagement() {
       if (stageFilter) params.stage = stageFilter;
       if (search) params.search = search;
       const res = await api.get('/cases', { params });
-      setCases(res.data.data || []);
+      const payload = res.data.data;
+      setCases(payload?.content || (Array.isArray(payload) ? payload : []));
     } catch (err) {
       setError('Failed to load cases');
     } finally {

@@ -22,16 +22,33 @@ export default function OffenderList() {
 
   const fetchStations = async () => {
     try {
-      const res = await api.get('/ps');
+      const res = await api.get('/police-stations');
       setStations(res.data.data || []);
     } catch { /* ignore */ }
+  };
+
+  const handleExport = async () => {
+    try {
+      const params = {};
+      if (psFilter) params.psId = psFilter;
+      if (search.trim()) params.query = search.trim();
+      const res = await api.get('/offenders/export', { params, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `offenders-${Date.now()}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Export failed');
+    }
   };
 
   const fetchOffenders = async () => {
     setLoading(true);
     try {
       const params = { page, size: 20 };
-      if (search.trim()) params.q = search.trim();
+      if (search.trim()) params.query = search.trim();
       if (psFilter) params.psId = psFilter;
       const res = await api.get('/offenders', { params });
       const data = res.data.data;
@@ -63,13 +80,23 @@ export default function OffenderList() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Offender Database</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>Search, filter, and manage offender profiles</p>
         </div>
-        <button
-          onClick={() => navigate('/offenders/new')}
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 cursor-pointer"
-          style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
-        >
-          + Add Offender
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExport}
+            className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => navigate('/offenders/new')}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
+          >
+            + Add Offender
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
