@@ -137,12 +137,16 @@ export default function Layout() {
             className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
           >
-            G
+            N
           </div>
           {sidebarOpen && (
-            <div className="animate-fade-in">
-              <h1 className="text-lg font-bold tracking-wide" style={{ color: 'var(--color-garuda-50)' }}>GARUDA</h1>
-              <p className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>Anti-Drug Intelligence</p>
+            <div className="animate-fade-in flex-1 min-w-0">
+              <h1 className="text-xs font-bold leading-tight" style={{ color: 'var(--color-garuda-50)' }} title="NDPS Monitoring & Intelligence Management System">
+                NDPS Monitoring & Intelligence Management System
+              </h1>
+              <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'var(--color-garuda-400)' }} title="Tirupati District Police & Excise Department">
+                Tirupati District Police & Excise Department
+              </p>
             </div>
           )}
         </div>

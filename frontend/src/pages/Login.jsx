@@ -35,10 +35,14 @@ export default function Login() {
               boxShadow: 'var(--shadow-glow)',
             }}
           >
-            G
+            N
           </div>
-          <h1 className="text-3xl font-bold tracking-wider" style={{ color: 'var(--color-garuda-50)' }}>GARUDA</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>Anti-Drug Intelligence Platform</p>
+          <h1 className="text-2xl font-bold tracking-tight px-4" style={{ color: 'var(--color-garuda-50)', lineHeight: '1.2' }}>
+            NDPS Monitoring & Intelligence Management System
+          </h1>
+          <p className="text-xs mt-2 uppercase tracking-wider font-semibold" style={{ color: 'var(--color-accent-400)' }}>
+            Tirupati District Police & Excise Department
+          </p>
         </div>
 
         {/* Login Card */}
