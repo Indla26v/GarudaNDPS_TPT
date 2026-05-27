@@ -4,6 +4,7 @@ import { successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
 import { getCaseWhere } from '../utils/scope';
 import { paramId } from '../utils/params';
+import { broadcastEvent } from './sse.controller';
 
 function mapCaseData(data: any) {
   const mapped: Record<string, unknown> = {};
@@ -119,6 +120,7 @@ export const createCase = async (req: Request, res: Response) => {
     });
 
     await logAudit('CREATE', 'CASE', newCase.id, req);
+    broadcastEvent('case_created', { id: newCase.id.toString(), firNo: newCase.fir_no });
     res.status(201).json(successResponse({ id: newCase.id.toString(), firNo: newCase.fir_no }, 'Case created'));
   } catch (error) {
     console.error(error);
@@ -140,6 +142,7 @@ export const updateCase = async (req: Request, res: Response) => {
     });
 
     await logAudit('UPDATE', 'CASE', updated.id, req);
+    broadcastEvent('data_updated', { entity: 'case', id: updated.id.toString() });
     res.json(successResponse(toCaseResponse(updated)));
   } catch (error) {
     console.error(error);
@@ -219,6 +222,7 @@ export const updateAccused = async (req: Request, res: Response) => {
 
     if (creates.length > 0) await prisma.case_accused.createMany({ data: creates });
     await logAudit('UPDATE_ACCUSED', 'CASE', id, req);
+    broadcastEvent('data_updated', { entity: 'case', id: id.toString() });
     res.json(successResponse({ id: id.toString() }, 'Accused list updated'));
   } catch (error) {
     console.error(error);
@@ -248,6 +252,7 @@ export const updateSeizure = async (req: Request, res: Response) => {
     }
 
     await logAudit('UPDATE_SEIZURE', 'CASE', id, req);
+    broadcastEvent('data_updated', { entity: 'case', id: id.toString() });
     res.json(successResponse({ id: id.toString() }, 'Seizure updated'));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

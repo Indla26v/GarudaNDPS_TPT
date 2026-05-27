@@ -36,6 +36,7 @@ function useNavItems() {
       items: [
         { path: '/dashboard', label: 'Dashboard', icon: '📊', show: true },
         { path: '/offenders', label: 'Offenders', icon: '👤', show: true },
+        { path: '/consumers', label: 'Consumers', icon: '🧑', show: true },
         { path: '/cases', label: 'Cases', icon: '📋', show: true },
         { path: '/mobile', label: 'Field Staff', icon: '📱',
           show: perms.canFieldEntry || perms.canSurveillanceReport || perms.canVerifyAccused },
@@ -172,12 +173,10 @@ export default function Layout() {
                       key={item.path}
                       to={item.path}
                       id={`nav-${item.path.replace(/\//g, '-').replace(/^-/, '')}`}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        active ? 'text-white' : 'hover:text-white'
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-slate-100 hover:text-slate-900`}
                       style={{
                         background: active ? 'var(--color-garuda-600)' : 'transparent',
-                        color: active ? 'white' : 'var(--color-garuda-300)',
+                        color: active ? 'var(--color-garuda-50)' : 'var(--color-garuda-400)',
                       }}
                     >
                       <span className="text-base flex-shrink-0">{item.icon}</span>

@@ -86,11 +86,11 @@ export const escalateDeletion = async (req: Request, res: Response) => {
 
     if (userRole !== 'CI' && userRole !== 'SI') return res.status(403).json({ message: 'Only CI/SI can escalate' });
 
-    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id) } });
+    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'FLAGGED') return res.status(400).json({ message: 'Invalid state' });
 
     await prisma.deletion_requests.update({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       data: { status: 'ESCALATED', escalated_by: BigInt(userId) }
     });
 
@@ -106,11 +106,11 @@ export const requestDeletion = async (req: Request, res: Response) => {
 
     if (userRole !== 'DSP') return res.status(403).json({ message: 'Only DSP can request formally' });
 
-    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id) } });
+    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'ESCALATED') return res.status(400).json({ message: 'Invalid state' });
 
     await prisma.deletion_requests.update({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       data: { status: 'REQUESTED', requested_by: BigInt(userId) }
     });
 
@@ -126,11 +126,11 @@ export const approveDeletion = async (req: Request, res: Response) => {
 
     if (userRole !== 'SP') return res.status(403).json({ message: 'Only SP can approve' });
 
-    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id) } });
+    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'REQUESTED') return res.status(400).json({ message: 'Invalid state' });
 
     await prisma.deletion_requests.update({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       data: { status: 'APPROVED', approved_by: BigInt(userId) }
     });
 
@@ -146,7 +146,7 @@ export const executeDeletion = async (req: Request, res: Response) => {
 
     if (userRole !== 'ADMIN') return res.status(403).json({ message: 'Only ADMIN can execute' });
 
-    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id) } });
+    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'APPROVED') return res.status(400).json({ message: 'Invalid state' });
 
     await prisma.$transaction(async (tx) => {
@@ -158,7 +158,7 @@ export const executeDeletion = async (req: Request, res: Response) => {
       }
 
       await tx.deletion_requests.update({
-        where: { id: BigInt(id) },
+        where: { id: BigInt(id as string) },
         data: { status: 'DELETED', deleted_by: BigInt(userId) }
       });
     });
@@ -171,11 +171,11 @@ export const rejectDeletion = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
 
-    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id) } });
+    const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
     await prisma.deletion_requests.update({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       data: { status: 'REJECTED' }
     });
 

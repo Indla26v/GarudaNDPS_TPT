@@ -7,20 +7,20 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 
 const ACTION_COLORS = {
-  CREATE:             '#22c55e',
-  UPDATE:             '#3b82f6',
-  DELETE:             '#ef4444',
-  LOGIN:              '#8b5cf6',
-  LOGOUT:             '#6b7280',
-  DELETION_FLAGGED:   '#facc15',
-  DELETION_ESCALATED: '#f97316',
-  DELETION_REQUESTED: '#60a5fa',
-  DELETION_APPROVED:  '#4ade80',
-  DELETION_EXECUTED:  '#ef4444',
-  DELETION_REJECTED:  '#f87171',
-  EDIT_REQUESTED:     '#facc15',
-  EDIT_APPROVED:      '#4ade80',
-  EDIT_REJECTED:      '#f87171',
+  CREATE:             '#16a34a',
+  UPDATE:             '#2563eb',
+  DELETE:             '#dc2626',
+  LOGIN:              '#7c3aed',
+  LOGOUT:             '#4b5563',
+  DELETION_FLAGGED:   '#d97706',
+  DELETION_ESCALATED: '#ea580c',
+  DELETION_REQUESTED: '#2563eb',
+  DELETION_APPROVED:  '#16a34a',
+  DELETION_EXECUTED:  '#dc2626',
+  DELETION_REJECTED:  '#dc2626',
+  EDIT_REQUESTED:     '#d97706',
+  EDIT_APPROVED:      '#16a34a',
+  EDIT_REJECTED:      '#dc2626',
 };
 
 export default function AuditLogs() {
@@ -66,8 +66,8 @@ export default function AuditLogs() {
           id="filter-action"
           value={filters.action}
           onChange={(e) => { setFilters({ ...filters, action: e.target.value }); setPage(0); }}
-          className="px-3 py-2 rounded-lg text-sm"
-          style={{ background: 'var(--color-garuda-800)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+          className="px-3 py-2 rounded-lg text-sm cursor-pointer"
+          style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
         >
           <option value="">All Actions</option>
           {Object.keys(ACTION_COLORS).map(a => <option key={a} value={a}>{a}</option>)}
@@ -76,8 +76,8 @@ export default function AuditLogs() {
           id="filter-entity"
           value={filters.entityType}
           onChange={(e) => { setFilters({ ...filters, entityType: e.target.value }); setPage(0); }}
-          className="px-3 py-2 rounded-lg text-sm"
-          style={{ background: 'var(--color-garuda-800)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+          className="px-3 py-2 rounded-lg text-sm cursor-pointer"
+          style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
         >
           <option value="">All Entities</option>
           <option value="ADMINISTRATION">ADMINISTRATION</option>
@@ -116,7 +116,7 @@ export default function AuditLogs() {
                     className="transition-colors duration-150"
                     style={{
                       borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.3)',
+                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
                     }}
                   >
                     <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--color-garuda-400)' }}>

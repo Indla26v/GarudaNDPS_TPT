@@ -10,12 +10,12 @@ import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 
 const STATUS_COLORS = {
-  FLAGGED:   { bg: 'rgba(249, 115, 22, 0.15)', text: '#fb923c', border: 'rgba(249, 115, 22, 0.3)' }, // Orange
-  ESCALATED: { bg: 'rgba(236, 72, 153, 0.15)', text: '#f472b6', border: 'rgba(236, 72, 153, 0.3)' }, // Pink
-  REQUESTED: { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', border: 'rgba(168, 85, 247, 0.3)' }, // Purple
-  APPROVED:  { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', border: 'rgba(59, 130, 246, 0.3)' }, // Blue
-  DELETED:   { bg: 'rgba(239, 68, 68, 0.15)',  text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' }, // Red
-  REJECTED:  { bg: 'rgba(107, 114, 128, 0.15)',text: '#9ca3af', border: 'rgba(107, 114, 128, 0.3)' }  // Gray
+  FLAGGED:   { bg: 'rgba(249, 115, 22, 0.1)', text: '#c2410c', border: 'rgba(249, 115, 22, 0.25)' }, // Orange
+  ESCALATED: { bg: 'rgba(236, 72, 153, 0.1)', text: '#be185d', border: 'rgba(236, 72, 153, 0.25)' }, // Pink
+  REQUESTED: { bg: 'rgba(168, 85, 247, 0.1)', text: '#6d28d9', border: 'rgba(168, 85, 247, 0.25)' }, // Purple
+  APPROVED:  { bg: 'rgba(59, 130, 246, 0.1)', text: '#1d4ed8', border: 'rgba(59, 130, 246, 0.25)' }, // Blue
+  DELETED:   { bg: 'rgba(239, 68, 68, 0.1)',  text: '#b91c1c', border: 'rgba(239, 68, 68, 0.25)' }, // Red
+  REJECTED:  { bg: 'rgba(107, 114, 128, 0.1)', text: '#4b5563', border: 'rgba(107, 114, 128, 0.25)' }  // Gray
 };
 
 export default function DeletionRequests() {
@@ -56,39 +56,39 @@ export default function DeletionRequests() {
 
   // Helper to determine the correct action button based on Role and Status
   const renderActionContainer = (req) => {
-    if (rawRole === 'CI' || rawRole === 'SI') {
-       if (req.status === 'FLAGGED') {
-         return (
-             <button onClick={() => handleAction(req.id, 'escalate')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-pink-900/40 text-pink-400 border border-pink-700/50 hover:bg-pink-900/60 transition-colors">
-               Escalate to DSP
-             </button>
-         );
+     if (rawRole === 'CI' || rawRole === 'SI') {
+        if (req.status === 'FLAGGED') {
+          return (
+              <button onClick={() => handleAction(req.id, 'escalate')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 transition-colors">
+                Escalate to DSP
+              </button>
+          );
+        }
+     } else if (rawRole === 'DSP') {
+       if (req.status === 'ESCALATED') {
+          return (
+              <button onClick={() => handleAction(req.id, 'request')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition-colors">
+                Request from SP
+              </button>
+          );
        }
-    } else if (rawRole === 'DSP') {
-      if (req.status === 'ESCALATED') {
-         return (
-             <button onClick={() => handleAction(req.id, 'request')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-purple-900/40 text-purple-400 border border-purple-700/50 hover:bg-purple-900/60 transition-colors">
-               Request from SP
-             </button>
-         );
-      }
-    } else if (rawRole === 'SP') {
-       if (req.status === 'REQUESTED') {
-           return (
-               <button onClick={() => handleAction(req.id, 'approve')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-blue-900/40 text-blue-400 border border-blue-700/50 hover:bg-blue-900/60 transition-colors">
-                 Approve Delete
-               </button>
-           );
-       }
-    } else if (rawRole === 'ADMIN') {
-       if (req.status === 'APPROVED') {
-           return (
-               <button onClick={() => handleAction(req.id, 'execute')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-red-900/40 text-red-400 border border-red-700/50 hover:bg-red-900/60 transition-colors">
-                 Execute Delete
-               </button>
-           );
-       }
-    }
+     } else if (rawRole === 'SP') {
+        if (req.status === 'REQUESTED') {
+            return (
+                <button onClick={() => handleAction(req.id, 'approve')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
+                  Approve Delete
+                </button>
+            );
+        }
+     } else if (rawRole === 'ADMIN') {
+        if (req.status === 'APPROVED') {
+            return (
+                <button onClick={() => handleAction(req.id, 'execute')} disabled={actionLoading === req.id} className="px-3 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors">
+                  Execute Delete
+                </button>
+            );
+        }
+     }
     return <span className="text-gray-500 text-xs italic">No actions</span>;
   };
 
@@ -110,8 +110,8 @@ export default function DeletionRequests() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-          <p style={{ color: '#f87171' }}>{error}</p>
+        <div className="p-4 rounded-lg" style={{ background: 'rgba(220, 38, 38, 0.08)', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
+          <p style={{ color: '#dc2626' }}>{error}</p>
         </div>
       )}
 
@@ -141,7 +141,7 @@ export default function DeletionRequests() {
                     className="transition-colors duration-150"
                     style={{
                       borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.3)',
+                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
                     }}
                   >
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>

@@ -171,13 +171,13 @@ export default function CaseManagement() {
                   const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
                   return (
                     <tr key={c.id} style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
-                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{c.fir_no}</td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{c.police_stations?.name || '—'}</td>
+                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{c.firNo}</td>
+                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{c.psName || '—'}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        <span className="max-w-[200px] truncate block">{c.section_of_law || '—'}</span>
+                        <span className="max-w-[200px] truncate block">{c.sectionOfLaw || '—'}</span>
                       </td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        {c.case_date ? new Date(c.case_date).toLocaleDateString('en-IN') : '—'}
+                        {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -188,7 +188,7 @@ export default function CaseManagement() {
                         </span>
                       </td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        {c.case_accused?.length || 0} accused
+                        {c.accused?.length || 0} accused
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link

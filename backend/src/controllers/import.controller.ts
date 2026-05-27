@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import prisma from '../config/prisma';
 import { successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
+import { broadcastEvent } from './sse.controller';
 
 function normKey(k: string): string {
   return k.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -41,7 +42,14 @@ export const importDprExcel = async (req: Request, res: Response) => {
     }
 
     const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const firstSheetName = wb.SheetNames[0];
+    if (!firstSheetName) {
+      return res.status(400).json({ message: 'Excel workbook has no sheets' });
+    }
+    const sheet = wb.Sheets[firstSheetName];
+    if (!sheet) {
+      return res.status(400).json({ message: 'Excel sheet could not be loaded' });
+    }
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
 
     if (!rows.length) {
@@ -58,7 +66,7 @@ export const importDprExcel = async (req: Request, res: Response) => {
     const stats = { rows: rows.length, casesCreated: 0, offendersCreated: 0, skipped: 0, errors: [] as string[] };
 
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
+      const row = rows[i]!;
       try {
         const psName = pick(row, 'PS Name', 'Police Station', 'Station', 'PS');
         const psCode = pick(row, 'PS Code', 'ps_code');
@@ -119,9 +127,20 @@ export const importDprExcel = async (req: Request, res: Response) => {
 
           const qty = pick(row, 'Quantity');
           const qtyNum = parseFloat(qty.replace(/[^\d.]/g, ''));
-          if (!Number.isNaN(qtyNum) && qtyNum > 0) {
+          const cash = pick(row, 'Cash', 'Cash Seized', 'Amount', 'Cash Amount');
+          const cashNum = parseFloat(cash.replace(/[^\d.]/g, ''));
+          const vehicles = pick(row, 'Vehicle', 'Vehicles', 'Vehicle Count', 'Vehicles Seized');
+          const vehiclesNum = parseInt(vehicles.replace(/\D/g, ''), 10);
+
+          if ((!Number.isNaN(qtyNum) && qtyNum > 0) || (!Number.isNaN(cashNum) && cashNum > 0) || (!Number.isNaN(vehiclesNum) && vehiclesNum > 0)) {
             await prisma.seizures.create({
-              data: { case_id: caseId, contraband_kg: qtyNum, seizure_date: caseDate },
+              data: {
+                case_id: caseId,
+                contraband_kg: !Number.isNaN(qtyNum) && qtyNum > 0 ? qtyNum : null,
+                cash_amount: !Number.isNaN(cashNum) && cashNum > 0 ? cashNum : 0,
+                vehicles_count: !Number.isNaN(vehiclesNum) && vehiclesNum > 0 ? vehiclesNum : 0,
+                seizure_date: caseDate
+              },
             });
           }
         }
@@ -132,25 +151,31 @@ export const importDprExcel = async (req: Request, res: Response) => {
 
         if (!offender) {
           const ageStr = pick(row, 'Age');
+          const contactsVal = pick(row, 'Mobile', 'Mobile No');
+          const aadhaarVal = pick(row, 'Aadhaar', 'Aadhaar No');
+
+          const offenderDataObj: any = {
+            ps_id: ps.id,
+            full_name: accusedName,
+            father_husband_name: pick(row, "Father's name", 'Father Name', 'Father') || null,
+            age: ageStr ? parseInt(ageStr, 10) || null : null,
+            full_address: pick(row, 'Address', 'Permanent Address') || null,
+            created_by: userId,
+          };
+
+          if (contactsVal) {
+            offenderDataObj.offender_contacts = {
+              create: [{ contact_type: 'MOBILE_PRIMARY', value: contactsVal }],
+            };
+          }
+          if (aadhaarVal) {
+            offenderDataObj.offender_identity_docs = {
+              create: [{ aadhaar_no: aadhaarVal.replace(/\D/g, '').slice(0, 12) }],
+            };
+          }
+
           offender = await prisma.offenders.create({
-            data: {
-              ps_id: ps.id,
-              full_name: accusedName,
-              father_husband_name: pick(row, "Father's name", 'Father Name', 'Father') || null,
-              age: ageStr ? parseInt(ageStr, 10) || null : null,
-              full_address: pick(row, 'Address', 'Permanent Address') || null,
-              created_by: userId,
-              offender_contacts: pick(row, 'Mobile', 'Mobile No')
-                ? {
-                    create: [{ contact_type: 'MOBILE_PRIMARY', value: pick(row, 'Mobile', 'Mobile No') }],
-                  }
-                : undefined,
-              offender_identity_docs: pick(row, 'Aadhaar', 'Aadhaar No')
-                ? {
-                    create: [{ aadhaar_no: pick(row, 'Aadhaar', 'Aadhaar No').replace(/\D/g, '').slice(0, 12) }],
-                  }
-                : undefined,
-            },
+            data: offenderDataObj
           });
           stats.offendersCreated++;
         }
@@ -174,6 +199,8 @@ export const importDprExcel = async (req: Request, res: Response) => {
     }
 
     await logAudit('CREATE', 'IMPORT', null, req, `DPR import: ${stats.casesCreated} cases, ${stats.offendersCreated} offenders`);
+
+    broadcastEvent('data_updated', { source: 'import', stats });
 
     res.json(successResponse(stats, 'Import completed'));
   } catch (error) {

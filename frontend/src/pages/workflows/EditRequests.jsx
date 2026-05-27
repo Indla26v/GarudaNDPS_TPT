@@ -10,9 +10,9 @@ import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 
 const STATUS_COLORS = {
-  PENDING:  { bg: 'rgba(234, 179, 8, 0.15)',  text: '#facc15', border: 'rgba(234, 179, 8, 0.3)' },
-  APPROVED: { bg: 'rgba(34, 197, 94, 0.15)',  text: '#4ade80', border: 'rgba(34, 197, 94, 0.3)' },
-  REJECTED: { bg: 'rgba(239, 68, 68, 0.15)',  text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+  PENDING:  { bg: 'rgba(234, 179, 8, 0.1)',  text: '#b45309', border: 'rgba(234, 179, 8, 0.25)' },
+  APPROVED: { bg: 'rgba(34, 197, 94, 0.1)',  text: '#15803d', border: 'rgba(34, 197, 94, 0.25)' },
+  REJECTED: { bg: 'rgba(239, 68, 68, 0.1)',  text: '#b91c1c', border: 'rgba(239, 68, 68, 0.25)' },
 };
 
 export default function EditRequests() {
@@ -69,8 +69,8 @@ export default function EditRequests() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-          <p style={{ color: '#f87171' }}>{error}</p>
+        <div className="p-4 rounded-lg" style={{ background: 'rgba(220, 38, 38, 0.08)', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
+          <p style={{ color: '#dc2626' }}>{error}</p>
         </div>
       )}
 
@@ -102,7 +102,7 @@ export default function EditRequests() {
                     className="transition-colors duration-150"
                     style={{
                       borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.3)',
+                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
                     }}
                   >
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
@@ -137,7 +137,7 @@ export default function EditRequests() {
                               onClick={() => handleAction(req.id, 'approve')}
                               disabled={actionLoading === req.id}
                               className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                              style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                              style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', border: '1px solid rgba(34, 197, 94, 0.2)' }}
                             >
                               {actionLoading === req.id ? '...' : 'Approve Edit'}
                             </button>
@@ -145,7 +145,7 @@ export default function EditRequests() {
                               onClick={() => handleAction(req.id, 'reject')}
                               disabled={actionLoading === req.id}
                               className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                              style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                              style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.2)' }}
                             >
                               Reject
                             </button>

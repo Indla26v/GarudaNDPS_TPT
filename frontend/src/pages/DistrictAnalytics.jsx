@@ -128,9 +128,9 @@ export default function DistrictAnalytics() {
                     </span>
                   </span>
                   <div className="flex items-center gap-4 text-xs">
-                    <span style={{ color: '#60a5fa' }}>{formatNumber(ps.totalCases)} cases</span>
-                    <span style={{ color: '#4ade80' }}>{formatNumber(ps.totalArrests)} arrests</span>
-                    <span style={{ color: '#f87171' }}>{formatNumber(ps.totalAbsconders)} absconders</span>
+                    <span style={{ color: '#2563eb' }}>{formatNumber(ps.totalCases)} cases</span>
+                    <span style={{ color: '#16a34a' }}>{formatNumber(ps.totalArrests)} arrests</span>
+                    <span style={{ color: '#dc2626' }}>{formatNumber(ps.totalAbsconders)} absconders</span>
                   </div>
                 </div>
                 <div
@@ -182,16 +182,16 @@ export default function DistrictAnalytics() {
                   className="transition-colors duration-150"
                   style={{
                     borderBottom: '1px solid var(--color-garuda-700)',
-                    background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.3)',
+                    background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
                   }}
                 >
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{ps.psName}</td>
                   <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>{ps.psCode}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: '#60a5fa' }}>{formatNumber(ps.totalCases)}</td>
+                  <td className="px-4 py-3 text-right" style={{ color: '#2563eb' }}>{formatNumber(ps.totalCases)}</td>
                   <td className="px-4 py-3 text-right" style={{ color: 'var(--color-garuda-200)' }}>{formatNumber(ps.totalOffenders)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: '#4ade80' }}>{formatNumber(ps.totalArrests)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: '#f87171' }}>{formatNumber(ps.totalAbsconders)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: '#facc15' }}>{formatNumber(ps.totalContrabandKg)}</td>
+                  <td className="px-4 py-3 text-right" style={{ color: '#16a34a' }}>{formatNumber(ps.totalArrests)}</td>
+                  <td className="px-4 py-3 text-right" style={{ color: '#dc2626' }}>{formatNumber(ps.totalAbsconders)}</td>
+                  <td className="px-4 py-3 text-right" style={{ color: '#d97706' }}>{formatNumber(ps.totalContrabandKg)}</td>
                   <td className="px-4 py-3 text-right" style={{ color: 'var(--color-garuda-200)' }}>₹{formatNumber(ps.totalCashSeized)}</td>
                 </tr>
               ))}

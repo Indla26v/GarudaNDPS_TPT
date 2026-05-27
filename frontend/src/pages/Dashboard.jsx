@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import api from '../api/axios';
 import { usePermissions } from '../hooks/usePermissions';
+import { useSSE } from '../hooks/useSSE';
 
 const KPI_CARDS = [
   { key: 'totalCases',           label: 'Total Cases',       icon: '📋', color: '#3b82f6' },
@@ -41,10 +42,18 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const perms = usePermissions();
+  const { lastEvent, isConnected } = useSSE();
 
   useEffect(() => {
     fetchSummary();
   }, []);
+
+  // Refresh data on SSE events
+  useEffect(() => {
+    if (lastEvent && ['case_created', 'offender_created', 'data_updated'].includes(lastEvent.type)) {
+      fetchSummary();
+    }
+  }, [lastEvent]);
 
   const fetchSummary = async () => {
     try {
@@ -83,9 +92,20 @@ export default function Dashboard() {
       {/* ── Header + Quick Links ─────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
-            Command Dashboard
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
+              Command Dashboard
+            </h1>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: isConnected ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: isConnected ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(239,68,68,0.2)' }}>
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: isConnected ? '#22c55e' : '#ef4444' }}
+              />
+              <span style={{ color: isConnected ? '#22c55e' : '#ef4444' }}>
+                {isConnected ? 'Live' : 'Offline'}
+              </span>
+            </div>
+          </div>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
             NDPS Operations{summary?.isStationLevel
               ? ` — ${summary?.psWiseData?.[0]?.psName || 'Your Station'}`

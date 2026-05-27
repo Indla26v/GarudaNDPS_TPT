@@ -22,7 +22,7 @@ export const getPoliceStationById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const s = await prisma.police_stations.findUnique({
-      where: { id: BigInt(id) }
+      where: { id: BigInt(id as string) }
     });
 
     if (!s) return res.status(404).json({ message: 'Police station not found' });

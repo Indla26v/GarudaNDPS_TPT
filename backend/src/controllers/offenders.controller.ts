@@ -5,14 +5,18 @@ import { logAudit } from '../utils/auditLogger';
 import { getOffenderWhere } from '../utils/scope';
 import { paramId } from '../utils/params';
 import { maskAadhaar, canRevealAadhaar } from '../utils/pii';
+import { broadcastEvent } from './sse.controller';
 
 export const getOffenders = async (req: Request, res: Response) => {
   try {
-    const { query, psId, page = 0, size = 10 } = req.query;
+    const { query, psId, category, page = 0, size = 10 } = req.query;
     
     let whereClause: any = { ...getOffenderWhere((req as any).user) };
     if (psId) {
       whereClause.ps_id = BigInt(psId as string);
+    }
+    if (category) {
+      whereClause.category = category as any;
     }
     if (query) {
       const q = String(query);
@@ -41,16 +45,16 @@ export const getOffenders = async (req: Request, res: Response) => {
 
     const formatted = offenders.map(o => ({
       id: o.id.toString(),
-      sl_no: o.sl_no,
-      full_name: o.full_name,
+      slNo: o.sl_no,
+      fullName: o.full_name,
       alias: o.alias,
       category: o.category,
       status: o.status,
-      risk_score: o.risk_score,
-      ps_name: o.police_stations?.name,
+      riskScore: o.risk_score,
+      psName: o.police_stations?.name,
       district: o.district,
       mobile: o.offender_contacts?.[0]?.value || null,
-      total_cases: o.case_accused.length
+      totalCases: o.case_accused.length
     }));
 
     res.json(successResponse({ content: formatted, totalElements: total, totalPages: Math.ceil(total / take) }));
@@ -114,7 +118,6 @@ export const getOffenderById = async (req: Request, res: Response) => {
       updatedAt: o.updated_at,
       identityDocs: o.offender_identity_docs?.[0]
         ? {
-            ...o.offender_identity_docs[0],
             id: o.offender_identity_docs[0].id.toString(),
             aadhaarNo: reveal ? rawAadhaar : maskAadhaar(rawAadhaar),
             aadhaarMasked: !reveal,
@@ -123,15 +126,42 @@ export const getOffenderById = async (req: Request, res: Response) => {
           }
         : null,
       aadhaarNo: reveal ? rawAadhaar : maskAadhaar(rawAadhaar),
-      contacts: o.offender_contacts.map(c => ({...c, id: c.id.toString(), offender_id: undefined})),
-      financials: o.offender_financials.map(f => ({...f, id: f.id.toString(), offender_id: undefined})),
-      drugProfile: o.offender_drug_profile || null,
+      voterId: o.offender_identity_docs?.[0]?.voter_id || null,
+      panCard: o.offender_identity_docs?.[0]?.pan_card || null,
+      addictionType: o.offender_drug_profile?.addiction_type || null,
+      consumptionFrequency: o.offender_drug_profile?.consumption_frequency || null,
+      sourceOfProcurement: o.offender_drug_profile?.source_of_procurement || null,
+      modeOfPurchase: o.offender_drug_profile?.mode_of_purchase || null,
+      usualConsumptionSpot: o.offender_drug_profile?.usual_consumption_spot || null,
+      drugProfile: o.offender_drug_profile
+        ? {
+            id: o.offender_drug_profile.id.toString(),
+            addictionType: o.offender_drug_profile.addiction_type,
+            consumptionFrequency: o.offender_drug_profile.consumption_frequency,
+            sourceOfProcurement: o.offender_drug_profile.source_of_procurement,
+            modeOfPurchase: o.offender_drug_profile.mode_of_purchase,
+            usualConsumptionSpot: o.offender_drug_profile.usual_consumption_spot,
+          }
+        : null,
+      contacts: o.offender_contacts.map(c => ({
+        id: c.id.toString(),
+        contactType: c.contact_type,
+        value: c.value,
+        notes: c.notes
+      })),
+      financials: o.offender_financials.map(f => ({
+        id: f.id.toString(),
+        finType: f.fin_type,
+        value: f.value,
+        bankName: f.bank_name,
+        notes: f.notes
+      })),
       supplyChainLinks: o.supply_chain_links_supply_chain_links_offender_idTooffenders.map(link => ({
         id: link.id.toString(),
         linkedOffenderId: link.linked_offender_id?.toString(),
         linkType: link.link_type,
-        linkedPersonName: link.linked_person_name,
-        linkedPersonContact: link.linked_person_contact,
+        linkedName: link.linked_person_name,
+        linkedContact: link.linked_person_contact,
         notes: link.notes
       })),
       totalCases: o.case_accused.length
@@ -159,10 +189,14 @@ export const createOffender = async (req: Request, res: Response) => {
       notes: c.notes
     })) : [];
 
-    const identityDocsCreate = data.identityDocs ? {
-      aadhaar_no: data.identityDocs.aadhaarNo,
-      voter_id: data.identityDocs.voterId,
-      pan_card: data.identityDocs.panCard
+    const aadhaarNo = data.aadhaarNo ?? data.identityDocs?.aadhaarNo ?? null;
+    const voterId = data.voterId ?? data.identityDocs?.voterId ?? null;
+    const panCard = data.panCard ?? data.identityDocs?.panCard ?? null;
+
+    const identityDocsCreate = (aadhaarNo || voterId || panCard) ? {
+      aadhaar_no: aadhaarNo,
+      voter_id: voterId,
+      pan_card: panCard
     } : undefined;
 
     const financialsCreate = data.financials ? data.financials.map((f: any) => ({
@@ -172,40 +206,49 @@ export const createOffender = async (req: Request, res: Response) => {
       notes: f.notes
     })) : [];
 
-    const drugProfileCreate = data.drugProfile ? {
-      addiction_type: data.drugProfile.addictionType,
-      consumption_frequency: data.drugProfile.consumptionFrequency,
-      source_of_procurement: data.drugProfile.sourceOfProcurement,
-      mode_of_purchase: data.drugProfile.modeOfPurchase,
-      usual_consumption_spot: data.drugProfile.usualConsumptionSpot
+    const addictionType = data.addictionType ?? data.drugProfile?.addictionType ?? null;
+    const consumptionFrequency = data.consumptionFrequency ?? data.drugProfile?.consumptionFrequency ?? null;
+    const sourceOfProcurement = data.sourceOfProcurement ?? data.drugProfile?.sourceOfProcurement ?? null;
+    const modeOfPurchase = data.modeOfPurchase ?? data.drugProfile?.modeOfPurchase ?? null;
+    const usualConsumptionSpot = data.usualConsumptionSpot ?? data.drugProfile?.usualConsumptionSpot ?? null;
+
+    const drugProfileCreate = (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot) ? {
+      addiction_type: addictionType,
+      consumption_frequency: consumptionFrequency,
+      source_of_procurement: sourceOfProcurement,
+      mode_of_purchase: modeOfPurchase,
+      usual_consumption_spot: usualConsumptionSpot
     } : undefined;
 
+    const dataObj: any = {
+      sl_no: data.slNo || data.sl_no || null,
+      full_name: data.fullName || data.full_name,
+      alias: data.alias || null,
+      father_husband_name: data.fatherHusbandName || data.father_husband_name || null,
+      age: data.age,
+      gender: data.gender,
+      category: data.category,
+      test_result: data.testResult || data.test_result,
+      full_address: data.fullAddress || data.full_address || null,
+      landmark_area: data.landmarkArea || data.landmark_area || null,
+      district: data.district,
+      state: data.state,
+      occupation: data.occupation,
+      monthly_income: data.monthlyIncome || data.monthly_income || null,
+      photo_url: data.photoUrl || data.photo_url || null,
+      status: data.status || 'ACTIVE',
+      risk_score: data.riskScore || data.risk_score,
+      ps_id: BigInt(data.psId || data.ps_id),
+      created_by: userId,
+    };
+
+    if (contactsCreate.length > 0) dataObj.offender_contacts = { create: contactsCreate };
+    if (identityDocsCreate) dataObj.offender_identity_docs = { create: identityDocsCreate };
+    if (financialsCreate.length > 0) dataObj.offender_financials = { create: financialsCreate };
+    if (drugProfileCreate) dataObj.offender_drug_profile = { create: drugProfileCreate };
+
     const newOffender = await prisma.offenders.create({
-      data: {
-        sl_no: data.slNo || data.sl_no,
-        full_name: data.fullName || data.full_name,
-        alias: data.alias,
-        father_husband_name: data.fatherHusbandName || data.father_husband_name,
-        age: data.age,
-        gender: data.gender,
-        category: data.category,
-        test_result: data.testResult || data.test_result,
-        full_address: data.fullAddress || data.full_address,
-        landmark_area: data.landmarkArea || data.landmark_area,
-        district: data.district,
-        state: data.state,
-        occupation: data.occupation,
-        monthly_income: data.monthlyIncome || data.monthly_income,
-        photo_url: data.photoUrl || data.photo_url,
-        status: data.status || 'ACTIVE',
-        risk_score: data.riskScore || data.risk_score,
-        ps_id: BigInt(data.psId || data.ps_id),
-        created_by: userId,
-        offender_contacts: contactsCreate.length > 0 ? { create: contactsCreate } : undefined,
-        offender_identity_docs: identityDocsCreate ? { create: identityDocsCreate } : undefined,
-        offender_financials: financialsCreate.length > 0 ? { create: financialsCreate } : undefined,
-        offender_drug_profile: drugProfileCreate ? { create: drugProfileCreate } : undefined,
-      }
+      data: dataObj
     });
     
     if (data.supplyChainLinks && data.supplyChainLinks.length > 0) {
@@ -214,15 +257,15 @@ export const createOffender = async (req: Request, res: Response) => {
             offender_id: newOffender.id,
             linked_offender_id: s.linkedOffenderId ? BigInt(s.linkedOffenderId) : null,
             link_type: s.linkType || s.link_type,
-            linked_person_name: s.linkedPersonName || s.linked_person_name,
-            linked_person_contact: s.linkedPersonContact || s.linked_person_contact,
+            linked_person_name: s.linkedName || s.linkedPersonName || s.linked_person_name,
+            linked_person_contact: s.linkedContact || s.linkedPersonContact || s.linked_person_contact,
             notes: s.notes
           }))
        });
     }
 
     await logAudit('CREATE', 'OFFENDER', newOffender.id, req);
-
+    broadcastEvent('offender_created', { id: newOffender.id.toString() });
     res.status(201).json(successResponse({ id: newOffender.id.toString() }, 'Offender created successfully'));
   } catch (error) {
     console.error(error);
@@ -241,28 +284,44 @@ export const updateOffender = async (req: Request, res: Response) => {
 
     // Transaction for safe nested updates (delete then recreate)
     await prisma.$transaction(async (tx) => {
+       const updateDataObj: any = {
+         full_name: data.fullName || data.full_name,
+         status: data.status,
+         ps_id: BigInt(data.psId || data.ps_id),
+       };
+       if (data.slNo !== undefined || data.sl_no !== undefined) updateDataObj.sl_no = data.slNo || data.sl_no || null;
+       if (data.alias !== undefined) updateDataObj.alias = data.alias || null;
+       if (data.fatherHusbandName !== undefined || data.father_husband_name !== undefined) {
+         updateDataObj.father_husband_name = data.fatherHusbandName || data.father_husband_name || null;
+       }
+       if (data.age !== undefined) updateDataObj.age = data.age;
+       if (data.gender !== undefined) updateDataObj.gender = data.gender;
+       if (data.category !== undefined) updateDataObj.category = data.category;
+       if (data.testResult !== undefined || data.test_result !== undefined) {
+         updateDataObj.test_result = data.testResult || data.test_result;
+       }
+       if (data.fullAddress !== undefined || data.full_address !== undefined) {
+         updateDataObj.full_address = data.fullAddress || data.full_address || null;
+       }
+       if (data.landmarkArea !== undefined || data.landmark_area !== undefined) {
+         updateDataObj.landmark_area = data.landmarkArea || data.landmark_area || null;
+       }
+       if (data.district !== undefined) updateDataObj.district = data.district;
+       if (data.state !== undefined) updateDataObj.state = data.state;
+       if (data.occupation !== undefined) updateDataObj.occupation = data.occupation;
+       if (data.monthlyIncome !== undefined || data.monthly_income !== undefined) {
+         updateDataObj.monthly_income = data.monthlyIncome || data.monthly_income || null;
+       }
+       if (data.photoUrl !== undefined || data.photo_url !== undefined) {
+         updateDataObj.photo_url = data.photoUrl || data.photo_url || null;
+       }
+       if (data.riskScore !== undefined || data.risk_score !== undefined) {
+         updateDataObj.risk_score = data.riskScore || data.risk_score;
+       }
+
        await tx.offenders.update({
           where: { id: BigInt(id as string) },
-          data: {
-            sl_no: data.slNo || data.sl_no,
-            full_name: data.fullName || data.full_name,
-            alias: data.alias,
-            father_husband_name: data.fatherHusbandName || data.father_husband_name,
-            age: data.age,
-            gender: data.gender,
-            category: data.category,
-            test_result: data.testResult || data.test_result,
-            full_address: data.fullAddress || data.full_address,
-            landmark_area: data.landmarkArea || data.landmark_area,
-            district: data.district,
-            state: data.state,
-            occupation: data.occupation,
-            monthly_income: data.monthlyIncome || data.monthly_income,
-            photo_url: data.photoUrl || data.photo_url,
-            status: data.status,
-            risk_score: data.riskScore || data.risk_score,
-            ps_id: BigInt(data.psId || data.ps_id),
-          }
+          data: updateDataObj
        });
 
        // Delete nested
@@ -283,13 +342,17 @@ export const updateOffender = async (req: Request, res: Response) => {
            }))
          });
        }
-       if (data.identityDocs) {
+       const aadhaarNo = data.aadhaarNo ?? data.identityDocs?.aadhaarNo ?? null;
+       const voterId = data.voterId ?? data.identityDocs?.voterId ?? null;
+       const panCard = data.panCard ?? data.identityDocs?.panCard ?? null;
+
+       if (aadhaarNo || voterId || panCard) {
          await tx.offender_identity_docs.create({
            data: {
              offender_id: BigInt(id as string),
-             aadhaar_no: data.identityDocs.aadhaarNo,
-             voter_id: data.identityDocs.voterId,
-             pan_card: data.identityDocs.panCard
+             aadhaar_no: aadhaarNo,
+             voter_id: voterId,
+             pan_card: panCard
            }
          });
        }
@@ -304,15 +367,21 @@ export const updateOffender = async (req: Request, res: Response) => {
            }))
          });
        }
-       if (data.drugProfile) {
+       const addictionType = data.addictionType ?? data.drugProfile?.addictionType ?? null;
+       const consumptionFrequency = data.consumptionFrequency ?? data.drugProfile?.consumptionFrequency ?? null;
+       const sourceOfProcurement = data.sourceOfProcurement ?? data.drugProfile?.sourceOfProcurement ?? null;
+       const modeOfPurchase = data.modeOfPurchase ?? data.drugProfile?.modeOfPurchase ?? null;
+       const usualConsumptionSpot = data.usualConsumptionSpot ?? data.drugProfile?.usualConsumptionSpot ?? null;
+
+       if (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot) {
          await tx.offender_drug_profile.create({
            data: {
              offender_id: BigInt(id as string),
-             addiction_type: data.drugProfile.addictionType,
-             consumption_frequency: data.drugProfile.consumptionFrequency,
-             source_of_procurement: data.drugProfile.sourceOfProcurement,
-             mode_of_purchase: data.drugProfile.modeOfPurchase,
-             usual_consumption_spot: data.drugProfile.usualConsumptionSpot
+             addiction_type: addictionType,
+             consumption_frequency: consumptionFrequency,
+             source_of_procurement: sourceOfProcurement,
+             mode_of_purchase: modeOfPurchase,
+             usual_consumption_spot: usualConsumptionSpot
            }
          });
        }
@@ -322,16 +391,16 @@ export const updateOffender = async (req: Request, res: Response) => {
             offender_id: BigInt(id as string),
             linked_offender_id: s.linkedOffenderId ? BigInt(s.linkedOffenderId) : null,
             link_type: s.linkType || s.link_type,
-            linked_person_name: s.linkedPersonName || s.linked_person_name,
-            linked_person_contact: s.linkedPersonContact || s.linked_person_contact,
+            linked_person_name: s.linkedName || s.linkedPersonName || s.linked_person_name,
+            linked_person_contact: s.linkedContact || s.linkedPersonContact || s.linked_person_contact,
             notes: s.notes
           }))
          });
        }
     });
 
-    await logAudit('UPDATE', 'OFFENDER', id, req);
-
+    await logAudit('UPDATE', 'OFFENDER', BigInt(id as string), req);
+    broadcastEvent('data_updated', { entity: 'offender', id });
     res.json(successResponse({ id }, 'Offender updated successfully'));
   } catch (error) {
     console.error(error);

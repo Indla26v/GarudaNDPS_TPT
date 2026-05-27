@@ -23,7 +23,7 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'linear-gradient(135deg, var(--color-garuda-900) 0%, #0d1f3c 50%, var(--color-garuda-800) 100%)' }}
+      style={{ background: 'linear-gradient(135deg, var(--color-garuda-800) 0%, var(--color-garuda-600) 100%)' }}
     >
       <div className="w-full max-w-md animate-slide-up">
         {/* Logo */}
@@ -49,9 +49,8 @@ export default function Login() {
         <div
           className="rounded-xl p-8"
           style={{
-            background: 'rgba(26, 42, 74, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid var(--color-garuda-600)',
+            background: '#ffffff',
+            border: '1px solid var(--color-garuda-700)',
             boxShadow: 'var(--shadow-elevated)',
           }}
         >
@@ -60,7 +59,7 @@ export default function Login() {
           {error && (
             <div
               className="mb-4 px-4 py-3 rounded-lg text-sm animate-fade-in"
-              style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-danger-400)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+              style={{ background: 'rgba(220, 38, 38, 0.08)', color: 'var(--color-danger-500)', border: '1px solid rgba(220, 38, 38, 0.2)' }}
             >
               {error}
             </div>
@@ -78,8 +77,8 @@ export default function Login() {
                 autoFocus
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
                 style={{
-                  background: 'var(--color-garuda-700)',
-                  border: '1px solid var(--color-garuda-600)',
+                  background: '#ffffff',
+                  border: '1px solid var(--color-garuda-700)',
                   color: 'var(--color-garuda-50)',
                 }}
                 placeholder="Enter username"
@@ -96,8 +95,8 @@ export default function Login() {
                 required
                 className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
                 style={{
-                  background: 'var(--color-garuda-700)',
-                  border: '1px solid var(--color-garuda-600)',
+                  background: '#ffffff',
+                  border: '1px solid var(--color-garuda-700)',
                   color: 'var(--color-garuda-50)',
                 }}
                 placeholder="Enter password"
@@ -113,6 +112,7 @@ export default function Login() {
                 background: loading
                   ? 'var(--color-garuda-600)'
                   : 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))',
+                color: loading ? 'var(--color-garuda-400)' : '#ffffff',
                 boxShadow: loading ? 'none' : 'var(--shadow-glow)',
               }}
             >

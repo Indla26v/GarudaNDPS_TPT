@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
 import { paramId } from '../utils/params';
+import { broadcastEvent } from './sse.controller';
 
 export const getChargeSheet = async (req: Request, res: Response) => {
   try {
@@ -44,6 +45,7 @@ export const upsertChargeSheet = async (req: Request, res: Response) => {
       update: updateData as any,
     });
     await logAudit('UPDATE', 'CHARGE_SHEET', cs.id, req);
+    broadcastEvent('data_updated', { entity: 'charge_sheet', id: cs.id.toString(), caseId: caseId.toString() });
     res.json(successResponse({ id: cs.id.toString() }, 'Charge sheet saved'));
   } catch (error) {
     console.error(error);
@@ -78,6 +80,7 @@ export const addCourtHearing = async (req: Request, res: Response) => {
       },
     });
     await logAudit('CREATE', 'COURT_HEARING', h.id, req);
+    broadcastEvent('data_updated', { entity: 'court_hearing', id: h.id.toString(), caseId: h.case_id.toString() });
     res.status(201).json(successResponse({ id: h.id.toString() }, 'Hearing added'));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -118,6 +121,7 @@ export const addBailRecord = async (req: Request, res: Response) => {
       },
     });
     await logAudit('CREATE', 'BAIL_RECORD', b.id, req);
+    broadcastEvent('data_updated', { entity: 'bail_record', id: b.id.toString(), caseId: b.case_id.toString() });
     res.status(201).json(successResponse({ id: b.id.toString() }, 'Bail record added'));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

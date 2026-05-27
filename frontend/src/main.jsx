@@ -61,6 +61,7 @@ createRoot(document.getElementById('root')).render(
 
             {/* Offenders — viewable by all, edit/create guarded in backend */}
             <Route path="offenders" element={<OffenderList />} />
+            <Route path="consumers" element={<OffenderList isConsumerOnly={true} />} />
             <Route path="offenders/new" element={<OffenderForm />} />
             <Route path="offenders/:id/edit" element={<OffenderForm />} />
 

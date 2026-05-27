@@ -212,7 +212,7 @@ export default function UserManagement() {
                   disabled={!!editUser}
                   required={!editUser}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 />
               </div>
               <div>
@@ -225,7 +225,7 @@ export default function UserManagement() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required={!editUser}
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 />
               </div>
               <div>
@@ -236,7 +236,7 @@ export default function UserManagement() {
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   required
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 />
               </div>
               <div>
@@ -244,8 +244,8 @@ export default function UserManagement() {
                 <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 >
                   {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>)}
                 </select>
@@ -255,8 +255,8 @@ export default function UserManagement() {
                 <select
                   value={form.department}
                   onChange={(e) => setForm({ ...form, department: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 >
                   {DEPARTMENTS.map(d => <option key={d} value={d}>{DEPT_LABELS[d] || d}</option>)}
                 </select>
@@ -269,7 +269,7 @@ export default function UserManagement() {
                   onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })}
                   placeholder="Optional"
                   className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 />
               </div>
               <div className="md:col-span-2">
@@ -277,8 +277,8 @@ export default function UserManagement() {
                 <select
                   value={form.policeStationId}
                   onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
+                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
                 >
                   <option value="">— None (District Level) —</option>
                   {stations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.psCode})</option>)}
@@ -320,8 +320,8 @@ export default function UserManagement() {
           <select
             value={selectedState}
             onChange={(e) => setSelectedState(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+            className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
+            style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
           >
             <option value="">— Select a State —</option>
             {uniqueStates.map(state => <option key={state} value={state}>{state}</option>)}
@@ -334,8 +334,8 @@ export default function UserManagement() {
             value={selectedDistrict}
             onChange={(e) => setSelectedDistrict(e.target.value)}
             disabled={!selectedState}
-            className="w-full px-3 py-2 rounded-lg text-sm disabled:opacity-50"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', border: '1px solid var(--color-garuda-600)' }}
+            className="w-full px-3 py-2 rounded-lg text-sm disabled:opacity-50 cursor-pointer"
+            style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
           >
             <option value="">— Select a District —</option>
             {availableDistricts.map(district => <option key={district} value={district}>{district}</option>)}
@@ -346,7 +346,7 @@ export default function UserManagement() {
           <button
             onClick={clearFilters}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer h-[38px]"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)', border: '1px solid var(--color-garuda-600)' }}
+            style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-200)', border: '1px solid var(--color-garuda-700)' }}
           >
             Clear Filters
           </button>
@@ -358,9 +358,9 @@ export default function UserManagement() {
         // Empty State (No selection)
         <div 
           className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
-          style={{ background: 'var(--color-garuda-800)', border: '1px dashed var(--color-garuda-600)' }}
+          style={{ background: 'var(--color-garuda-800)', border: '1px dashed var(--color-garuda-700)' }}
         >
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--color-garuda-700)' }}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--color-garuda-600)' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.43 4.07 15.95 4.07 12C4.07 11.83 4.08 11.66 4.09 11.5H11V19.93ZM13 19.93V11.5H19.91C19.92 11.66 19.93 11.83 19.93 12C19.93 15.95 16.95 19.43 13 19.93ZM19.74 9.5H13V4.26C16.39 5.05 19.04 7.54 19.74 9.5ZM11 4.26V9.5H4.26C4.96 7.54 7.61 5.05 11 4.26Z" fill="var(--color-garuda-400)"/>
             </svg>
@@ -389,7 +389,7 @@ export default function UserManagement() {
               {/* Card Header */}
               <div 
                 className="px-5 py-4 flex justify-between items-center border-b"
-                style={{ background: 'rgba(26, 42, 74, 0.4)', borderColor: 'var(--color-garuda-700)' }}
+                style={{ background: 'var(--color-garuda-600)', borderColor: 'var(--color-garuda-700)' }}
               >
                 <div>
                   <h3 className="text-base font-semibold" style={{ color: 'var(--color-garuda-50)' }}>
@@ -405,10 +405,10 @@ export default function UserManagement() {
               <div className="flex-1 p-0 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ background: 'var(--color-garuda-900)' }}>
-                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Officer</th>
-                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Role</th>
-                      <th className="text-right px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-400)' }}>Status</th>
+                    <tr style={{ background: 'var(--color-garuda-600)' }}>
+                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Officer</th>
+                      <th className="text-left px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Role</th>
+                      <th className="text-right px-5 py-2 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -419,7 +419,7 @@ export default function UserManagement() {
                           key={u.id}
                           style={{
                             borderBottom: '1px solid var(--color-garuda-700)',
-                            background: i % 2 === 0 ? 'transparent' : 'rgba(26, 42, 74, 0.15)',
+                            background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)',
                           }}
                         >
                           <td className="px-5 py-3">
@@ -452,8 +452,8 @@ export default function UserManagement() {
                               <span
                                 className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                                 style={{
-                                  background: u.isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                  color: u.isActive ? '#4ade80' : '#f87171',
+                                  background: u.isActive ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                                  color: u.isActive ? '#16a34a' : '#dc2626',
                                 }}
                               >
                                 {u.isActive ? 'Active' : 'Inactive'}
@@ -461,16 +461,16 @@ export default function UserManagement() {
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleEdit(u)}
-                                  className="text-xs hover:underline"
-                                  style={{ color: '#60a5fa' }}
+                                  className="text-xs hover:underline font-medium"
+                                  style={{ color: '#2563eb' }}
                                 >
                                   Edit
                                 </button>
                                 {u.isActive && (
                                   <button
                                     onClick={() => handleDeactivate(u.id)}
-                                    className="text-xs hover:underline"
-                                    style={{ color: '#f87171' }}
+                                    className="text-xs hover:underline font-medium"
+                                    style={{ color: '#dc2626' }}
                                   >
                                     Deactivate
                                   </button>

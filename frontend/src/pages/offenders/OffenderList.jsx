@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
-export default function OffenderList() {
+export default function OffenderList({ isConsumerOnly = false }) {
   const [offenders, setOffenders] = useState([]);
   const [search, setSearch] = useState('');
   const [psFilter, setPsFilter] = useState('');
@@ -18,7 +18,7 @@ export default function OffenderList() {
 
   useEffect(() => {
     fetchOffenders();
-  }, [page, psFilter]);
+  }, [page, psFilter, isConsumerOnly]);
 
   const fetchStations = async () => {
     try {
@@ -32,11 +32,12 @@ export default function OffenderList() {
       const params = {};
       if (psFilter) params.psId = psFilter;
       if (search.trim()) params.query = search.trim();
+      if (isConsumerOnly) params.category = 'CONSUMER';
       const res = await api.get('/offenders/export', { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `offenders-${Date.now()}.csv`;
+      a.download = `${isConsumerOnly ? 'consumers' : 'offenders'}-${Date.now()}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
@@ -50,6 +51,7 @@ export default function OffenderList() {
       const params = { page, size: 20 };
       if (search.trim()) params.query = search.trim();
       if (psFilter) params.psId = psFilter;
+      if (isConsumerOnly) params.category = 'CONSUMER';
       const res = await api.get('/offenders', { params });
       const data = res.data.data;
       setOffenders(data?.content || []);
@@ -65,20 +67,24 @@ export default function OffenderList() {
   };
 
   const categoryColors = {
-    CONSUMER: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
-    LOCAL_PEDDLER: { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24' },
-    SUPPLIER: { bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
-    LOCAL_KINGPIN: { bg: 'rgba(236,72,153,0.15)', color: '#f472b6' },
-    TRANSPORTER: { bg: 'rgba(34,197,94,0.15)', color: '#4ade80' },
-    INTERSTATE_KINGPIN: { bg: 'rgba(168,85,247,0.15)', color: '#c084fc' },
+    CONSUMER: { bg: 'rgba(59, 130, 246, 0.1)', color: '#1d4ed8' },
+    LOCAL_PEDDLER: { bg: 'rgba(245, 158, 11, 0.1)', color: '#b45309' },
+    SUPPLIER: { bg: 'rgba(239, 68, 68, 0.1)', color: '#b91c1c' },
+    LOCAL_KINGPIN: { bg: 'rgba(236, 72, 153, 0.1)', color: '#be185d' },
+    TRANSPORTER: { bg: 'rgba(34, 197, 94, 0.1)', color: '#15803d' },
+    INTERSTATE_KINGPIN: { bg: 'rgba(168, 85, 247, 0.1)', color: '#6d28d9' },
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Offender Database</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>Search, filter, and manage offender profiles</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
+            {isConsumerOnly ? 'Consumer Database' : 'Offender Database'}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
+            {isConsumerOnly ? 'Search, filter, and manage consumer profiles' : 'Search, filter, and manage offender profiles'}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -94,7 +100,7 @@ export default function OffenderList() {
             className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 cursor-pointer"
             style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
           >
-            + Add Offender
+            {isConsumerOnly ? '+ Add Consumer' : '+ Add Offender'}
           </button>
         </div>
       </div>
@@ -112,7 +118,7 @@ export default function OffenderList() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, alias, or mobile..."
             className="flex-1 px-4 py-2 rounded-lg text-sm outline-none"
-            style={{ background: 'var(--color-garuda-700)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-50)' }}
+            style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', color: 'var(--color-garuda-50)' }}
           />
           <button
             type="submit"
@@ -127,7 +133,7 @@ export default function OffenderList() {
           value={psFilter}
           onChange={(e) => { setPsFilter(e.target.value); setPage(0); }}
           className="px-4 py-2 rounded-lg text-sm outline-none cursor-pointer"
-          style={{ background: 'var(--color-garuda-700)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-50)' }}
+          style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', color: 'var(--color-garuda-50)' }}
         >
           <option value="">All Police Stations</option>
           {stations.map((ps) => (
@@ -163,7 +169,7 @@ export default function OffenderList() {
                       key={o.id}
                       className="transition-colors duration-150 cursor-pointer"
                       style={{ borderBottom: '1px solid var(--color-garuda-700)' }}
-                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-garuda-700)'}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-garuda-600)'}
                       onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                       onClick={() => navigate(`/offenders/${o.id}/edit`)}
                     >
@@ -179,7 +185,7 @@ export default function OffenderList() {
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.district || '-'}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>{o.mobile || '-'}</td>
                       <td className="px-4 py-3 text-center">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.1)', color: '#1d4ed8' }}>
                           {o.totalCases || 0}
                         </span>
                       </td>

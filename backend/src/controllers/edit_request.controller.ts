@@ -122,7 +122,7 @@ export const getEditRequestById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const request = await prisma.edit_requests.findUnique({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       include: {
         requested_user: true,
         approved_user: true,
@@ -180,7 +180,7 @@ export const approveEditRequest = async (req: Request, res: Response) => {
     }
 
     const request = await prisma.edit_requests.findUnique({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       include: { requested_user: true },
     });
 
@@ -199,7 +199,7 @@ export const approveEditRequest = async (req: Request, res: Response) => {
       await applyEntityChanges(request.entity_type, request.entity_id, request.changes_json);
 
       await tx.edit_requests.update({
-        where: { id: BigInt(id) },
+        where: { id: BigInt(id as string) },
         data: {
           status: 'APPROVED',
           approved_by: BigInt(approverId),
@@ -208,7 +208,7 @@ export const approveEditRequest = async (req: Request, res: Response) => {
       });
     });
 
-    await logAudit('EDIT_APPROVED', 'EDIT_REQUEST', BigInt(id), req, `Approved ${request.entity_type} ${request.entity_id}`);
+    await logAudit('EDIT_APPROVED', 'EDIT_REQUEST', BigInt(id as string), req, `Approved ${request.entity_type} ${request.entity_id}`);
 
     res.json(successResponse({ id }, 'Edit request approved and applied'));
   } catch (error: any) {
@@ -230,7 +230,7 @@ export const rejectEditRequest = async (req: Request, res: Response) => {
     }
 
     const request = await prisma.edit_requests.findUnique({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       include: { requested_user: true },
     });
 
@@ -243,7 +243,7 @@ export const rejectEditRequest = async (req: Request, res: Response) => {
     }
 
     await prisma.edit_requests.update({
-      where: { id: BigInt(id) },
+      where: { id: BigInt(id as string) },
       data: {
         status: 'REJECTED',
         approved_by: BigInt(userId),
@@ -252,7 +252,7 @@ export const rejectEditRequest = async (req: Request, res: Response) => {
       },
     });
 
-    await logAudit('EDIT_REJECTED', 'EDIT_REQUEST', BigInt(id), req, 'Edit request rejected');
+    await logAudit('EDIT_REJECTED', 'EDIT_REQUEST', BigInt(id as string), req, 'Edit request rejected');
 
     res.json(successResponse({ id }, 'Edit request rejected'));
   } catch (error) {
