@@ -63,14 +63,7 @@ export default function CaseManagement() {
           </p>
         </div>
         {(perms.canRegisterCase) && (
-          <Link
-            to="/cases/new"
-            className="px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))',
-              color: '#fff',
-            }}
-          >
+          <Link to="/cases/new" className="btn btn-primary">
             + Register New Case
           </Link>
         )}
@@ -84,30 +77,16 @@ export default function CaseManagement() {
             placeholder="Search by FIR No., accused name, station..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm outline-none transition-colors"
-            style={{
-              background: 'var(--color-garuda-800)',
-              border: '1px solid var(--color-garuda-600)',
-              color: 'var(--color-garuda-100)',
-            }}
+            className="input flex-1"
           />
-          <button
-            type="submit"
-            className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
-          >
+          <button type="submit" className="btn btn-secondary">
             Search
           </button>
         </form>
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value)}
-          className="px-4 py-2.5 rounded-lg text-sm outline-none cursor-pointer"
-          style={{
-            background: 'var(--color-garuda-800)',
-            border: '1px solid var(--color-garuda-600)',
-            color: 'var(--color-garuda-100)',
-          }}
+          className="select"
         >
           <option value="">All Stages</option>
           {Object.entries(STAGE_COLORS).map(([key, val]) => (
@@ -124,10 +103,9 @@ export default function CaseManagement() {
             <button
               key={key}
               onClick={() => setStageFilter(stageFilter === key ? '' : key)}
-              className="rounded-xl p-3 text-center cursor-pointer transition-all duration-200 hover:scale-105"
+              className="card card-hover rounded-xl p-3 text-center cursor-pointer"
               style={{
-                background: stageFilter === key ? val.bg + '22' : 'var(--color-garuda-800)',
-                border: `1px solid ${stageFilter === key ? val.bg : 'var(--color-garuda-700)'}`,
+                borderColor: stageFilter === key ? val.bg : undefined,
               }}
             >
               <p className="text-xl font-bold" style={{ color: val.bg }}>{count}</p>
@@ -145,32 +123,32 @@ export default function CaseManagement() {
       ) : error ? (
         <div className="text-center py-8" style={{ color: 'var(--color-danger-400)' }}>{error}</div>
       ) : cases.length === 0 ? (
-        <div className="text-center py-16 rounded-xl" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card text-center py-16 rounded-xl">
           <p className="text-lg font-medium" style={{ color: 'var(--color-garuda-300)' }}>No cases found</p>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-500)' }}>
             {search ? 'Try adjusting your search criteria' : 'Register a new case to get started'}
           </p>
         </div>
       ) : (
-        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--color-garuda-700)' }}>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>FIR No.</th>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Station</th>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Section</th>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Date</th>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Stage</th>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Accused</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Actions</th>
+                <tr className="table-header">
+                  <th>FIR No.</th>
+                  <th>Station</th>
+                  <th>Section</th>
+                  <th>Date</th>
+                  <th>Stage</th>
+                  <th>Accused</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {cases.map((c) => {
                   const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
                   return (
-                    <tr key={c.id} style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+                    <tr key={c.id} className="table-row">
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{c.firNo}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{c.psName || '—'}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
@@ -181,8 +159,8 @@ export default function CaseManagement() {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full"
-                          style={{ background: stage.bg + '22', color: stage.bg }}
+                          className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{ background: stage.bg + '14', color: stage.bg }}
                         >
                           {stage.label}
                         </span>
@@ -191,11 +169,7 @@ export default function CaseManagement() {
                         {c.accused?.length || 0} accused
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link
-                          to={`/cases/${c.id}`}
-                          className="text-xs font-medium px-3 py-1 rounded-md transition-colors"
-                          style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
-                        >
+                        <Link to={`/cases/${c.id}`} className="btn btn-ghost btn-sm">
                           View
                         </Link>
                       </td>

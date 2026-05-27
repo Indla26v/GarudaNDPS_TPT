@@ -5,25 +5,29 @@
  */
 import { useState } from 'react';
 import { usePermissions } from '../../hooks/usePermissions';
+import {
+  IconChart, IconClipboard, IconLock, IconTool, IconScale, IconReports,
+  IconWarning, IconRunning, IconBell, IconOffender, IconPackage,
+} from '../../components/Icons';
 
 const TABS = [
-  { id: 'standard', label: 'Standard Reports', icon: '📊' },
-  { id: 'dpr', label: 'DPR Export', icon: '📋' },
-  { id: 'intel', label: 'Intelligence Summary', icon: '🔒' },
-  { id: 'custom', label: 'Custom Builder', icon: '🛠️' },
-  { id: 'court', label: 'Court Diary', icon: '⚖️' },
-  { id: 'performance', label: 'Performance', icon: '📈' },
+  { id: 'standard', label: 'Standard Reports', Icon: IconChart },
+  { id: 'dpr', label: 'DPR Export', Icon: IconClipboard },
+  { id: 'intel', label: 'Intelligence Summary', Icon: IconLock },
+  { id: 'custom', label: 'Custom Builder', Icon: IconTool },
+  { id: 'court', label: 'Court Diary', Icon: IconScale },
+  { id: 'performance', label: 'Performance', Icon: IconReports },
 ];
 
 const STANDARD_REPORTS = [
-  { name: 'Monthly Case Abstract', desc: 'Station-wise case summary for current month', icon: '📅' },
-  { name: 'Yearly Comparative Chart', desc: 'Cases, arrests, convictions year-over-year', icon: '📈' },
-  { name: 'Pending Charge Sheet', desc: 'Cases beyond 60/180 days without CS', icon: '⚠️' },
-  { name: 'Absconder List', desc: 'Pending arrests with days outstanding', icon: '🏃' },
-  { name: 'Bail Expiry Alert', desc: 'Upcoming bail expiration dates', icon: '🔔' },
-  { name: 'Court Pending List', desc: 'Pending cases with next hearing dates', icon: '⚖️' },
-  { name: 'Drug Seizure Summary', desc: 'Drug-type-wise seizure quantities', icon: '💊' },
-  { name: 'Top 10 Repeat Offenders', desc: 'Most frequent accused persons', icon: '👤' },
+  { name: 'Monthly Case Abstract', desc: 'Station-wise case summary for current month', Icon: IconClipboard, color: '#3b82f6' },
+  { name: 'Yearly Comparative Chart', desc: 'Cases, arrests, convictions year-over-year', Icon: IconChart, color: '#8b5cf6' },
+  { name: 'Pending Charge Sheet', desc: 'Cases beyond 60/180 days without CS', Icon: IconWarning, color: '#f59e0b' },
+  { name: 'Absconder List', desc: 'Pending arrests with days outstanding', Icon: IconRunning, color: '#ef4444' },
+  { name: 'Bail Expiry Alert', desc: 'Upcoming bail expiration dates', Icon: IconBell, color: '#d97706' },
+  { name: 'Court Pending List', desc: 'Pending cases with next hearing dates', Icon: IconScale, color: '#6366f1' },
+  { name: 'Drug Seizure Summary', desc: 'Drug-type-wise seizure quantities', Icon: IconPackage, color: '#059669' },
+  { name: 'Top 10 Repeat Offenders', desc: 'Most frequent accused persons', Icon: IconOffender, color: '#b45309' },
 ];
 
 export default function Reports() {
@@ -47,14 +51,9 @@ export default function Reports() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200"
-            style={{
-              background: activeTab === tab.id ? 'var(--color-accent-500)' : 'var(--color-garuda-800)',
-              color: activeTab === tab.id ? '#fff' : 'var(--color-garuda-300)',
-              border: `1px solid ${activeTab === tab.id ? 'var(--color-accent-500)' : 'var(--color-garuda-700)'}`,
-            }}
+            className={`btn btn-sm ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
           >
-            {tab.icon} {tab.label}
+            <tab.Icon size={14} color={activeTab === tab.id ? '#fff' : undefined} /> {tab.label}
           </button>
         ))}
       </div>
@@ -65,16 +64,17 @@ export default function Reports() {
           {STANDARD_REPORTS.map(report => (
             <div
               key={report.name}
-              className="rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-              style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
+              className="card card-hover rounded-xl p-5 cursor-pointer"
             >
-              <div className="text-2xl mb-3">{report.icon}</div>
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ background: report.color + '14' }}
+              >
+                <report.Icon size={20} color={report.color} />
+              </div>
               <h3 className="text-sm font-semibold" style={{ color: 'var(--color-garuda-100)' }}>{report.name}</h3>
               <p className="text-xs mt-1" style={{ color: 'var(--color-garuda-400)' }}>{report.desc}</p>
-              <button
-                className="mt-3 text-xs font-medium px-3 py-1.5 rounded-lg cursor-pointer"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
-              >
+              <button className="btn btn-secondary btn-sm mt-3">
                 Generate
               </button>
             </div>
@@ -84,9 +84,16 @@ export default function Reports() {
 
       {/* Other tabs - Coming Soon */}
       {activeTab !== 'standard' && (
-        <div className="rounded-xl p-8 text-center" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card rounded-xl p-8 text-center">
           <div className="space-y-4">
-            <div className="text-4xl">{TABS.find(t => t.id === activeTab)?.icon}</div>
+            {(() => {
+              const tab = TABS.find(t => t.id === activeTab);
+              return tab ? (
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto" style={{ background: 'var(--color-garuda-600)' }}>
+                  <tab.Icon size={28} color="var(--color-garuda-400)" />
+                </div>
+              ) : null;
+            })()}
             <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
               {TABS.find(t => t.id === activeTab)?.label}
             </h2>
@@ -97,9 +104,9 @@ export default function Reports() {
               {activeTab === 'court' && 'All upcoming court hearings in next 7/30 days with responsible officers, required documents, and reminder notifications.'}
               {activeTab === 'performance' && 'Cases vs. target, charge sheet submission rate, conviction rate, station-wise and officer-wise comparisons.'}
             </p>
-            <div className="inline-block px-4 py-2 rounded-full text-xs font-medium" style={{ background: '#0ea5e9', color: '#fff' }}>
+            <span className="btn btn-sm" style={{ background: '#0ea5e9', color: '#fff', borderColor: '#0ea5e9', cursor: 'default' }}>
               Coming in Phase 2 — Operations
-            </div>
+            </span>
           </div>
         </div>
       )}

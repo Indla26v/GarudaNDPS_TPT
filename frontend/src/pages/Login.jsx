@@ -75,12 +75,7 @@ export default function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
-                className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid var(--color-garuda-700)',
-                  color: 'var(--color-garuda-50)',
-                }}
+                className="input"
                 placeholder="Enter username"
               />
             </div>
@@ -93,12 +88,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid var(--color-garuda-700)',
-                  color: 'var(--color-garuda-50)',
-                }}
+                className="input"
                 placeholder="Enter password"
               />
             </div>
@@ -107,14 +97,7 @@ export default function Login() {
               id="login-submit"
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200 cursor-pointer"
-              style={{
-                background: loading
-                  ? 'var(--color-garuda-600)'
-                  : 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))',
-                color: loading ? 'var(--color-garuda-400)' : '#ffffff',
-                boxShadow: loading ? 'none' : 'var(--shadow-glow)',
-              }}
+              className="btn btn-primary btn-lg w-full"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

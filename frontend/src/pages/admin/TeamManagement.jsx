@@ -132,8 +132,7 @@ export default function TeamManagement() {
         </div>
         <button
           onClick={() => { setEditTeam(null); setForm({ name: '', department: 'OPERATIONS', description: '' }); setShowForm(true); }}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer hover:scale-105"
-          style={{ background: 'var(--color-accent-500)', color: '#fff' }}
+          className="btn btn-primary btn-sm"
         >
           + New Team
         </button>
@@ -176,12 +175,10 @@ export default function TeamManagement() {
               </div>
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => { setShowForm(false); setEditTeam(null); }}
-                  className="px-4 py-2 rounded-lg text-sm cursor-pointer"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
+                  className="btn btn-secondary btn-sm">
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
-                  style={{ background: 'var(--color-accent-500)', color: '#fff' }}>
+                <button type="submit" className="btn btn-primary btn-sm">
                   {editTeam ? 'Update' : 'Create'}
                 </button>
               </div>
@@ -209,8 +206,7 @@ export default function TeamManagement() {
                       </p>
                     </div>
                     <button onClick={() => handleAddMember(showAddMember, u.id)}
-                      className="px-3 py-1 rounded text-xs font-medium cursor-pointer hover:scale-105 transition-all"
-                      style={{ background: 'var(--color-accent-500)', color: '#fff' }}>
+                      className="btn btn-primary btn-sm">
                       Add
                     </button>
                   </div>
@@ -219,8 +215,7 @@ export default function TeamManagement() {
             </div>
             <div className="flex justify-end mt-4">
               <button onClick={() => setShowAddMember(null)}
-                className="px-4 py-2 rounded-lg text-sm cursor-pointer"
-                style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
+                className="btn btn-secondary btn-sm">
                 Close
               </button>
             </div>
@@ -257,19 +252,16 @@ export default function TeamManagement() {
               </div>
               <div className="flex gap-1 ml-2 shrink-0">
                 <button onClick={() => setShowAddMember(team.id)}
-                  className="px-2 py-1 rounded text-xs cursor-pointer transition-all hover:scale-105"
-                  style={{ background: 'var(--color-accent-500)', color: '#fff' }} title="Add member">
+                  className="btn btn-primary btn-sm" title="Add member">
                   + Member
                 </button>
                 <button onClick={() => handleEdit(team)}
-                  className="px-2 py-1 rounded text-xs cursor-pointer transition-all"
-                  style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }} title="Edit team">
-                  ✏️
+                  className="btn btn-ghost btn-sm" title="Edit team">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
                 <button onClick={() => handleDeleteTeam(team.id)}
-                  className="px-2 py-1 rounded text-xs cursor-pointer transition-all"
-                  style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }} title="Delete team">
-                  🗑️
+                  className="btn btn-ghost btn-sm" title="Delete team" style={{ color: '#ef4444' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
             </div>

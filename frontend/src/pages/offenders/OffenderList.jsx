@@ -67,12 +67,12 @@ export default function OffenderList({ isConsumerOnly = false }) {
   };
 
   const categoryColors = {
-    CONSUMER: { bg: 'rgba(59, 130, 246, 0.1)', color: '#1d4ed8' },
-    LOCAL_PEDDLER: { bg: 'rgba(245, 158, 11, 0.1)', color: '#b45309' },
-    SUPPLIER: { bg: 'rgba(239, 68, 68, 0.1)', color: '#b91c1c' },
-    LOCAL_KINGPIN: { bg: 'rgba(236, 72, 153, 0.1)', color: '#be185d' },
-    TRANSPORTER: { bg: 'rgba(34, 197, 94, 0.1)', color: '#15803d' },
-    INTERSTATE_KINGPIN: { bg: 'rgba(168, 85, 247, 0.1)', color: '#6d28d9' },
+    CONSUMER: { bg: 'rgba(59, 130, 246, 0.08)', color: '#1d4ed8' },
+    LOCAL_PEDDLER: { bg: 'rgba(245, 158, 11, 0.08)', color: '#b45309' },
+    SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
+    LOCAL_KINGPIN: { bg: 'rgba(236, 72, 153, 0.08)', color: '#be185d' },
+    TRANSPORTER: { bg: 'rgba(34, 197, 94, 0.08)', color: '#15803d' },
+    INTERSTATE_KINGPIN: { bg: 'rgba(168, 85, 247, 0.08)', color: '#6d28d9' },
   };
 
   return (
@@ -87,18 +87,12 @@ export default function OffenderList({ isConsumerOnly = false }) {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
-          >
+          <button type="button" onClick={handleExport} className="btn btn-secondary btn-sm">
             Export CSV
           </button>
           <button
             onClick={() => navigate('/offenders/new')}
-            className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-200 cursor-pointer"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
+            className="btn btn-primary btn-sm"
           >
             {isConsumerOnly ? '+ Add Consumer' : '+ Add Offender'}
           </button>
@@ -106,10 +100,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
       </div>
 
       {/* Search & Filter Bar */}
-      <div
-        className="flex flex-col md:flex-row gap-3 p-4 rounded-xl"
-        style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
-      >
+      <div className="card flex flex-col md:flex-row gap-3 p-4 rounded-xl">
         <form onSubmit={handleSearch} className="flex-1 flex gap-2">
           <input
             id="offender-search"
@@ -117,14 +108,9 @@ export default function OffenderList({ isConsumerOnly = false }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, alias, or mobile..."
-            className="flex-1 px-4 py-2 rounded-lg text-sm outline-none"
-            style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', color: 'var(--color-garuda-50)' }}
+            className="input flex-1"
           />
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
-            style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
-          >
+          <button type="submit" className="btn btn-secondary">
             Search
           </button>
         </form>
@@ -132,8 +118,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
           id="offender-ps-filter"
           value={psFilter}
           onChange={(e) => { setPsFilter(e.target.value); setPage(0); }}
-          className="px-4 py-2 rounded-lg text-sm outline-none cursor-pointer"
-          style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', color: 'var(--color-garuda-50)' }}
+          className="select"
         >
           <option value="">All Police Stations</option>
           {stations.map((ps) => (
@@ -143,16 +128,13 @@ export default function OffenderList({ isConsumerOnly = false }) {
       </div>
 
       {/* Table */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
-      >
+      <div className="card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: 'var(--color-garuda-700)' }}>
+              <tr className="table-header">
                 {['Sl.No', 'Full Name', 'Alias', 'Category', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>{h}</th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -167,10 +149,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
                   return (
                     <tr
                       key={o.id}
-                      className="transition-colors duration-150 cursor-pointer"
-                      style={{ borderBottom: '1px solid var(--color-garuda-700)' }}
-                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-garuda-600)'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                      className="table-row cursor-pointer"
                       onClick={() => navigate(`/offenders/${o.id}/edit`)}
                     >
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.slNo || '-'}</td>
@@ -185,15 +164,14 @@ export default function OffenderList({ isConsumerOnly = false }) {
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.district || '-'}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>{o.mobile || '-'}</td>
                       <td className="px-4 py-3 text-center">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.1)', color: '#1d4ed8' }}>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.08)', color: '#1d4ed8' }}>
                           {o.totalCases || 0}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); navigate(`/offenders/${o.id}/edit`); }}
-                          className="px-3 py-1 rounded text-xs font-medium cursor-pointer"
-                          style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-200)' }}
+                          className="btn btn-ghost btn-sm"
                         >
                           Edit
                         </button>
@@ -212,8 +190,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 rounded text-sm cursor-pointer disabled:opacity-40"
-              style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
+              className="btn btn-secondary btn-sm"
             >
               Previous
             </button>
@@ -223,8 +200,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
-              className="px-3 py-1.5 rounded text-sm cursor-pointer disabled:opacity-40"
-              style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
+              className="btn btn-secondary btn-sm"
             >
               Next
             </button>

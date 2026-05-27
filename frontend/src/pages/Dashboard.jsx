@@ -20,21 +20,25 @@ import {
 import api from '../api/axios';
 import { usePermissions } from '../hooks/usePermissions';
 import { useSSE } from '../hooks/useSSE';
+import {
+  IconClipboard, IconLock, IconRunning, IconHourglass, IconScale, IconCheckCircle,
+  IconPackage, IconDollar, IconCar, IconBell, IconMegaphone, IconSearch, IconReports,
+} from '../components/Icons';
 
 const KPI_CARDS = [
-  { key: 'totalCases',           label: 'Total Cases',       icon: '📋', color: '#3b82f6' },
-  { key: 'totalArrests',         label: 'Arrests',           icon: '🔒', color: '#22c55e' },
-  { key: 'totalAbsconders',      label: 'Absconders',        icon: '🏃', color: '#ef4444' },
-  { key: 'pendingChargeSheets',  label: 'Pending CS',        icon: '⏳', color: '#f59e0b' },
-  { key: 'pendingCourtCases',    label: 'Pending Courts',    icon: '⚖️', color: '#8b5cf6' },
-  { key: 'convictionsThisYear',  label: 'Convictions (YTD)', icon: '✅', color: '#06b6d4' },
+  { key: 'totalCases',           label: 'Total Cases',       Icon: IconClipboard, color: '#3b82f6' },
+  { key: 'totalArrests',         label: 'Arrests',           Icon: IconLock,      color: '#22c55e' },
+  { key: 'totalAbsconders',      label: 'Absconders',        Icon: IconRunning,   color: '#ef4444' },
+  { key: 'pendingChargeSheets',  label: 'Pending CS',        Icon: IconHourglass, color: '#f59e0b' },
+  { key: 'pendingCourtCases',    label: 'Pending Courts',    Icon: IconScale,     color: '#8b5cf6' },
+  { key: 'convictionsThisYear',  label: 'Convictions (YTD)', Icon: IconCheckCircle, color: '#06b6d4' },
 ];
 
-const ALERT_ICONS = {
-  NEW_CASE: '📋',
-  ABSCONDER: '🏃',
-  CHARGE_SHEET: '⏳',
-  CONVICTION: '✅',
+const ALERT_ICON_MAP = {
+  NEW_CASE: IconClipboard,
+  ABSCONDER: IconRunning,
+  CHARGE_SHEET: IconHourglass,
+  CONVICTION: IconCheckCircle,
 };
 
 export default function Dashboard() {
@@ -114,18 +118,15 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           {perms.canRegisterCase && (
-            <Link to="/cases/new" className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105"
-              style={{ background: 'var(--color-accent-500)', color: '#fff' }}>
+            <Link to="/cases/new" className="btn btn-primary btn-sm">
               + New Case
             </Link>
           )}
-          <Link to="/offenders" className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>
-            🔍 Search Accused
+          <Link to="/offenders" className="btn btn-secondary btn-sm">
+            <IconSearch size={14} /> Search Accused
           </Link>
-          <Link to="/reports" className="px-3 py-2 rounded-lg text-xs font-medium transition-all hover:scale-105"
-            style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>
-            📄 Reports
+          <Link to="/reports" className="btn btn-secondary btn-sm">
+            <IconReports size={14} /> Reports
           </Link>
         </div>
       </div>
@@ -135,19 +136,19 @@ export default function Dashboard() {
         {KPI_CARDS.map((card, i) => (
           <div
             key={card.key}
-            className="rounded-xl p-4 transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'var(--color-garuda-800)',
-              border: '1px solid var(--color-garuda-700)',
-              boxShadow: 'var(--shadow-card)',
-              animationDelay: `${i * 60}ms`,
-            }}
+            className="card card-hover rounded-xl p-4"
+            style={{ animationDelay: `${i * 60}ms` }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">{card.icon}</span>
+            <div className="flex items-center justify-between mb-3">
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center"
+                style={{ background: card.color + '14' }}
+              >
+                <card.Icon size={18} color={card.color} />
+              </div>
               <span
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                style={{ background: card.color + '22', color: card.color }}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: card.color + '14', color: card.color }}
               >
                 {card.label}
               </span>
@@ -162,13 +163,17 @@ export default function Dashboard() {
       {/* ── Seizure Stats Row ────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Contraband Seized', val: `${fmt(summary?.totalContrabandKg)} Kg`, color: '#f59e0b', icon: '📦' },
-          { label: 'Cash Seized', val: `₹${fmt(summary?.totalCashSeized)}`, color: '#22c55e', icon: '💰' },
-          { label: 'Vehicles Seized', val: fmt(summary?.totalVehiclesSeized), color: '#ec4899', icon: '🚗' },
+          { label: 'Contraband Seized', val: `${fmt(summary?.totalContrabandKg)} Kg`, color: '#f59e0b', Icon: IconPackage },
+          { label: 'Cash Seized', val: `₹${fmt(summary?.totalCashSeized)}`, color: '#22c55e', Icon: IconDollar },
+          { label: 'Vehicles Seized', val: fmt(summary?.totalVehiclesSeized), color: '#ec4899', Icon: IconCar },
         ].map(s => (
-          <div key={s.label} className="rounded-xl p-4 flex items-center gap-4"
-            style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-            <span className="text-2xl">{s.icon}</span>
+          <div key={s.label} className="card rounded-xl p-4 flex items-center gap-4">
+            <div
+              className="w-11 h-11 rounded-lg flex items-center justify-center"
+              style={{ background: s.color + '14' }}
+            >
+              <s.Icon size={22} color={s.color} />
+            </div>
             <div>
               <p className="text-lg font-bold" style={{ color: s.color }}>{s.val}</p>
               <p className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>{s.label}</p>
@@ -180,18 +185,18 @@ export default function Dashboard() {
       {/* ── Charts Row ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Year-wise Trend */}
-        <div className="lg:col-span-2 rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="lg:col-span-2 card rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Year-wise NDPS Cases (2016–2026)
           </h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={summary?.yearWiseTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="year" stroke="#64748b" fontSize={11} />
-              <YAxis stroke="#64748b" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} />
+              <YAxis stroke="#94a3b8" fontSize={11} />
               <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: '#e2e8f0' }}
+                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155' }}
+                labelStyle={{ color: '#1e293b' }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Line type="monotone" dataKey="cases" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} name="Cases" />
@@ -201,7 +206,7 @@ export default function Dashboard() {
         </div>
 
         {/* Drug Type Donut */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Drug Type Breakdown
           </h3>
@@ -220,7 +225,7 @@ export default function Dashboard() {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -237,17 +242,17 @@ export default function Dashboard() {
 
       {/* ── Station-wise Bar Chart ───────────────────────────────────── */}
       {summary?.psWiseData?.length > 1 && (
-        <div className="rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card rounded-xl p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Station-wise Cases & Arrests
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={summary.psWiseData.filter(ps => ps.totalCases > 0).sort((a, b) => b.totalCases - a.totalCases)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="psName" stroke="#64748b" fontSize={10} angle={-30} textAnchor="end" height={60} />
-              <YAxis stroke="#64748b" fontSize={11} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="psName" stroke="#94a3b8" fontSize={10} angle={-30} textAnchor="end" height={60} />
+              <YAxis stroke="#94a3b8" fontSize={11} />
               <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="totalCases" fill="#3b82f6" name="Cases" radius={[4, 4, 0, 0]} />
@@ -261,31 +266,34 @@ export default function Dashboard() {
       {/* ── Bottom Row: Alerts + Absconder Ticker ───────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Live Alert Feed */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
-            🔔 Live Alert Feed
+        <div className="card rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
+            <IconBell size={16} color="#d97706" /> Live Alert Feed
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {summary?.recentAlerts?.length > 0 ? summary.recentAlerts.map(alert => (
-              <div key={alert.id + alert.type} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
-                <span className="text-base mt-0.5">{ALERT_ICONS[alert.type] || '📢'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs" style={{ color: 'var(--color-garuda-100)' }}>{alert.message}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-garuda-500)' }}>
-                    {new Date(alert.date).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
-                  </p>
+            {summary?.recentAlerts?.length > 0 ? summary.recentAlerts.map(alert => {
+              const AlertIcon = ALERT_ICON_MAP[alert.type] || IconMegaphone;
+              return (
+                <div key={alert.id + alert.type} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
+                  <AlertIcon size={16} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs" style={{ color: 'var(--color-garuda-100)' }}>{alert.message}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-garuda-500)' }}>
+                      {new Date(alert.date).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )) : (
+              );
+            }) : (
               <p className="text-sm" style={{ color: 'var(--color-garuda-500)' }}>No recent alerts</p>
             )}
           </div>
         </div>
 
         {/* Absconder Ticker */}
-        <div className="rounded-xl p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
-            🏃 Pending Absconders
+        <div className="card rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
+            <IconRunning size={16} color="#ef4444" /> Pending Absconders
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {summary?.absconderTicker?.length > 0 ? summary.absconderTicker.map(a => (
@@ -310,7 +318,7 @@ export default function Dashboard() {
 
       {/* ── PS-wise Data Table (for SP/Admin) ────────────────────────── */}
       {summary?.psWiseData?.length > 1 && (
-        <div className="rounded-xl overflow-hidden" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card rounded-xl overflow-hidden">
           <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
             <h2 className="text-sm font-semibold" style={{ color: 'var(--color-garuda-200)' }}>
               Police Station-wise Breakdown
@@ -319,19 +327,19 @@ export default function Dashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--color-garuda-700)' }}>
-                  <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>PS Name</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Cases</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Offenders</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Arrests</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Absconders</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Contraband (Kg)</th>
-                  <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Cash</th>
+                <tr className="table-header">
+                  <th>PS Name</th>
+                  <th className="text-right">Cases</th>
+                  <th className="text-right">Offenders</th>
+                  <th className="text-right">Arrests</th>
+                  <th className="text-right">Absconders</th>
+                  <th className="text-right">Contraband (Kg)</th>
+                  <th className="text-right">Cash</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.psWiseData.map((ps, i) => (
-                  <tr key={ps.psId} style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+                  <tr key={ps.psId} className="table-row">
                     <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>{ps.psName}</td>
                     <td className="px-4 py-3 text-right" style={{ color: 'var(--color-info-400)' }}>{fmt(ps.totalCases)}</td>
                     <td className="px-4 py-3 text-right" style={{ color: 'var(--color-garuda-200)' }}>{fmt(ps.totalOffenders)}</td>

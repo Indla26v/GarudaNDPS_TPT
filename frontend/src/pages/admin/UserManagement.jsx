@@ -374,7 +374,9 @@ export default function UserManagement() {
           className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
           style={{ background: 'var(--color-garuda-800)', border: '1px dashed var(--color-garuda-600)' }}
         >
-          <div className="text-4xl mb-3">🔍</div>
+          <div className="text-4xl mb-3" style={{ color: 'var(--color-garuda-400)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
           <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>No police stations found for this district</h3>
         </div>
       ) : (
@@ -426,8 +428,9 @@ export default function UserManagement() {
                             <div className="font-medium" style={{ color: 'var(--color-garuda-100)' }}>{u.fullName}</div>
                             <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>{u.username}</div>
                             {u.teamName && (
-                              <div className="text-xs mt-1 font-medium" style={{ color: 'var(--color-garuda-300)' }}>
-                                🏢 {u.teamName}
+                              <div className="text-xs mt-1 font-medium flex items-center gap-1" style={{ color: 'var(--color-garuda-300)' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+                                {u.teamName}
                               </div>
                             )}
                           </td>

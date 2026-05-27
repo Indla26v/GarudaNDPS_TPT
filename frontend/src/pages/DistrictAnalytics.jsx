@@ -7,15 +7,18 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useSSE } from '../hooks/useSSE';
+import {
+  IconClipboard, IconOffender, IconLock, IconRunning, IconPackage, IconDollar, IconCar,
+} from '../components/Icons';
 
 const METRIC_CARDS = [
-  { key: 'totalCases',        label: 'Total Cases',     icon: '', color: '#3b82f6' },
-  { key: 'totalOffenders',    label: 'Total Offenders',  icon: '', color: '#8b5cf6' },
-  { key: 'totalArrests',      label: 'Total Arrests',    icon: '', color: '#22c55e' },
-  { key: 'totalAbsconders',   label: 'Absconders',       icon: '', color: '#ef4444' },
-  { key: 'totalContrabandKg', label: 'Contraband (Kg)',  icon: '', color: '#f59e0b' },
-  { key: 'totalCashSeized',   label: 'Cash Seized (₹)',  icon: '', color: '#06b6d4' },
-  { key: 'totalVehiclesSeized', label: 'Vehicles Seized', icon: '', color: '#ec4899' },
+  { key: 'totalCases',        label: 'Total Cases',     Icon: IconClipboard, color: '#3b82f6' },
+  { key: 'totalOffenders',    label: 'Total Offenders',  Icon: IconOffender,  color: '#8b5cf6' },
+  { key: 'totalArrests',      label: 'Total Arrests',    Icon: IconLock,      color: '#22c55e' },
+  { key: 'totalAbsconders',   label: 'Absconders',       Icon: IconRunning,   color: '#ef4444' },
+  { key: 'totalContrabandKg', label: 'Contraband (Kg)',  Icon: IconPackage,   color: '#f59e0b' },
+  { key: 'totalCashSeized',   label: 'Cash Seized (₹)',  Icon: IconDollar,    color: '#06b6d4' },
+  { key: 'totalVehiclesSeized', label: 'Vehicles Seized', Icon: IconCar,      color: '#ec4899' },
 ];
 
 export default function DistrictAnalytics() {
@@ -83,14 +86,14 @@ export default function DistrictAnalytics() {
         {METRIC_CARDS.map((card) => (
           <div
             key={card.key}
-            className="rounded-xl p-4 transition-all duration-300 hover:scale-105 animate-slide-up"
-            style={{
-              background: 'var(--color-garuda-800)',
-              border: '1px solid var(--color-garuda-700)',
-              boxShadow: 'var(--shadow-card)',
-            }}
+            className="card card-hover rounded-xl p-4 animate-slide-up"
           >
-            <div className="text-2xl mb-2">{card.icon}</div>
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+              style={{ background: card.color + '14' }}
+            >
+              <card.Icon size={18} color={card.color} />
+            </div>
             <p className="text-2xl font-bold" style={{ color: card.color }}>
               {formatNumber(summary?.[card.key])}
             </p>
@@ -100,10 +103,7 @@ export default function DistrictAnalytics() {
       </div>
 
       {/* PS Comparison Chart (table representation) */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
-      >
+      <div className="card rounded-xl overflow-hidden">
         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
             Police Station Comparison
@@ -152,10 +152,7 @@ export default function DistrictAnalytics() {
       </div>
 
       {/* Detailed Table */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
-      >
+      <div className="card rounded-xl overflow-hidden">
         <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
             Detailed Breakdown
@@ -164,26 +161,22 @@ export default function DistrictAnalytics() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: 'var(--color-garuda-700)' }}>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>PS Name</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Code</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Cases</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Offenders</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Arrests</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Absconders</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Contraband (Kg)</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-300)' }}>Cash (₹)</th>
+              <tr className="table-header">
+                <th>PS Name</th>
+                <th>Code</th>
+                <th className="text-right">Cases</th>
+                <th className="text-right">Offenders</th>
+                <th className="text-right">Arrests</th>
+                <th className="text-right">Absconders</th>
+                <th className="text-right">Contraband (Kg)</th>
+                <th className="text-right">Cash (₹)</th>
               </tr>
             </thead>
             <tbody>
               {summary?.psWiseData?.map((ps, i) => (
                 <tr
                   key={ps.psId}
-                  className="transition-colors duration-150"
-                  style={{
-                    borderBottom: '1px solid var(--color-garuda-700)',
-                    background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
-                  }}
+                  className="table-row"
                 >
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{ps.psName}</td>
                   <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>{ps.psCode}</td>

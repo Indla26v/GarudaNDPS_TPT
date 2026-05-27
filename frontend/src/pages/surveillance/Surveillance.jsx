@@ -6,14 +6,17 @@
  */
 import { useState } from 'react';
 import { usePermissions } from '../../hooks/usePermissions';
+import {
+  IconFieldStaff, IconSearch, IconMap, IconMegaphone, IconChain, IconSurveillance,
+} from '../../components/Icons';
 
 const TABS = [
-  { id: 'mobile', label: 'Mobile Analysis', icon: '📱' },
-  { id: 'imei', label: 'IMEI Tracking', icon: '📟' },
-  { id: 'geo', label: 'Geo-Location', icon: '🗺️' },
-  { id: 'social', label: 'Social Media', icon: '📣' },
-  { id: 'messaging', label: 'Messaging Intel', icon: '💬' },
-  { id: 'correlation', label: 'Correlation', icon: '🔗' },
+  { id: 'mobile', label: 'Mobile Analysis', Icon: IconFieldStaff, color: '#3b82f6' },
+  { id: 'imei', label: 'IMEI Tracking', Icon: IconSearch, color: '#8b5cf6' },
+  { id: 'geo', label: 'Geo-Location', Icon: IconMap, color: '#059669' },
+  { id: 'social', label: 'Social Media', Icon: IconMegaphone, color: '#ec4899' },
+  { id: 'messaging', label: 'Messaging Intel', Icon: IconSurveillance, color: '#f59e0b' },
+  { id: 'correlation', label: 'Correlation', Icon: IconChain, color: '#6366f1' },
 ];
 
 export default function Surveillance() {
@@ -48,6 +51,7 @@ export default function Surveillance() {
   };
 
   const current = descriptions[activeTab];
+  const activeTabObj = TABS.find(t => t.id === activeTab);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -66,27 +70,26 @@ export default function Surveillance() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className="px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200"
-            style={{
-              background: activeTab === tab.id ? 'var(--color-accent-500)' : 'var(--color-garuda-800)',
-              color: activeTab === tab.id ? '#fff' : 'var(--color-garuda-300)',
-              border: `1px solid ${activeTab === tab.id ? 'var(--color-accent-500)' : 'var(--color-garuda-700)'}`,
-            }}
+            className={`btn btn-sm ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
           >
-            {tab.icon} {tab.label}
+            <tab.Icon size={14} color={activeTab === tab.id ? '#fff' : undefined} /> {tab.label}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div className="rounded-xl p-8 text-center" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+      <div className="card rounded-xl p-8 text-center">
         <div className="space-y-4">
-          <div className="text-4xl">{TABS.find(t => t.id === activeTab)?.icon}</div>
+          {activeTabObj && (
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto" style={{ background: activeTabObj.color + '14' }}>
+              <activeTabObj.Icon size={28} color={activeTabObj.color} />
+            </div>
+          )}
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>{current.title}</h2>
           <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--color-garuda-400)' }}>{current.desc}</p>
-          <div className="inline-block px-4 py-2 rounded-full text-xs font-medium" style={{ background: '#14b8a6', color: '#fff' }}>
+          <span className="btn btn-sm" style={{ background: '#14b8a6', color: '#fff', borderColor: '#14b8a6', cursor: 'default' }}>
             Coming in Phase 3 — Intelligence
-          </div>
+          </span>
         </div>
       </div>
     </div>

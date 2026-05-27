@@ -136,16 +136,14 @@ export default function EditRequests() {
                             <button
                               onClick={() => handleAction(req.id, 'approve')}
                               disabled={actionLoading === req.id}
-                              className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                              style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#15803d', border: '1px solid rgba(34, 197, 94, 0.2)' }}
+                              className="btn btn-success btn-sm"
                             >
                               {actionLoading === req.id ? '...' : 'Approve Edit'}
                             </button>
                             <button
                               onClick={() => handleAction(req.id, 'reject')}
                               disabled={actionLoading === req.id}
-                              className="px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                              style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                              className="btn btn-danger btn-sm"
                             >
                               Reject
                             </button>

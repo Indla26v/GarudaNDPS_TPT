@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import {
+  IconDashboard, IconOffender, IconConsumer, IconCases, IconFieldStaff,
+  IconSurveillance, IconFinance, IconNetwork, IconReports, IconMap,
+  IconTrash, IconEdit, IconUsers, IconBuilding, IconAuditLog, IconImport,
+} from './Icons';
 
 /**
  * Build navigation items dynamically based on user permissions AND department.
@@ -19,10 +24,10 @@ function useNavItems() {
       {
         title: 'Administration',
         items: [
-          { path: '/admin/users', label: 'User Management', icon: '👥', show: true },
-          { path: '/admin/teams', label: 'Team Management', icon: '🏢', show: true },
-          { path: '/admin/audit-logs', label: 'Audit Logs', icon: '📜', show: true },
-          { path: '/admin/import', label: 'DPR Import', icon: '📥', show: true },
+          { path: '/admin/users', label: 'User Management', icon: IconUsers, show: true },
+          { path: '/admin/teams', label: 'Team Management', icon: IconBuilding, show: true },
+          { path: '/admin/audit-logs', label: 'Audit Logs', icon: IconAuditLog, show: true },
+          { path: '/admin/import', label: 'DPR Import', icon: IconImport, show: true },
         ],
       },
     ];
@@ -34,39 +39,39 @@ function useNavItems() {
     {
       title: 'Operations',
       items: [
-        { path: '/dashboard', label: 'Dashboard', icon: '📊', show: true },
-        { path: '/offenders', label: 'Offenders', icon: '👤', show: true },
-        { path: '/consumers', label: 'Consumers', icon: '🧑', show: true },
-        { path: '/cases', label: 'Cases', icon: '📋', show: true },
-        { path: '/mobile', label: 'Field Staff', icon: '📱',
+        { path: '/dashboard', label: 'Dashboard', icon: IconDashboard, show: true },
+        { path: '/offenders', label: 'Offenders', icon: IconOffender, show: true },
+        { path: '/consumers', label: 'Consumers', icon: IconConsumer, show: true },
+        { path: '/cases', label: 'Cases', icon: IconCases, show: true },
+        { path: '/mobile', label: 'Field Staff', icon: IconFieldStaff,
           show: perms.canFieldEntry || perms.canSurveillanceReport || perms.canVerifyAccused },
       ],
     },
     {
       title: 'Intelligence',
       items: [
-        { path: '/surveillance', label: 'Surveillance', icon: '📡',
+        { path: '/surveillance', label: 'Surveillance', icon: IconSurveillance,
           show: perms.canViewAllTech || perms.canAddTechIntel },
-        { path: '/finance', label: 'Financial', icon: '💰',
+        { path: '/finance', label: 'Financial', icon: IconFinance,
           show: perms.canViewAllFinance },
-        { path: '/network', label: 'Network Map', icon: '🕸️',
+        { path: '/network', label: 'Network Map', icon: IconNetwork,
           show: perms.canViewAllNetwork || perms.canBuildNetwork },
       ],
     },
     {
       title: 'Reports',
       items: [
-        { path: '/reports', label: 'Reports', icon: '📄',
+        { path: '/reports', label: 'Reports', icon: IconReports,
           show: perms.canViewAllReports || perms.canBuildCustomReport },
-        { path: '/district-analytics', label: 'District Analytics', icon: '🗺️',
+        { path: '/district-analytics', label: 'District Analytics', icon: IconMap,
           show: perms.canViewDistrictAnalytics },
       ],
     },
     {
       title: 'Workflows',
       items: [
-        { path: '/deletion-requests', label: 'Deletions', icon: '🗑️', show: true },
-        { path: '/edit-requests', label: 'Edit Requests', icon: '✏️',
+        { path: '/deletion-requests', label: 'Deletions', icon: IconTrash, show: true },
+        { path: '/edit-requests', label: 'Edit Requests', icon: IconEdit,
           show: perms.canApproveEdit || perms.canRequestEdit },
       ],
     },
@@ -130,22 +135,22 @@ export default function Layout() {
       {/* ---- Sidebar ---- */}
       <aside
         className={`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}
-        style={{ background: 'var(--color-garuda-800)', borderRight: '1px solid var(--color-garuda-700)' }}
+        style={{ background: '#e8750a', borderRight: '1px solid rgba(255,255,255,0.15)' }}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-4 py-5" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+        <div className="flex items-center gap-3 px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))' }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0"
+            style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}
           >
             N
           </div>
           {sidebarOpen && (
             <div className="animate-fade-in flex-1 min-w-0">
-              <h1 className="text-xs font-bold leading-tight" style={{ color: 'var(--color-garuda-50)' }} title="NDPS Monitoring & Intelligence Management System">
+              <h1 className="text-xs font-bold leading-tight" style={{ color: '#fff' }} title="NDPS Monitoring & Intelligence Management System">
                 NDPS Monitoring & Intelligence Management System
               </h1>
-              <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'var(--color-garuda-400)' }} title="Tirupati District Police & Excise Department">
+              <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }} title="Tirupati District Police & Excise Department">
                 Tirupati District Police & Excise Department
               </p>
             </div>
@@ -155,11 +160,11 @@ export default function Layout() {
         {/* Nav Items — grouped by section, conditionally rendered based on role + department */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navSections.map((section, si) => (
-            <div key={section.title} className={si > 0 ? 'mt-4' : ''}>
+            <div key={section.title} className={si > 0 ? 'mt-5' : ''}>
               {sidebarOpen && (
                 <p
                   className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-2"
-                  style={{ color: 'var(--color-garuda-500)' }}
+                  style={{ color: 'rgba(255,255,255,0.5)' }}
                 >
                   {section.title}
                 </p>
@@ -168,18 +173,21 @@ export default function Layout() {
                 {section.items.map((item) => {
                   const active = location.pathname === item.path ||
                     (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                  const NavIcon = item.icon;
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
                       id={`nav-${item.path.replace(/\//g, '-').replace(/^-/, '')}`}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-slate-100 hover:text-slate-900`}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                       style={{
-                        background: active ? 'var(--color-garuda-600)' : 'transparent',
-                        color: active ? 'var(--color-garuda-50)' : 'var(--color-garuda-400)',
+                        background: active ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        color: active ? '#fff' : 'rgba(255,255,255,0.8)',
                       }}
+                      onMouseOver={(e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                      onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <span className="text-base flex-shrink-0">{item.icon}</span>
+                      <NavIcon size={18} color={active ? '#fff' : 'rgba(255,255,255,0.75)'} />
                       {sidebarOpen && <span>{item.label}</span>}
                     </Link>
                   );
@@ -193,7 +201,7 @@ export default function Layout() {
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="px-4 py-3 text-sm transition-colors cursor-pointer"
-          style={{ color: 'var(--color-garuda-400)', borderTop: '1px solid var(--color-garuda-700)' }}
+          style={{ color: 'rgba(255,255,255,0.65)', borderTop: '1px solid rgba(255,255,255,0.15)' }}
         >
           {sidebarOpen ? '← Collapse' : '→'}
         </button>
@@ -204,7 +212,7 @@ export default function Layout() {
         {/* Header */}
         <header
           className="flex items-center justify-between px-6 py-3"
-          style={{ background: 'var(--color-garuda-800)', borderBottom: '1px solid var(--color-garuda-700)' }}
+          style={{ background: '#fff', borderBottom: '1px solid var(--color-garuda-700)' }}
         >
           <div />
           <div className="flex items-center gap-4">
@@ -232,8 +240,8 @@ export default function Layout() {
             <button
               id="btn-logout"
               onClick={logout}
-              className="px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
-              style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
+              className="btn btn-secondary"
+              style={{ fontSize: '12px', padding: '6px 14px' }}
             >
               Logout
             </button>

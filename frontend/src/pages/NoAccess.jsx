@@ -6,6 +6,7 @@
  */
 import { Link } from 'react-router-dom';
 import { usePermissions } from '../hooks/usePermissions';
+import { IconLock } from '../components/Icons';
 
 const DEPARTMENT_LABELS = {
   ADMINISTRATION: 'Administration',
@@ -54,7 +55,7 @@ export default function NoAccess() {
             animation: 'pulse 2s ease-in-out infinite',
           }}
         >
-          <span style={{ fontSize: 36 }}>🔒</span>
+          <IconLock size={36} color="#ef4444" />
         </div>
 
         <h1
@@ -115,22 +116,13 @@ export default function NoAccess() {
         <div className="flex gap-3 justify-center">
           <Link
             to="/dashboard"
-            className="px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))',
-              color: '#fff',
-            }}
+            className="btn btn-primary"
           >
             ← Go to Dashboard
           </Link>
           <button
             onClick={() => window.history.back()}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 cursor-pointer"
-            style={{
-              background: 'var(--color-garuda-700)',
-              color: 'var(--color-garuda-200)',
-              border: '1px solid var(--color-garuda-600)',
-            }}
+            className="btn btn-secondary"
           >
             Go Back
           </button>
