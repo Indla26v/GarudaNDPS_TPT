@@ -8,19 +8,17 @@ import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 
 const DEPT_LABELS = {
-  ADMINISTRATION: 'Administration', OPERATIONS: 'Operations', INTELLIGENCE: 'Intelligence',
-  FIN_CELL: 'Financial Cell', TECH_CELL: 'Tech Cell', ANALYST: 'Analyst', LEGAL: 'Legal', STF: 'Special Task Force',
+  POLICE: 'Police', CYBER_ANALYTICS: 'Cyber Analytics (STF)', EXCISE: 'Excise Officer',
 };
 
 const DEPARTMENTS = Object.keys(DEPT_LABELS);
 
 const DEPT_COLORS = {
-  ADMINISTRATION: '#ef4444', OPERATIONS: '#3b82f6', INTELLIGENCE: '#8b5cf6',
-  FIN_CELL: '#22c55e', TECH_CELL: '#14b8a6', ANALYST: '#0ea5e9', LEGAL: '#64748b', STF: '#e11d48',
+  POLICE: '#3b82f6', CYBER_ANALYTICS: '#8b5cf6', EXCISE: '#22c55e',
 };
 
 const ROLE_LABELS = {
-  ADMIN: 'Admin', SP: 'SP', ASP: 'ASP', DSP: 'DSP', CI: 'CI', SI: 'SI', CONSTABLE: 'Constable',
+  SP: 'SP', ASP: 'ASP', SDPO: 'SDPO (DSP)', SHO: 'SHO (CI/SI)', CONSTABLE: 'Constable',
 };
 
 export default function TeamManagement() {
@@ -109,7 +107,7 @@ export default function TeamManagement() {
   // Users not in any team (available to assign)
   const getAvailableUsers = (teamId) => {
     const teamMemberIds = teams.find(t => t.id === teamId)?.members?.map(m => m.id) || [];
-    return allUsers.filter(u => u.role !== 'ADMIN' && !teamMemberIds.includes(u.id));
+    return allUsers.filter(u => u.role !== 'SP' && !teamMemberIds.includes(u.id));
   };
 
   if (loading) {

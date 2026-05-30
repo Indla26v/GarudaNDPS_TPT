@@ -382,7 +382,7 @@ model users {
   password_hash        String                 @db.VarChar(255)
   full_name            String                 @db.VarChar(200)
   role                 user_role
-  department           department_type        @default(OPERATIONS)
+  department           department_type        @default(POLICE)
   badge_number         String?                @db.VarChar(50)
   police_station_id    BigInt?
   division_id          String?                @db.VarChar(100)
@@ -670,27 +670,20 @@ enum test_result {
   PENDING
 }
 
-// Roles = Police Ranks only
+// Roles = Police Ranks (SP is top admin)
 enum user_role {
-  ADMIN
   SP
   ASP
-  DSP
-  CI
-  SI
+  SDPO
+  SHO
   CONSTABLE
 }
 
 // Departments = Organizational Units
 enum department_type {
-  ADMINISTRATION
-  OPERATIONS
-  INTELLIGENCE
-  FIN_CELL
-  TECH_CELL
-  ANALYST
-  LEGAL
-  STF
+  POLICE
+  CYBER_ANALYTICS
+  EXCISE
 }
 
 // Teams — created by Admin, assigned to a department

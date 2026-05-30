@@ -46,12 +46,9 @@ async function main() {
 
   // ── Teams ────────────────────────────────────────────────────────────
   const teams = [
-    { name: 'Narcotics Task Force', department: 'OPERATIONS' as const, description: 'Primary field operations for NDPS cases' },
-    { name: 'Cyber Surveillance Unit', department: 'TECH_CELL' as const, description: 'Technical surveillance, IMEI, CDR analysis' },
-    { name: 'Financial Intelligence Unit', department: 'FIN_CELL' as const, description: 'Hawala, UPI, money trail analysis' },
-    { name: 'Data Analytics Team', department: 'ANALYST' as const, description: 'Network mapping, pattern analysis, intelligence correlation' },
-    { name: 'Special Task Force', department: 'STF' as const, description: 'High-value target operations' },
-    { name: 'Legal Cell', department: 'LEGAL' as const, description: 'Court cases, prosecution, bail monitoring' },
+    { name: 'Narcotics Task Force', department: 'POLICE' as const, description: 'Primary field operations for NDPS cases' },
+    { name: 'Cyber Surveillance Unit', department: 'CYBER_ANALYTICS' as const, description: 'Technical surveillance, IMEI, CDR analysis & network mapping' },
+    { name: 'Excise Enforcement Unit', department: 'EXCISE' as const, description: 'Excise department enforcement operations' },
   ];
 
   const teamMap: Record<string, bigint> = {};
@@ -67,48 +64,38 @@ async function main() {
 
   // ── Users ────────────────────────────────────────────────────────────
   const ps1 = await prisma.police_stations.findFirst({ where: { ps_code: 'TP-EAST' } });
+  const exPs = await prisma.police_stations.findFirst({ where: { ps_code: 'EX-TPT-U' } });
 
   const users = [
-    // Admin (no team, ADMINISTRATION dept)
-    { username: 'admin', password: 'password123', full_name: 'System Administrator', role: 'ADMIN' as const, department: 'ADMINISTRATION' as const, team_id: null },
+    // SP — District Admin (Police)
+    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'POLICE' as const, team_id: null },
 
-    // SP — Operations
-    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'OPERATIONS' as const, team_id: null },
+    // ASP — District level (Police)
+    { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'] },
 
-    // ASP — Operations
-    { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
+    // SDPO — Multiple PS (Police)
+    { username: 'sdpo', password: 'password123', full_name: 'P. Venkatesh (SDPO East)', role: 'SDPO' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
-    // DSP — Operations
-    { username: 'dsp', password: 'password123', full_name: 'P. Venkatesh (DSP East)', role: 'DSP' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'] },
+    // SHO — One PS (Police)
+    { username: 'sho', password: 'password123', full_name: 'M. Suresh (SHO)', role: 'SHO' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
-    // CI — Operations
-    { username: 'ci', password: 'password123', full_name: 'M. Suresh (CI East)', role: 'CI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    // Constable — One PS (Police)
+    { username: 'constable', password: 'password123', full_name: 'B. Krishna (Constable)', role: 'CONSTABLE' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
-    // SI — Operations
-    { username: 'si', password: 'password123', full_name: 'A. Rajesh (SI)', role: 'SI' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    // ── Cyber Analytics (STF) ──────────────────────────────────────────
+    { username: 'cyber_sdpo', password: 'password123', full_name: 'Vijay Singh (Cyber SDPO)', role: 'SDPO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-001' },
+    { username: 'cyber_sho', password: 'password123', full_name: 'Ravi Kumar (Cyber SHO)', role: 'SHO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-002', ps_id: ps1?.id },
 
-    // Constable — Operations
-    { username: 'constable', password: 'password123', full_name: 'B. Krishna (Constable)', role: 'CONSTABLE' as const, department: 'OPERATIONS' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
-
-    // ── Cyber Crime / Intelligence Teams ──────────────────────────────
-    // Tech Cell
-    { username: 'tech_si', password: 'password123', full_name: 'Ravi Kumar - Tech Surveillance', role: 'SI' as const, department: 'TECH_CELL' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'TC-001' },
-
-    // Fin Cell
-    { username: 'fin_si', password: 'password123', full_name: 'Priya Sharma - Financial Analyst', role: 'SI' as const, department: 'FIN_CELL' as const, team_id: teamMap['Financial Intelligence Unit'], badge: 'FC-001' },
-
-    // Analyst
-    { username: 'net_si', password: 'password123', full_name: 'Arjun Reddy - Network Analyst', role: 'SI' as const, department: 'ANALYST' as const, team_id: teamMap['Data Analytics Team'], badge: 'AN-001' },
-
-    // STF
-    { username: 'stf_dsp', password: 'password123', full_name: 'Vijay Singh - STF Officer', role: 'DSP' as const, department: 'STF' as const, team_id: teamMap['Special Task Force'], badge: 'STF-001' },
+    // ── Excise ─────────────────────────────────────────────────────────
+    { username: 'excise_sho', password: 'password123', full_name: 'Arjun Reddy (Excise SHO)', role: 'SHO' as const, department: 'EXCISE' as const, team_id: teamMap['Excise Enforcement Unit'], badge: 'EX-001', ps_id: exPs?.id },
   ];
 
   // Delete old-format users if they exist
   const oldUsernames = [
-    'sp_tirupati', 'asp_narcotics', 'dsp_east', 'ci_east',
+    'admin', 'sp_tirupati', 'asp_narcotics', 'dsp_east', 'ci_east',
     'si_field01', 'const_field01', 'tech_surv01',
-    'fin_analyst01', 'net_analyst01', 'stf_narco01'
+    'fin_analyst01', 'net_analyst01', 'stf_narco01',
+    'dsp', 'ci', 'si', 'tech_si', 'fin_si', 'net_si', 'stf_dsp',
   ];
   await prisma.users.deleteMany({
     where: {
@@ -146,7 +133,7 @@ async function main() {
   }
 
   console.log('\n═══════════════════════════════════════════════════════');
-  console.log('  GARUDA — ALL LOGIN CREDENTIALS');
+  console.log('  D.A.R.T. — ALL LOGIN CREDENTIALS');
   console.log('═══════════════════════════════════════════════════════');
   for (const u of users) {
     console.log(`  ${u.role.padEnd(10)} │ ${u.username.padEnd(18)} │ ${u.password.padEnd(20)} │ ${u.department}`);

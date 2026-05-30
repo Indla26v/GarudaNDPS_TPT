@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-const ROLES = ['ADMIN', 'SP', 'DSP', 'CI', 'SI', 'CONSTABLE'];
+const ROLES = ['SP', 'ASP', 'SDPO', 'SHO', 'CONSTABLE'];
 
 async function main() {
   console.log('Seeding test credentials...');
@@ -34,7 +34,7 @@ async function main() {
         password_hash: passwordHash,
         full_name: `Test ${role} ${i}`,
         role: role as any,
-        police_station_id: role === 'ADMIN' ? null : ps.id, 
+        police_station_id: (role === 'SP' || role === 'ASP') ? null : ps.id, 
         is_active: true,
       });
     }

@@ -6,28 +6,25 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../../api/axios';
 
-const ROLES = ['ADMIN', 'SP', 'ASP', 'DSP', 'CI', 'SI', 'CONSTABLE'];
+const ROLES = ['SP', 'ASP', 'SDPO', 'SHO', 'CONSTABLE'];
 
 const ROLE_LABELS = {
-  ADMIN: 'Admin', SP: 'SP', ASP: 'ASP', DSP: 'DSP', CI: 'CI (SHO)', SI: 'SI', CONSTABLE: 'Constable',
+  SP: 'SP', ASP: 'ASP', SDPO: 'SDPO (DSP)', SHO: 'SHO (CI/SI)', CONSTABLE: 'Constable',
 };
 
 const DEPARTMENTS = [
-  'ADMINISTRATION', 'OPERATIONS', 'INTELLIGENCE', 'FIN_CELL', 'TECH_CELL', 'ANALYST', 'LEGAL', 'STF',
+  'POLICE', 'CYBER_ANALYTICS', 'EXCISE',
 ];
 
 const DEPT_LABELS = {
-  ADMINISTRATION: 'Administration', OPERATIONS: 'Operations', INTELLIGENCE: 'Intelligence',
-  FIN_CELL: 'Financial Cell', TECH_CELL: 'Tech Cell', ANALYST: 'Analyst', LEGAL: 'Legal', STF: 'Special Task Force',
+  POLICE: 'Police', CYBER_ANALYTICS: 'Cyber Analytics (STF)', EXCISE: 'Excise Officer',
 };
 
 const ROLE_COLORS = {
-  ADMIN:     { bg: '#ef4444', text: '#fff' },
   SP:        { bg: '#8b5cf6', text: '#fff' },
   ASP:       { bg: '#6366f1', text: '#fff' },
-  DSP:       { bg: '#3b82f6', text: '#fff' },
-  CI:        { bg: '#22c55e', text: '#fff' },
-  SI:        { bg: '#f59e0b', text: '#000' },
+  SDPO:      { bg: '#3b82f6', text: '#fff' },
+  SHO:       { bg: '#22c55e', text: '#fff' },
   CONSTABLE: { bg: '#6b7280', text: '#fff' },
 };
 

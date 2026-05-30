@@ -1,32 +1,29 @@
 /**
  * GARUDA — usePermissions Hook
  *
- * Roles = Police Ranks: ADMIN, SP, ASP, DSP, CI, SI, CONSTABLE
- * Departments = Org Units: ADMINISTRATION, OPERATIONS, INTELLIGENCE, FIN_CELL, TECH_CELL, ANALYST, LEGAL, STF
+ * Roles = Police Ranks: SP, ASP, SDPO, SHO, CONSTABLE
+ * Departments = Org Units: POLICE, CYBER_ANALYTICS, EXCISE
  *
  * ACCESS RULES:
  *   - Role rank determines base capability (higher rank = more power)
  *   - Department membership determines which modules a user can access
- *   - SP/ASP are NOT exempt from department restrictions on Intelligence/Field pages
- *   - ADMIN bypasses all checks
+ *   - SP bypasses all checks (system admin)
  *
  * DATA SCOPE:
- *   - Station-level (DSP, CI, SI, Constable): data scoped to their Police Station
+ *   - Station-level (SDPO, SHO, Constable): data scoped to their Police Station
  *   - District-level (SP, ASP): data for the entire district (all PS)
  */
 import { useMemo } from 'react';
 
 const ROLE_HIERARCHY = {
-  ADMIN:     0,
-  SP:        1,
-  ASP:       2,
-  DSP:       3,
-  CI:        4,
-  SI:        5,
-  CONSTABLE: 6,
+  SP:        0,
+  ASP:       1,
+  SDPO:      2,
+  SHO:       3,
+  CONSTABLE: 4,
 };
 
-const STATION_LEVEL_ROLES = ['DSP', 'CI', 'SI', 'CONSTABLE'];
+const STATION_LEVEL_ROLES = ['SDPO', 'SHO', 'CONSTABLE'];
 const DISTRICT_LEVEL_ROLES = ['SP', 'ASP'];
 
 export function usePermissions() {
@@ -40,7 +37,7 @@ export function usePermissions() {
 
     /** Does the user meet or exceed the given minimum role? */
     const hasMinRole = (minRole) => {
-      if (role === 'ADMIN') return true;
+      if (role === 'SP') return true;
       const minRank = ROLE_HIERARCHY[minRole] ?? 0;
       return rank <= minRank;
     };
@@ -56,52 +53,51 @@ export function usePermissions() {
 
     /**
      * Check a specific permission key.
-     * SP/ASP are NOT exempt from department restrictions.
-     * Only ADMIN bypasses all checks.
+     * SP bypasses all checks (system admin).
      */
     const hasPermission = (key) => {
-      if (role === 'ADMIN') return true;
+      if (role === 'SP') return true;
 
       const PERM_MAP = {
         // Core Operations — no department restriction
         DASHBOARD_VIEW:     () => hasMinRole('CONSTABLE'),
         DASHBOARD_FULL:     () => hasMinRole('SP'),
         OFFENDER_VIEW:      () => hasMinRole('CONSTABLE'),
-        OFFENDER_CREATE:    () => hasMinRole('SI'),
-        OFFENDER_EDIT:      () => hasMinRole('SI'),
+        OFFENDER_CREATE:    () => hasMinRole('SHO'),
+        OFFENDER_EDIT:      () => hasMinRole('SHO'),
         CASE_VIEW:          () => hasMinRole('CONSTABLE'),
-        CASE_CREATE:        () => hasMinRole('SI'),
-        CASE_APPROVE:       () => hasMinRole('CI'),
+        CASE_CREATE:        () => hasMinRole('SHO'),
+        CASE_APPROVE:       () => hasMinRole('SHO'),
 
-        // Field Staff — department-restricted (OPERATIONS, STF)
-        FIELD_ENTRY:        () => hasMinRole('CONSTABLE') && inDepartment('OPERATIONS', 'STF'),
-        FIELD_VERIFY:       () => hasMinRole('SI') && inDepartment('OPERATIONS', 'STF'),
+        // Field Staff — department-restricted (POLICE, CYBER_ANALYTICS)
+        FIELD_ENTRY:        () => hasMinRole('CONSTABLE') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
+        FIELD_VERIFY:       () => hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
 
         // Tech Surveillance — department-restricted
-        TECH_VIEW_ALL:      () => hasMinRole('CONSTABLE') && inDepartment('TECH_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'),
-        TECH_ADD:           () => hasMinRole('SI') && inDepartment('TECH_CELL', 'ANALYST', 'STF'),
+        TECH_VIEW_ALL:      () => hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+        TECH_ADD:           () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
         // Financial Analysis — department-restricted
-        FIN_VIEW_ALL:       () => hasMinRole('CONSTABLE') && inDepartment('FIN_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'),
-        FIN_ADD:            () => hasMinRole('SI') && inDepartment('FIN_CELL', 'STF'),
+        FIN_VIEW_ALL:       () => hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+        FIN_ADD:            () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
         // Network & Chain Analysis — department-restricted
-        NET_VIEW_ALL:       () => hasMinRole('CONSTABLE') && inDepartment('ANALYST', 'TECH_CELL', 'STF', 'INTELLIGENCE'),
-        NET_BUILD:          () => hasMinRole('SI') && inDepartment('ANALYST', 'STF'),
+        NET_VIEW_ALL:       () => hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+        NET_BUILD:          () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
         // Reports — no department restriction
-        REPORTS_VIEW:       () => hasMinRole('SI'),
-        REPORTS_CUSTOM:     () => hasMinRole('CI'),
+        REPORTS_VIEW:       () => hasMinRole('SHO'),
+        REPORTS_CUSTOM:     () => hasMinRole('SHO'),
 
-        // Admin-only
-        USER_MANAGEMENT:    () => role === 'ADMIN',
-        AUDIT_LOGS:         () => role === 'ADMIN',
-        TEAM_MANAGEMENT:    () => role === 'ADMIN',
+        // SP-only
+        USER_MANAGEMENT:    () => role === 'SP',
+        AUDIT_LOGS:         () => role === 'SP',
+        TEAM_MANAGEMENT:    () => role === 'SP',
 
         // Workflows — no department restriction
         DISTRICT_ANALYTICS: () => hasMinRole('ASP'),
-        EDIT_APPROVE:       () => hasMinRole('CI'),
-        EDIT_REQUEST:       () => hasMinRole('SI'),
+        EDIT_APPROVE:       () => hasMinRole('SHO'),
+        EDIT_REQUEST:       () => hasMinRole('SHO'),
       };
 
       return PERM_MAP[key] ? PERM_MAP[key]() : false;
@@ -120,45 +116,40 @@ export function usePermissions() {
       isDistrictLevel,
 
       // Identity
-      isAdmin: role === 'ADMIN',
       isSP: role === 'SP',
       isASP: role === 'ASP',
-      isDSP: role === 'DSP',
-      isCI: role === 'CI',
-      isSI: role === 'SI',
+      isSDPO: role === 'SDPO',
+      isSHO: role === 'SHO',
 
       // Department checks
-      isTechCell: department === 'TECH_CELL',
-      isFinCell: department === 'FIN_CELL',
-      isAnalyst: department === 'ANALYST',
-      isSTF: department === 'STF',
-      isOperations: department === 'OPERATIONS',
-      isIntelligence: department === 'INTELLIGENCE',
+      isPolice: department === 'POLICE',
+      isCyberAnalytics: department === 'CYBER_ANALYTICS',
+      isExcise: department === 'EXCISE',
 
       // Page-level shortcuts — these now properly enforce department restrictions
       canViewDashboardFull: hasMinRole('SP'),
-      canRegisterCase: hasMinRole('SI'),
-      canApproveCase: hasMinRole('CI'),
+      canRegisterCase: hasMinRole('SHO'),
+      canApproveCase: hasMinRole('SHO'),
 
-      canFieldEntry: hasMinRole('CONSTABLE') && inDepartment('OPERATIONS', 'STF'),
-      canVerifyAccused: hasMinRole('SI') && inDepartment('OPERATIONS', 'STF'),
-      canSurveillanceReport: hasMinRole('SI') && inDepartment('OPERATIONS', 'STF'),
+      canFieldEntry: hasMinRole('CONSTABLE') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
+      canVerifyAccused: hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
+      canSurveillanceReport: hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
 
-      canViewAllTech: hasMinRole('CONSTABLE') && inDepartment('TECH_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'),
-      canAddTechIntel: hasMinRole('SI') && inDepartment('TECH_CELL', 'ANALYST', 'STF'),
+      canViewAllTech: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+      canAddTechIntel: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
-      canViewAllFinance: hasMinRole('CONSTABLE') && inDepartment('FIN_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'),
-      canViewAllNetwork: hasMinRole('CONSTABLE') && inDepartment('ANALYST', 'TECH_CELL', 'STF', 'INTELLIGENCE'),
-      canBuildNetwork: hasMinRole('SI') && inDepartment('ANALYST', 'STF'),
+      canViewAllFinance: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+      canViewAllNetwork: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+      canBuildNetwork: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
-      canViewAllReports: hasMinRole('SI'),
-      canBuildCustomReport: hasMinRole('CI'),
+      canViewAllReports: hasMinRole('SHO'),
+      canBuildCustomReport: hasMinRole('SHO'),
 
       canViewDistrictAnalytics: hasMinRole('ASP'),
-      canViewUserManagement: role === 'ADMIN',
-      canViewAuditLogs: role === 'ADMIN',
-      canApproveEdit: hasMinRole('CI'),
-      canRequestEdit: hasMinRole('SI'),
+      canViewUserManagement: role === 'SP',
+      canViewAuditLogs: role === 'SP',
+      canApproveEdit: hasMinRole('SHO'),
+      canRequestEdit: hasMinRole('SHO'),
     };
   }, [role, department]);
 }

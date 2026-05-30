@@ -136,26 +136,41 @@ export default function Dashboard() {
         {KPI_CARDS.map((card, i) => (
           <div
             key={card.key}
-            className="card card-hover rounded-xl p-4"
-            style={{ animationDelay: `${i * 60}ms` }}
+            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden hover:translate-y-[-2px] transition-all duration-200"
+            style={{
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+              animationDelay: `${i * 60}ms`
+            }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ background: card.color + '14' }}
-              >
-                <card.Icon size={18} color={card.color} />
-              </div>
-              <span
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: card.color + '14', color: card.color }}
-              >
+            {/* Header Zone */}
+            <div 
+              className="px-4 py-2.5 flex items-center justify-start"
+              style={{ background: '#E27319' }}
+            >
+              <span className="text-[12px] font-bold text-white tracking-wider uppercase select-none">
                 {card.label}
               </span>
             </div>
-            <p className="text-2xl font-bold" style={{ color: card.color }}>
-              {fmt(summary?.[card.key])}
-            </p>
+            
+            {/* Body Zone */}
+            <div className="p-4 flex items-center justify-between gap-3 bg-white dark:bg-slate-900/60">
+              {/* Left Side: Icon in subtle container */}
+              <div 
+                className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-800 border border-slate-100/80 dark:border-slate-700/40"
+              >
+                <card.Icon size={20} color={card.color} />
+              </div>
+              
+              {/* Right Side: Large bold stat number */}
+              <div className="text-right flex-1 min-w-0">
+                <p 
+                  className="font-extrabold truncate"
+                  style={{ fontSize: '28px', lineHeight: '1.2', color: card.color }}
+                >
+                  {fmt(summary?.[card.key])}
+                </p>
+              </div>
+            </div>
           </div>
         ))}
       </div>

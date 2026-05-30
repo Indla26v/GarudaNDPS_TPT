@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 /* ============================================================
    GARUDA — Design System Tokens (Tailwind v4 CSS Theme)
    ============================================================ */
@@ -53,7 +55,58 @@
   --animate-fade-in: fade-in 0.4s ease-out;
   --animate-slide-up: slide-up 0.35s ease-out;
   --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+
+  /* ---- Header & Dropdown backgrounds ---- */
+  --color-dropdown-bg: #ffffff;
+  --color-header-bg: #ffffff;
 }
+
+/* ============================================================
+   Dark Mode Overrides
+   ============================================================ */
+body.dark {
+  --color-garuda-900: #0f172a; /* Deepest dark background */
+  --color-garuda-800: #1e293b; /* Card/Sidebar Background */
+  --color-garuda-700: #334155; /* Border/Divider */
+  --color-garuda-600: #1e293b; /* Active/Hover State */
+  --color-garuda-500: #64748b; /* Muted Borders */
+  --color-garuda-400: #94a3b8; /* Secondary Text */
+  --color-garuda-300: #cbd5e1; /* Body Text */
+  --color-garuda-200: #e2e8f0; /* Section Headers */
+  --color-garuda-100: #f8fafc; /* Titles */
+  --color-garuda-50:  #ffffff; /* Deepest Headings */
+
+  --color-dropdown-bg: #1e293b;
+  --color-header-bg: #1e293b;
+}
+
+/* Specific elements dark mode style overrides */
+body.dark .input,
+body.dark .select {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+body.dark .table-header {
+  background-color: #334155 !important;
+}
+
+body.dark .table-row:hover {
+  background-color: #1e293b !important;
+}
+
+body.dark .btn-secondary {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+body.dark .btn-secondary:hover {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+}
+
 
 /* ---- Keyframes ---- */
 @keyframes fade-in {

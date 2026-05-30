@@ -21,19 +21,19 @@ router.get('/', getDeletionRequests);
 // Step 1: Flag a record for deletion (any authenticated user)
 router.post('/flag', flagForDeletion);
 
-// Step 2: Escalate the flag (SI / CI)
+// Step 2: Escalate the flag (SHO)
 router.post('/:id/escalate', escalateDeletion);
 
-// Step 3: DSP officially requests deletion
+// Step 3: SDPO officially requests deletion
 router.post('/:id/request', requestDeletion);
 
 // Step 4: SP approves the deletion
 router.post('/:id/approve', approveDeletion);
 
-// Step 5: Admin executes the final deletion
+// Step 5: SP executes the final deletion
 router.post('/:id/execute', executeDeletion);
 
 // Reject at any step (by authorized role)
-router.post('/:id/reject', authorize('DSP'), rejectDeletion);
+router.post('/:id/reject', authorize('SDPO'), rejectDeletion);
 
 export default router;

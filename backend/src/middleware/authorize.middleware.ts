@@ -4,7 +4,7 @@ import { ROLE_HIERARCHY, hasPermission } from '../config/roles';
 
 /**
  * Middleware that requires the user to have a minimum role level.
- * Roles are ranked: ADMIN > SP > ASP > DSP > CI > SI > CONSTABLE
+ * Roles are ranked: SP > ASP > SDPO > SHO > CONSTABLE
  */
 export function authorize(...allowedRoles: string[]) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {

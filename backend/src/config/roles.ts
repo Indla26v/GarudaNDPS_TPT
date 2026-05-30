@@ -1,63 +1,48 @@
 /**
  * GARUDA — Role & Permission Configuration
  * 
- * Roles = Police Ranks: ADMIN, SP, ASP, DSP, CI, SI, CONSTABLE
- * Departments = Organizational Units: ADMINISTRATION, OPERATIONS, INTELLIGENCE, FIN_CELL, TECH_CELL, ANALYST, LEGAL, STF
+ * Roles = Police Ranks: SP, ASP, SDPO, SHO, CONSTABLE
+ * Departments = Organizational Units: POLICE, CYBER_ANALYTICS, EXCISE
  * 
  * ACCESS RULES:
  *   - Role rank determines base capability (higher rank = more power)
  *   - Department membership determines which modules a user can access
- *   - SP/ASP are NOT exempt from department restrictions on Intelligence pages
- *   - ADMIN bypasses all checks
+ *   - SP bypasses all checks (system admin)
  */
 
 // ── Role hierarchy (rank order, lower = more powerful) ─────────────────
 export const ROLE_HIERARCHY: Record<string, number> = {
-  ADMIN:     0,
-  SP:        1,
-  ASP:       2,
-  DSP:       3,
-  CI:        4,
-  SI:        5,
-  CONSTABLE: 6,
+  SP:        0,
+  ASP:       1,
+  SDPO:      2,
+  SHO:       3,
+  CONSTABLE: 4,
 };
 
 export const ROLE_LABELS: Record<string, string> = {
-  ADMIN:     'Admin',
   SP:        'SP',
   ASP:       'ASP',
-  DSP:       'DSP',
-  CI:        'CI (SHO)',
-  SI:        'SI',
+  SDPO:      'SDPO (DSP)',
+  SHO:       'SHO (CI/SI)',
   CONSTABLE: 'Constable',
 };
 
 export const DEPARTMENTS = [
-  'ADMINISTRATION',
-  'OPERATIONS',
-  'INTELLIGENCE',
-  'FIN_CELL',
-  'TECH_CELL',
-  'ANALYST',
-  'LEGAL',
-  'STF',
+  'POLICE',
+  'CYBER_ANALYTICS',
+  'EXCISE',
 ] as const;
 
 export const DEPARTMENT_LABELS: Record<string, string> = {
-  ADMINISTRATION: 'Administration',
-  OPERATIONS:     'Operations',
-  INTELLIGENCE:   'Intelligence',
-  FIN_CELL:       'Financial Cell',
-  TECH_CELL:      'Tech Cell',
-  ANALYST:        'Analyst',
-  LEGAL:          'Legal',
-  STF:            'Special Task Force',
+  POLICE:          'Police',
+  CYBER_ANALYTICS: 'Cyber Analytics (STF)',
+  EXCISE:          'Excise Officer',
 };
 
 // ── Permission matrix ──────────────────────────────────────────────────
 // Access is determined by a combination of role rank AND department.
 // If `departments` is specified, the user's department MUST match one of them.
-// SP/ASP are NOT exempt from department checks.
+// SP bypasses all checks.
 
 export const PERMISSIONS = {
   // Page 1: Dashboard — all roles can see their own level
@@ -66,54 +51,53 @@ export const PERMISSIONS = {
 
   // Page 2: Offender Database — all operational staff
   OFFENDER_VIEW:        { minRole: 'CONSTABLE' },
-  OFFENDER_CREATE:      { minRole: 'SI' },
-  OFFENDER_EDIT:        { minRole: 'SI' },
+  OFFENDER_CREATE:      { minRole: 'SHO' },
+  OFFENDER_EDIT:        { minRole: 'SHO' },
 
   // Page 3: Case Management — operational departments
   CASE_VIEW:            { minRole: 'CONSTABLE' },
-  CASE_CREATE:          { minRole: 'SI' },
-  CASE_EDIT:            { minRole: 'SI' },
-  CASE_APPROVE:         { minRole: 'CI' },
+  CASE_CREATE:          { minRole: 'SHO' },
+  CASE_EDIT:            { minRole: 'SHO' },
+  CASE_APPROVE:         { minRole: 'SHO' },
   // Legacy route keys (Phase 0 alignment)
-  ADD_CASE:             { minRole: 'SI' },
-  EDIT_RECORDS:         { minRole: 'SI' },
+  ADD_CASE:             { minRole: 'SHO' },
+  EDIT_RECORDS:         { minRole: 'SHO' },
 
   // Page 4: Field Staff — field personnel (department-restricted)
-  FIELD_ENTRY:          { minRole: 'CONSTABLE', departments: ['OPERATIONS', 'STF'] },
-  FIELD_VERIFY:         { minRole: 'SI', departments: ['OPERATIONS', 'STF'] },
+  FIELD_ENTRY:          { minRole: 'CONSTABLE', departments: ['POLICE', 'CYBER_ANALYTICS'] },
+  FIELD_VERIFY:         { minRole: 'SHO', departments: ['POLICE', 'CYBER_ANALYTICS'] },
 
   // Page 5: Technical Surveillance — restricted to specific departments
-  TECH_VIEW_ALL:        { minRole: 'CONSTABLE', departments: ['TECH_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'] },
-  TECH_ADD:             { minRole: 'SI', departments: ['TECH_CELL', 'ANALYST', 'STF'] },
+  TECH_VIEW_ALL:        { minRole: 'CONSTABLE', departments: ['CYBER_ANALYTICS'] },
+  TECH_ADD:             { minRole: 'SHO', departments: ['CYBER_ANALYTICS'] },
 
   // Page 6: Financial Analysis — restricted to specific departments
-  FIN_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['FIN_CELL', 'ANALYST', 'STF', 'INTELLIGENCE'] },
-  FIN_ADD:              { minRole: 'SI', departments: ['FIN_CELL', 'STF'] },
+  FIN_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['CYBER_ANALYTICS'] },
+  FIN_ADD:              { minRole: 'SHO', departments: ['CYBER_ANALYTICS'] },
 
   // Page 7: Network & Chain Analysis — restricted to specific departments
-  NET_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['ANALYST', 'TECH_CELL', 'STF', 'INTELLIGENCE'] },
-  NET_BUILD:            { minRole: 'SI', departments: ['ANALYST', 'STF'] },
+  NET_VIEW_ALL:         { minRole: 'CONSTABLE', departments: ['CYBER_ANALYTICS'] },
+  NET_BUILD:            { minRole: 'SHO', departments: ['CYBER_ANALYTICS'] },
 
   // Page 8: Reports — mostly open for reads
-  REPORTS_VIEW:         { minRole: 'SI' },
-  REPORTS_CUSTOM:       { minRole: 'CI' },
+  REPORTS_VIEW:         { minRole: 'SHO' },
+  REPORTS_CUSTOM:       { minRole: 'SHO' },
 
-  // Page 9: Admin & User Management — ADMIN only
-  USER_MANAGEMENT:      { minRole: 'ADMIN' },
-  AUDIT_LOGS:           { minRole: 'ADMIN' },
-  TEAM_MANAGEMENT:      { minRole: 'ADMIN' },
+  // Page 9: Admin & User Management — SP only
+  USER_MANAGEMENT:      { minRole: 'SP' },
+  AUDIT_LOGS:           { minRole: 'SP' },
+  TEAM_MANAGEMENT:      { minRole: 'SP' },
 
   // Workflows
   DISTRICT_ANALYTICS:   { minRole: 'ASP' },
-  EDIT_APPROVE:         { minRole: 'CI' },
-  EDIT_REQUEST:         { minRole: 'SI' },
+  EDIT_APPROVE:         { minRole: 'SHO' },
+  EDIT_REQUEST:         { minRole: 'SHO' },
 };
 
 /**
  * Check if a user with the given role and department has a specific permission.
  * 
- * IMPORTANT: SP/ASP are NOT exempt from department restrictions.
- * Only ADMIN bypasses all checks.
+ * SP bypasses all checks (system admin).
  */
 export function hasPermission(
   userRole: string,
@@ -123,8 +107,8 @@ export function hasPermission(
   const perm = PERMISSIONS[permissionKey];
   if (!perm) return false;
 
-  // ADMIN bypasses all checks
-  if (userRole === 'ADMIN') return true;
+  // SP bypasses all checks
+  if (userRole === 'SP') return true;
 
   // Check role rank
   const userRank = ROLE_HIERARCHY[userRole];
@@ -132,7 +116,7 @@ export function hasPermission(
   if (userRank === undefined || requiredRank === undefined) return false;
   if (userRank > requiredRank) return false;
 
-  // Check department restriction (if any) — applies to ALL roles including SP/ASP
+  // Check department restriction (if any) — applies to ALL roles including ASP
   if ('departments' in perm && perm.departments) {
     if (!perm.departments.includes(userDepartment as any)) return false;
   }

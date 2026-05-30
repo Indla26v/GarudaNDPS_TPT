@@ -10,13 +10,11 @@ export const getDeletionRequests = async (req: Request, res: Response) => {
     
     // We only show relevant requests to the role
     const where: any = {};
-    if (userRole === 'DSP') {
+    if (userRole === 'SDPO') {
       where.status = 'ESCALATED';
       // Join to get those matching their PS
     } else if (userRole === 'SP') {
-      where.status = 'REQUESTED';
-    } else if (userRole === 'ADMIN') {
-      where.status = 'APPROVED';
+      where.status = { in: ['REQUESTED', 'APPROVED'] };
     } else {
       where.status = 'FLAGGED';
     }
@@ -31,7 +29,7 @@ export const getDeletionRequests = async (req: Request, res: Response) => {
     
     // Filter manually for DSP and SP logic due to complex joins in schema limits 
     let filteredRequests = requests;
-    if (userRole === 'DSP' && psId) {
+    if (userRole === 'SDPO' && psId) {
        filteredRequests = requests.filter(r => r.flagged_user?.police_stations?.id.toString() === psId.toString());
     } else if (userRole === 'SP') {
       // Find SP's district
@@ -84,7 +82,7 @@ export const escalateDeletion = async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const userRole = (req as any).user.role;
 
-    if (userRole !== 'CI' && userRole !== 'SI') return res.status(403).json({ message: 'Only CI/SI can escalate' });
+    if (userRole !== 'SHO') return res.status(403).json({ message: 'Only SHO can escalate' });
 
     const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'FLAGGED') return res.status(400).json({ message: 'Invalid state' });
@@ -94,7 +92,7 @@ export const escalateDeletion = async (req: Request, res: Response) => {
       data: { status: 'ESCALATED', escalated_by: BigInt(userId) }
     });
 
-    res.json(successResponse({ id }, 'Escalated to DSP'));
+    res.json(successResponse({ id }, 'Escalated to SDPO'));
   } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
@@ -104,7 +102,7 @@ export const requestDeletion = async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const userRole = (req as any).user.role;
 
-    if (userRole !== 'DSP') return res.status(403).json({ message: 'Only DSP can request formally' });
+    if (userRole !== 'SDPO') return res.status(403).json({ message: 'Only SDPO can request formally' });
 
     const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'ESCALATED') return res.status(400).json({ message: 'Invalid state' });
@@ -134,7 +132,7 @@ export const approveDeletion = async (req: Request, res: Response) => {
       data: { status: 'APPROVED', approved_by: BigInt(userId) }
     });
 
-    res.json(successResponse({ id }, 'Approved for Admin execution'));
+    res.json(successResponse({ id }, 'Approved for SP execution'));
   } catch (error) { res.status(500).json({ message: 'Server error' }); }
 };
 
@@ -144,7 +142,7 @@ export const executeDeletion = async (req: Request, res: Response) => {
     const userId = (req as any).user.userId;
     const userRole = (req as any).user.role;
 
-    if (userRole !== 'ADMIN') return res.status(403).json({ message: 'Only ADMIN can execute' });
+    if (userRole !== 'SP') return res.status(403).json({ message: 'Only SP can execute' });
 
     const request = await prisma.deletion_requests.findUnique({ where: { id: BigInt(id as string) } });
     if (!request || request.status !== 'APPROVED') return res.status(400).json({ message: 'Invalid state' });

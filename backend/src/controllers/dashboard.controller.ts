@@ -4,9 +4,8 @@
  * Provides aggregated KPI data for the dashboard.
  * 
  * DATA SCOPING:
- *   Station-level (DSP, CI, SI, Constable) → only their PS data
+ *   Station-level (SDPO, SHO, Constable) → only their PS data
  *   District-level (SP, ASP) → all PS data in the district
- *   ADMIN → all data
  */
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';

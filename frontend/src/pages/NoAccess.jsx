@@ -9,23 +9,16 @@ import { usePermissions } from '../hooks/usePermissions';
 import { IconLock } from '../components/Icons';
 
 const DEPARTMENT_LABELS = {
-  ADMINISTRATION: 'Administration',
-  OPERATIONS:     'Operations',
-  INTELLIGENCE:   'Intelligence',
-  FIN_CELL:       'Financial Cell',
-  TECH_CELL:      'Tech Cell',
-  ANALYST:        'Analyst',
-  LEGAL:          'Legal',
-  STF:            'Special Task Force',
+  POLICE:          'Police',
+  CYBER_ANALYTICS: 'Cyber Analytics (STF)',
+  EXCISE:          'Excise Department',
 };
 
 const ROLE_LABELS = {
-  ADMIN:     'Admin',
   SP:        'Superintendent of Police',
   ASP:       'Asst. Superintendent of Police',
-  DSP:       'Deputy Superintendent of Police',
-  CI:        'Circle Inspector',
-  SI:        'Sub-Inspector',
+  SDPO:      'Sub-Divisional Police Officer',
+  SHO:       'Station House Officer',
   CONSTABLE: 'Constable',
 };
 

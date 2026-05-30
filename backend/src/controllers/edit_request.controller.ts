@@ -175,8 +175,8 @@ export const approveEditRequest = async (req: Request, res: Response) => {
     const approverRole = (req as any).user.role;
     const approverPsId = (req as any).user.policeStationId;
 
-    if (!['DSP', 'ADMIN', 'CI'].includes(approverRole)) {
-      return res.status(403).json({ message: 'Only DSP, CI, or Admin can approve' });
+    if (!['SDPO', 'SP', 'SHO'].includes(approverRole)) {
+      return res.status(403).json({ message: 'Only SDPO, SHO, or SP can approve' });
     }
 
     const request = await prisma.edit_requests.findUnique({
@@ -225,8 +225,8 @@ export const rejectEditRequest = async (req: Request, res: Response) => {
     const userPsId = (req as any).user.policeStationId;
     const { rejectionReason } = req.body;
 
-    if (!['DSP', 'ADMIN', 'CI'].includes(userRole)) {
-      return res.status(403).json({ message: 'Only DSP, CI, or Admin can reject' });
+    if (!['SDPO', 'SP', 'SHO'].includes(userRole)) {
+      return res.status(403).json({ message: 'Only SDPO, SHO, or SP can reject' });
     }
 
     const request = await prisma.edit_requests.findUnique({
