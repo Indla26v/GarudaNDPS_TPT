@@ -4,6 +4,7 @@ import { getInterrogations, addInterrogation } from '../controllers/case_lifecyc
 import { exportOffendersCsv, getOffenderHistorySheet } from '../controllers/export.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize, requirePermission } from '../middleware/authorize.middleware';
+import { uploadPhoto } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -16,6 +17,19 @@ router.get('/:offenderId/interrogations', getInterrogations);
 router.get('/:id/history-sheet', getOffenderHistorySheet);
 router.post('/:offenderId/interrogations', requirePermission('EDIT_RECORDS'), addInterrogation);
 router.get('/:id', getOffenderById);
+
+// Photo upload endpoint
+router.post('/upload', uploadPhoto.single('photo'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  res.json({
+    success: true,
+    data: {
+      url: `/api/uploads/${req.file.filename}`
+    }
+  });
+});
 
 // Create: all roles except SP (SP is district-level, doesn't add data directly)
 router.post('/', requirePermission('ADD_CASE'), createOffender);

@@ -60,6 +60,9 @@ export default function CaseForm() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [fileUploading, setFileUploading] = useState(false);
 
   useEffect(() => {
     fetchStations();
@@ -110,6 +113,15 @@ export default function CaseForm() {
           otherItems: s.otherItems || '',
         });
       }
+      if (c.relevantFiles) {
+        try {
+          setUploadedFiles(JSON.parse(c.relevantFiles));
+        } catch {
+          setUploadedFiles(c.relevantFiles.split(',').map((url) => ({ name: url.split('/').pop(), url })));
+        }
+      } else {
+        setUploadedFiles([]);
+      }
     } catch {
       setError('Failed to load case');
     } finally {
@@ -134,12 +146,53 @@ export default function CaseForm() {
 
   const addAccused = (o) => {
     if (accused.some((a) => a.offenderId === o.id)) return;
-    setAccused([...accused, { offenderId: o.id, offenderName: o.full_name, arrestStatus: 'ARRESTED' }]);
+    setAccused([...accused, { offenderId: o.id, offenderName: o.fullName || o.full_name, arrestStatus: 'ARRESTED' }]);
     setOffenderSearch('');
     setOffenderResults([]);
   };
 
   const removeAccused = (offenderId) => setAccused(accused.filter((a) => a.offenderId !== offenderId));
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    setFileUploading(true);
+    setError('');
+    try {
+      const newUploaded = [];
+      for (const file of files) {
+        if (file.size > 15 * 1024 * 1024) {
+          setError(`File ${file.name} is too large (max 15MB)`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await api.post('/cases/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (res.data.data?.url) {
+          newUploaded.push({
+            name: res.data.data.name || file.name,
+            url: res.data.data.url
+          });
+        }
+      }
+      setUploadedFiles(prev => [...prev, ...newUploaded]);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to upload case files');
+    } finally {
+      setFileUploading(false);
+      e.target.value = null;
+    }
+  };
+
+  const removeFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,14 +204,15 @@ export default function CaseForm() {
         psId: parseInt(form.psId, 10),
         quantity: form.quantity ? parseFloat(form.quantity) : null,
         streetValue: form.streetValue ? parseFloat(form.streetValue) : null,
+        relevantFiles: uploadedFiles.length > 0 ? JSON.stringify(uploadedFiles) : null,
         accused: accused.map((a) => ({ offenderId: a.offenderId, arrestStatus: a.arrestStatus })),
         seizures: seizure.contrabandKg || seizure.cashAmount
           ? [{
-              contrabandKg: seizure.contrabandKg ? parseFloat(seizure.contrabandKg) : null,
-              cashAmount: seizure.cashAmount ? parseFloat(seizure.cashAmount) : 0,
-              vehiclesCount: parseInt(seizure.vehiclesCount, 10) || 0,
-              otherItems: seizure.otherItems || null,
-            }]
+            contrabandKg: seizure.contrabandKg ? parseFloat(seizure.contrabandKg) : null,
+            cashAmount: seizure.cashAmount ? parseFloat(seizure.cashAmount) : 0,
+            vehiclesCount: parseInt(seizure.vehiclesCount, 10) || 0,
+            otherItems: seizure.otherItems || null,
+          }]
           : [],
       };
       if (isEdit) {
@@ -316,21 +370,45 @@ export default function CaseForm() {
             <input
               value={offenderSearch}
               onChange={(e) => setOffenderSearch(e.target.value)}
-              placeholder="Search offender by name..."
+              placeholder="Search offender by name, Aadhaar, phone, email..."
               className={`${inp} flex-1`}
               style={fieldStyle}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchOffenders())}
             />
-            <button type="button" onClick={searchOffenders} className="px-4 py-2 rounded-lg text-sm" style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>
+            <button
+              type="button"
+              onClick={searchOffenders}
+              className="px-4 py-2 rounded-lg text-sm text-white transition-colors"
+              style={{ background: 'var(--color-accent-500)', cursor: 'pointer', border: 'none' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-accent-600)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--color-accent-500)'; }}
+            >
               Search
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 rounded-lg text-sm whitespace-nowrap border"
+              style={{ borderColor: 'var(--color-accent-400)', background: 'transparent', color: 'var(--color-accent-400)', cursor: 'pointer' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(234, 88, 12, 0.1)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              + Add New Accused
             </button>
           </div>
           {offenderResults.length > 0 && (
             <ul className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-garuda-600)' }}>
               {offenderResults.map((o) => (
                 <li key={o.id}>
-                  <button type="button" onClick={() => addAccused(o)} className="w-full text-left px-3 py-2 text-sm hover:bg-garuda-700" style={{ color: 'var(--color-garuda-200)' }}>
-                    {o.full_name} {o.ps_name ? `(${o.ps_name})` : ''}
+                  <button
+                    type="button"
+                    onClick={() => addAccused(o)}
+                    className="w-full text-left px-3 py-2 text-sm transition-colors"
+                    style={{ color: 'var(--color-garuda-200)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-garuda-600)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {o.fullName || o.full_name} {(o.psName || o.ps_name) ? `(${o.psName || o.ps_name})` : ''}
                   </button>
                 </li>
               ))}
@@ -358,6 +436,68 @@ export default function CaseForm() {
           </div>
         </div>
 
+        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Relevant PDF Files</h3>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <label
+                className="btn btn-secondary text-sm flex items-center gap-2 cursor-pointer"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+              >
+                <svg className="w-4 h-4 text-accent-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                {fileUploading ? 'Uploading...' : 'Choose Files'}
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={fileUploading}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>
+                Upload scans, FIR copies, or seizure reports (PDF, Word, Images up to 15MB each).
+              </span>
+            </div>
+
+            {uploadedFiles.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                {uploadedFiles.map((file, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2.5 rounded-lg border text-xs"
+                    style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)' }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium truncate hover:text-accent-400 transition-colors"
+                        style={{ color: 'var(--color-garuda-100)' }}
+                      >
+                        {file.name}
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="text-red-400 hover:text-red-500 font-bold px-2 py-1 bg-transparent border-none cursor-pointer text-xs"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-3 justify-end">
           <button type="button" onClick={() => navigate('/cases')} className="px-5 py-2.5 rounded-lg text-sm" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
             Cancel
@@ -367,6 +507,288 @@ export default function CaseForm() {
           </button>
         </div>
       </form>
+      <AddAccusedModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSaved={addAccused}
+        stations={stations}
+        currentPsId={form.psId}
+      />
+    </div>
+  );
+}
+
+function AddAccusedModal({ isOpen, onClose, onSaved, stations, currentPsId }) {
+  const [modalForm, setModalForm] = useState({
+    fullName: '',
+    alias: '',
+    fatherHusbandName: '',
+    age: '',
+    gender: '',
+    category: '',
+    psId: currentPsId || '',
+    aadhaarNo: '',
+    phone: '',
+    fullAddress: '',
+    photoUrl: ''
+  });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Sync station ID with current form selection when opened
+  useEffect(() => {
+    if (isOpen) {
+      setModalForm({
+        fullName: '',
+        alias: '',
+        fatherHusbandName: '',
+        age: '',
+        gender: '',
+        category: '',
+        psId: currentPsId || '',
+        aadhaarNo: '',
+        phone: '',
+        fullAddress: '',
+        photoUrl: ''
+      });
+      setError('');
+    }
+  }, [isOpen, currentPsId]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setModalForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Photo file size must be under 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    setUploading(true);
+    setError('');
+    try {
+      const res = await api.post('/offenders/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data.data?.url) {
+        setModalForm(prev => ({ ...prev, photoUrl: res.data.data.url }));
+      } else {
+        setError('Upload succeeded but no URL was returned');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!modalForm.fullName.trim()) return setError('Full name is required');
+    if (!modalForm.psId) return setError('Police station is required');
+
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        fullName: modalForm.fullName.trim(),
+        alias: modalForm.alias.trim() || null,
+        fatherHusbandName: modalForm.fatherHusbandName.trim() || null,
+        age: modalForm.age ? parseInt(modalForm.age, 10) : null,
+        gender: modalForm.gender || null,
+        category: modalForm.category || null,
+        psId: parseInt(modalForm.psId, 10),
+        aadhaarNo: modalForm.aadhaarNo.trim() || null,
+        fullAddress: modalForm.fullAddress.trim() || null,
+        photoUrl: modalForm.photoUrl || null,
+        contacts: modalForm.phone.trim()
+          ? [{ contactType: 'MOBILE_PRIMARY', value: modalForm.phone.trim(), notes: 'Primary' }]
+          : []
+      };
+
+      const res = await api.post('/offenders', payload);
+      const newId = res.data.data?.id;
+
+      if (newId) {
+        onSaved({
+          id: newId,
+          fullName: modalForm.fullName.trim()
+        });
+        onClose();
+      } else {
+        setError('Failed to retrieve registered offender ID.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to register accused');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop overlay */}
+      <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs cursor-default animate-fade-in" onClick={onClose} />
+
+      {/* Modal Dialog */}
+      <div
+        className="relative w-full max-w-lg rounded-2xl p-6 border text-left shadow-2xl animate-slide-up overflow-y-auto max-h-[90vh] z-10"
+        style={{
+          background: 'linear-gradient(135deg, rgba(30,41,59,0.98), rgba(15,23,42,0.98))',
+          borderColor: 'var(--color-garuda-700)',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-4 border-b border-dashed pb-3" style={{ borderColor: 'var(--color-garuda-700)' }}>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-garuda-50)' }}>
+            Register & Add New Accused
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white bg-transparent border-none cursor-pointer text-lg font-bold p-1 select-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Full Name *</label>
+              <input name="fullName" value={modalForm.fullName} onChange={handleChange} required className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station *</label>
+              <select name="psId" value={modalForm.psId} onChange={handleChange} required className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
+                <option value="">Select PS</option>
+                {stations.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.ps_code})</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Alias</label>
+              <input name="alias" value={modalForm.alias} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Father/Husband Name</label>
+              <input name="fatherHusbandName" value={modalForm.fatherHusbandName} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Age</label>
+              <input type="number" name="age" value={modalForm.age} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Gender</label>
+              <select name="gender" value={modalForm.gender} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
+                <option value="">Select</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Category</label>
+              <select name="category" value={modalForm.category} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
+                <option value="">Select</option>
+                <option value="CONSUMER">Consumer</option>
+                <option value="LOCAL_PEDDLER">Local Peddler</option>
+                <option value="LOCAL_SUPPLIER">Local Supplier</option>
+                <option value="LOCAL_KINGPIN">Local Kingpin</option>
+                <option value="TRANSPORTER">Transporter</option>
+                <option value="INTERSTATE_KINGPIN">Interstate Kingpin</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Aadhaar Number</label>
+              <input maxLength={12} name="aadhaarNo" value={modalForm.aadhaarNo} onChange={handleChange} className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Mobile Number</label>
+              <input type="tel" name="phone" value={modalForm.phone} onChange={handleChange} placeholder="Primary phone number" className="w-full px-3 py-2 rounded-lg text-sm outline-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Photograph</label>
+              <div className="flex items-center gap-4 p-3 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)' }}>
+                {modalForm.photoUrl ? (
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 flex-shrink-0">
+                    <img src={modalForm.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setModalForm(prev => ({ ...prev, photoUrl: '' }))}
+                      className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] text-red-400 font-bold opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-none"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg border border-dashed border-slate-600 bg-slate-800/40 flex items-center justify-center flex-shrink-0 text-slate-500">
+                    {uploading ? (
+                      <span className="text-[10px] animate-pulse">...</span>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                    )}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    disabled={uploading}
+                    className="block w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-accent-500/10 file:text-accent-400 hover:file:bg-accent-500/20 file:cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">PNG, JPG, or JPEG up to 5MB</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--color-garuda-300)' }}>Full Address</label>
+              <textarea name="fullAddress" value={modalForm.fullAddress} onChange={handleChange} rows={2} placeholder="Enter physical address details" className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-600)', color: 'var(--color-garuda-100)' }} />
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4 border-t border-dashed" style={{ borderColor: 'var(--color-garuda-700)' }}>
+            <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)', border: 'none' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving || uploading} className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white cursor-pointer" style={{ background: 'var(--color-accent-500)', opacity: (saving || uploading) ? 0.6 : 1, border: 'none' }}>
+              {saving ? 'Registering...' : 'Register & Add'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

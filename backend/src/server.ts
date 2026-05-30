@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import authRoutes from './routes/auth.routes';
 import offendersRoutes from './routes/offenders.routes';
 import dashboardRoutes from './routes/dashboard.routes';
@@ -17,6 +18,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static uploads
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ── Public routes ─────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);

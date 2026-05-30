@@ -22,7 +22,13 @@ export const getOffenders = async (req: Request, res: Response) => {
       const q = String(query);
       whereClause.OR = [
         { full_name: { contains: q, mode: 'insensitive' } },
-        { alias: { contains: q, mode: 'insensitive' } }
+        { alias: { contains: q, mode: 'insensitive' } },
+        { offender_identity_docs: { some: { OR: [
+          { aadhaar_no: { contains: q, mode: 'insensitive' } },
+          { voter_id: { contains: q, mode: 'insensitive' } },
+          { pan_card: { contains: q, mode: 'insensitive' } }
+        ] } } },
+        { offender_contacts: { some: { value: { contains: q, mode: 'insensitive' } } } }
       ];
     }
 

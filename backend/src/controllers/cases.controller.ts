@@ -23,6 +23,9 @@ function mapCaseData(data: any) {
   if (data.isRowdySheet !== undefined || data.is_rowdy_sheet !== undefined) {
     mapped.is_rowdy_sheet = data.isRowdySheet ?? data.is_rowdy_sheet;
   }
+  if (data.relevantFiles !== undefined || data.relevant_files !== undefined) {
+    mapped.relevant_files = data.relevantFiles ?? data.relevant_files;
+  }
   if (data.natureOfOffence !== undefined || data.nature_of_offence !== undefined) {
     mapped.nature_of_offence = data.natureOfOffence ?? data.nature_of_offence;
   }
@@ -296,6 +299,7 @@ function toCaseResponse(c: any) {
     department: c.department,
     isHistorySheet: c.is_history_sheet,
     isRowdySheet: c.is_rowdy_sheet,
+    relevantFiles: c.relevant_files,
     createdByName: c.users?.full_name,
     createdAt: c.created_at,
     updatedAt: c.updated_at,

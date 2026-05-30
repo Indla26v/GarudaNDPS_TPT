@@ -25,6 +25,7 @@ import TeamManagement from './pages/admin/TeamManagement';
 import AuditLogs from './pages/admin/AuditLogs';
 import DataImport from './pages/admin/DataImport';
 import DistrictAnalytics from './pages/DistrictAnalytics';
+import Enforcement from './pages/Enforcement';
 import { usePermissions } from './hooks/usePermissions';
 import './index.css';
 
@@ -62,6 +63,7 @@ createRoot(document.getElementById('root')).render(
             {/* Offenders — viewable by all, edit/create guarded in backend */}
             <Route path="offenders" element={<OffenderList />} />
             <Route path="consumers" element={<OffenderList isConsumerOnly={true} />} />
+            <Route path="enforcement" element={<Enforcement />} />
             <Route path="offenders/new" element={<OffenderForm />} />
             <Route path="offenders/:id/edit" element={<OffenderForm />} />
 

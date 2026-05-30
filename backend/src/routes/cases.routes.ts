@@ -18,10 +18,25 @@ import {
 } from '../controllers/case_lifecycle.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/authorize.middleware';
+import { uploadDocument } from '../middleware/upload.middleware';
 
 const router = Router();
 
 router.use(authenticate);
+
+// Document upload endpoint
+router.post('/upload', uploadDocument.single('file'), (req: any, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  res.json({
+    success: true,
+    data: {
+      url: `/api/uploads/${req.file.filename}`,
+      name: req.file.originalname
+    }
+  });
+});
 
 router.post('/', requirePermission('ADD_CASE'), createCase);
 router.get('/', getCases);

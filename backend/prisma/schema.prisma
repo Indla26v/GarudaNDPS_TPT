@@ -66,6 +66,7 @@ model cases {
   created_at           DateTime          @default(now()) @db.Timestamp(6)
   is_history_sheet     Boolean           @default(false)
   is_rowdy_sheet       Boolean           @default(false)
+  relevant_files       String?           @db.VarChar(1000)
   updated_at           DateTime          @default(now()) @db.Timestamp(6)
   case_accused         case_accused[]
   users                users?            @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
