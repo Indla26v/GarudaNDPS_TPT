@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import apLogo from '../assets/Appolice(emblem).png';
+import garudaLogo from '../assets/Garuda_logo.png';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import api from '../api/axios';
@@ -174,23 +176,12 @@ export default function Layout() {
         style={{ background: '#e8750a', borderRight: '1px solid rgba(255,255,255,0.15)' }}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg flex-shrink-0"
-            style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}
-          >
-            D
-          </div>
-          {sidebarOpen && (
-            <div className="animate-fade-in flex-1 min-w-0">
-              <h1 className="text-xs font-bold leading-tight" style={{ color: '#fff' }} title="D.A.R.T. (Drug Action & Resource Tracker)">
-                D.A.R.T. (Drug Action & Resource Tracker)
-              </h1>
-              <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }} title="Tirupati District Police & Excise Department">
-                Tirupati District Police & Excise Department
-              </p>
-            </div>
-          )}
+        <div className="flex items-center justify-center px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+          <img 
+            src={apLogo}
+            alt="AP Police Logo" 
+            className="w-15 h-15 object-contain flex-shrink-0 bg-white rounded-full p-0.5"
+          />
         </div>
 
         {/* Nav Items — grouped by section, conditionally rendered based on role + department */}
@@ -248,9 +239,15 @@ export default function Layout() {
         {/* Header */}
         <header
           className="flex items-center justify-between px-6 py-3"
-          style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)' }}
+          style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)', height: '101px' }}
         >
-          <div />
+          <div className="flex items-center h-full">
+            <img 
+              src={garudaLogo} 
+              alt="Garuda Logo" 
+              className="h-15 object-contain pl-4 scale-150 transform origin-left"
+            />
+          </div>
           <div className="flex items-center gap-4 relative">
             <button
               id="user-profile-badge"
