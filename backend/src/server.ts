@@ -11,6 +11,7 @@ import deletionRoutes from './routes/deletion.routes';
 import editRequestRoutes from './routes/edit_request.routes';
 import adminRoutes from './routes/admin.routes';
 import sseRoutes from './routes/sse.routes';
+import enforcementRoutes from './routes/enforcement.routes';
 
 dotenv.config();
 
@@ -41,6 +42,9 @@ app.use('/api/admin', adminRoutes);
 // ── Real-time (SSE) routes ────────────────────────────────────────────
 app.use('/api/sse', sseRoutes);
 
+// ── Enforcement routes ────────────────────────────────────────────────
+app.use('/api/enforcement', enforcementRoutes);
+
 // ── Health check ──────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Garuda API is running smoothly!' });
@@ -51,3 +55,5 @@ const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+export default app;

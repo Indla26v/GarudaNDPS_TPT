@@ -92,6 +92,11 @@ export const PERMISSIONS = {
   DISTRICT_ANALYTICS:   { minRole: 'ASP' },
   EDIT_APPROVE:         { minRole: 'SHO' },
   EDIT_REQUEST:         { minRole: 'SHO' },
+
+  // Enforcement
+  ENFORCEMENT_VIEW:     { minRole: 'CONSTABLE' },
+  ENFORCEMENT_CREATE:   { minRole: 'CONSTABLE' },
+  ENFORCEMENT_REVIEW:   { minRole: 'SHO' },
 };
 
 /**

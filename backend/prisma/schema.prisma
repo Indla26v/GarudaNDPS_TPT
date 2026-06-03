@@ -209,6 +209,8 @@ model offenders {
   supply_chain_links_supply_chain_links_offender_idTooffenders        supply_chain_links[]     @relation("supply_chain_links_offender_idTooffenders")
   surveillance_records                                                surveillance_records[]
   interrogation_sessions                                              interrogation_sessions[]
+  enforcement_matched                                                 enforcement_checks[]     @relation("enforcement_matched_offender")
+  enforcement_committed                                               enforcement_checks[]     @relation("enforcement_committed_offender")
 
   @@index([alias], map: "idx_offenders_alias")
   @@index([category], map: "idx_offenders_category")
@@ -306,6 +308,7 @@ model police_stations {
   intelligence_inputs intelligence_inputs[]
   offenders           offenders[]
   users               users[]
+  enforcement_checks  enforcement_checks[]
 
   @@index([district], map: "idx_ps_district")
 }
@@ -414,6 +417,10 @@ model users {
   edit_requests_created        edit_requests[] @relation("edit_requested_by_user")
   edit_requests_approved       edit_requests[] @relation("edit_approved_by_user")
   interrogation_sessions       interrogation_sessions[]
+
+  // Enforcement relations
+  enforcement_checks_created   enforcement_checks[] @relation("enforcement_created_by")
+  enforcement_checks_reviewed  enforcement_checks[] @relation("enforcement_reviewed_by")
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
@@ -720,4 +727,74 @@ enum edit_request_status {
   PENDING
   APPROVED
   REJECTED
+}
+
+// ============================================================
+// Enforcement Checks
+// ============================================================
+
+model enforcement_checks {
+  id                    BigInt                  @id @default(autoincrement())
+
+  // Demographics captured in field
+  subject_name          String                  @db.VarChar(200)
+  subject_age           Int?
+  subject_gender        gender_type?
+  subject_aadhaar       String?                 @db.VarChar(12)
+  photo_url             String?                 @db.VarChar(500)
+  place_of_enforcement  String                  @db.VarChar(500)
+  district              String                  @default("Tirupati") @db.VarChar(100)
+
+  // Lookup results
+  ndps_match            Boolean                 @default(false)
+  matched_offender_id   BigInt?
+  criminal_record_found Boolean                 @default(false)
+  lookup_summary        String?
+
+  // Drug test
+  test_result           enforcement_test_result @default(PENDING)
+  consumption_type      String?                 @db.VarChar(200)
+
+  // Workflow status
+  status                enforcement_status      @default(FIELD_CREATED)
+
+  // Officer who created (field officer)
+  created_by            BigInt
+  ps_id                 BigInt
+
+  // SHO review
+  reviewed_by           BigInt?
+  reviewed_at           DateTime?               @db.Timestamp(6)
+  review_notes          String?
+  committed_offender_id BigInt?
+
+  created_at            DateTime                @default(now()) @db.Timestamp(6)
+  updated_at            DateTime                @default(now()) @db.Timestamp(6)
+
+  // Relations
+  officer               users                   @relation("enforcement_created_by", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer              users?                  @relation("enforcement_reviewed_by", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_station        police_stations         @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  matched_offender      offenders?              @relation("enforcement_matched_offender", fields: [matched_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  committed_offender    offenders?              @relation("enforcement_committed_offender", fields: [committed_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_ec_ps")
+  @@index([created_by], map: "idx_ec_created_by")
+  @@index([status], map: "idx_ec_status")
+  @@index([test_result], map: "idx_ec_result")
+  @@index([created_at], map: "idx_ec_created_at")
+}
+
+enum enforcement_test_result {
+  PENDING
+  POSITIVE
+  NEGATIVE
+}
+
+enum enforcement_status {
+  FIELD_CREATED
+  NEGATIVE_CLOSED
+  PENDING_SHO_REVIEW
+  SHO_APPROVED
+  SHO_REJECTED
 }

@@ -98,6 +98,11 @@ export function usePermissions() {
         DISTRICT_ANALYTICS: () => hasMinRole('ASP'),
         EDIT_APPROVE:       () => hasMinRole('SHO'),
         EDIT_REQUEST:       () => hasMinRole('SHO'),
+
+        // Enforcement
+        ENFORCEMENT_VIEW:   () => hasMinRole('CONSTABLE'),
+        ENFORCEMENT_CREATE: () => hasMinRole('CONSTABLE'),
+        ENFORCEMENT_REVIEW: () => hasMinRole('SHO'),
       };
 
       return PERM_MAP[key] ? PERM_MAP[key]() : false;
@@ -150,6 +155,11 @@ export function usePermissions() {
       canViewAuditLogs: role === 'SP',
       canApproveEdit: hasMinRole('SHO'),
       canRequestEdit: hasMinRole('SHO'),
+
+      // Enforcement
+      canEnforcementView: hasMinRole('CONSTABLE'),
+      canEnforcementCreate: hasMinRole('CONSTABLE'),
+      canEnforcementReview: hasMinRole('SHO'),
     };
   }, [role, department]);
 }
