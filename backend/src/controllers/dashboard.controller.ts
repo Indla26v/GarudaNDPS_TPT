@@ -12,10 +12,30 @@ import prisma from '../config/prisma';
 import { successResponse } from '../utils/transformers';
 import { getDashboardScope, ScopeUser } from '../utils/scope';
 
+interface CacheEntry {
+  data: any;
+  expiry: number;
+}
+const dashboardCache = new Map<string, CacheEntry>();
+const CACHE_TTL_SECONDS = 30; // 30 seconds
+
 export const getDashboardSummary = async (req: Request, res: Response) => {
   try {
     const user: ScopeUser = (req as any).user || {};
     const { psFilter, isStationLevel } = getDashboardScope(user);
+
+    // Generate cache key based on the user's role and police station id
+    const psIdStr = psFilter.ps_id ? psFilter.ps_id.toString() : 'all';
+    const cacheKey = `summary_${isStationLevel ? 'station' : 'district'}_${psIdStr}`;
+
+    const forceBypass = req.query.force === 'true';
+
+    if (!forceBypass) {
+      const cached = dashboardCache.get(cacheKey);
+      if (cached && Date.now() < cached.expiry) {
+        return res.json(successResponse(cached.data));
+      }
+    }
 
     // Build case/offender/seizure where clauses based on scope
     const caseWhere: any = { ...psFilter };
@@ -289,7 +309,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     });
 
     // ── Response ─────────────────────────────────────────────────────────
-    res.json(successResponse({
+    const summaryData = {
       // KPI cards
       totalCases,
       totalOffenders,
@@ -321,7 +341,15 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         entity_type: r.entity_type,
         entity_id: r.entity_id.toString(),
       })),
-    }));
+    };
+
+    // Cache the query result
+    dashboardCache.set(cacheKey, {
+      data: summaryData,
+      expiry: Date.now() + CACHE_TTL_SECONDS * 1000,
+    });
+
+    res.json(successResponse(summaryData));
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

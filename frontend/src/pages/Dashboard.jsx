@@ -41,28 +41,49 @@ const ALERT_ICON_MAP = {
   CONVICTION: IconCheckCircle,
 };
 
+// Simple in-memory client-side cache for tab switching
+let cachedSummary = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 30000; // 30 seconds cache
+
 export default function Dashboard() {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // If cache is valid, initialize with cached data and skip loading screen
+  const isCacheValid = cachedSummary && (Date.now() - lastFetchTime < CACHE_TTL);
+
+  const [summary, setSummary] = useState(isCacheValid ? cachedSummary : null);
+  const [loading, setLoading] = useState(!isCacheValid);
   const [error, setError] = useState('');
   const perms = usePermissions();
   const { lastEvent, isConnected } = useSSE();
 
   useEffect(() => {
-    fetchSummary();
+    fetchSummary(false);
   }, []);
 
-  // Refresh data on SSE events
+  // Refresh data on SSE events (bypasses cache)
   useEffect(() => {
     if (lastEvent && ['case_created', 'offender_created', 'data_updated'].includes(lastEvent.type)) {
-      fetchSummary();
+      fetchSummary(true);
     }
   }, [lastEvent]);
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (force = false) => {
+    const now = Date.now();
+    if (!force && cachedSummary && (now - lastFetchTime < CACHE_TTL)) {
+      setSummary(cachedSummary);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await api.get('/dashboard/summary');
+      if (!cachedSummary) {
+        setLoading(true);
+      }
+      const res = await api.get(`/dashboard/summary${force ? '?force=true' : ''}`);
+      cachedSummary = res.data.data;
+      lastFetchTime = Date.now();
       setSummary(res.data.data);
+      setError('');
     } catch (err) {
       setError('Failed to load dashboard data');
     } finally {

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import os from 'os';
 import authRoutes from './routes/auth.routes';
 import offendersRoutes from './routes/offenders.routes';
 import dashboardRoutes from './routes/dashboard.routes';
@@ -21,7 +22,11 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static uploads
-app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const isVercel = process.env.VERCEL === '1';
+const uploadsDir = isVercel 
+  ? path.join(os.tmpdir(), 'uploads')
+  : path.join(process.cwd(), 'uploads');
+app.use('/api/uploads', express.static(uploadsDir));
 
 // ── Public routes ─────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
