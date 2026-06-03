@@ -74,7 +74,7 @@ export default function CaseDetail() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <Link to="/cases" className="text-xs mb-2 inline-block" style={{ color: 'var(--color-garuda-400)' }}>← Back to Cases</Link>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
@@ -87,7 +87,7 @@ export default function CaseDetail() {
         {canEdit && (
           <Link
             to={`/cases/${id}/edit`}
-            className="px-4 py-2 rounded-lg text-sm font-medium"
+            className="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap"
             style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}
           >
             Edit Case
@@ -114,9 +114,9 @@ export default function CaseDetail() {
 
       {tab === 'overview' && (
         <>
-          <div className="rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <div className="rounded-xl p-6 overflow-x-auto" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-300)' }}>Case Progress</h3>
-            <div className="flex items-center gap-0">
+            <div className="flex items-center gap-0 min-w-[600px]">
               {STAGES.map((stage, i) => {
                 const isActive = i <= currentStageIdx;
                 const isCurrent = i === currentStageIdx;

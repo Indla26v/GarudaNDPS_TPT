@@ -366,12 +366,12 @@ export default function CaseForm() {
 
         <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Accused</h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               value={offenderSearch}
               onChange={(e) => setOffenderSearch(e.target.value)}
               placeholder="Search offender by name, Aadhaar, phone, email..."
-              className={`${inp} flex-1`}
+              className={`${inp} flex-1 min-w-[200px]`}
               style={fieldStyle}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchOffenders())}
             />
@@ -428,7 +428,7 @@ export default function CaseForm() {
 
         <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Seizure (optional)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <input placeholder="Contraband (kg)" value={seizure.contrabandKg} onChange={(e) => setSeizure({ ...seizure, contrabandKg: e.target.value })} className={inp} style={fieldStyle} />
             <input placeholder="Cash seized (₹)" value={seizure.cashAmount} onChange={(e) => setSeizure({ ...seizure, cashAmount: e.target.value })} className={inp} style={fieldStyle} />
             <input placeholder="Vehicles" value={seizure.vehiclesCount} onChange={(e) => setSeizure({ ...seizure, vehiclesCount: e.target.value })} className={inp} style={fieldStyle} />

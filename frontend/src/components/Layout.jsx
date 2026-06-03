@@ -238,14 +238,14 @@ export default function Layout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header
-          className="flex items-center justify-between px-6 py-3"
-          style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)', height: '101px' }}
+          className="flex flex-wrap items-center justify-between px-6 py-3 min-h-[101px] gap-4 flex-shrink-0"
+          style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)' }}
         >
           <div className="flex items-center h-full">
             <img 
               src={garudaLogo} 
               alt="Garuda Logo" 
-              className="h-15 object-contain pl-4 scale-150 transform origin-left"
+              className="h-20 object-contain pl-4"
             />
           </div>
           <div className="flex items-center gap-4 relative">

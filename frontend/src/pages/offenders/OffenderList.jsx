@@ -77,7 +77,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
             {isConsumerOnly ? 'Consumer Database' : 'Offender Database'}
@@ -86,7 +86,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
             {isConsumerOnly ? 'Search, filter, and manage consumer profiles' : 'Search, filter, and manage offender profiles'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button type="button" onClick={handleExport} className="btn btn-secondary btn-sm">
             Export CSV
           </button>

@@ -163,19 +163,19 @@ export default function OffenderForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
             {isEdit ? 'Edit Offender' : 'Add New Offender'}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>Fill in all proforma sections</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isEdit && (
-            <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
+            <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
               style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>Print History Sheet</button>
           )}
-          <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
+          <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
             style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>← Back</button>
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function OffenderForm() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--color-garuda-800)' }}>
+      <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: 'var(--color-garuda-800)' }}>
         {TABS.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
             className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === i ? 'text-white' : ''}`}
@@ -338,8 +338,8 @@ export default function OffenderForm() {
       </div>
 
       {/* Footer Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex flex-wrap gap-2">
           {activeTab > 0 && (
             <button onClick={() => setActiveTab(activeTab - 1)} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
               style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>← Previous</button>
@@ -350,7 +350,7 @@ export default function OffenderForm() {
           )}
         </div>
         <button onClick={handleSubmit} disabled={saving}
-          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all"
+          className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white cursor-pointer transition-all whitespace-nowrap"
           style={{ background: saving ? 'var(--color-garuda-600)' : 'linear-gradient(135deg, var(--color-accent-500), var(--color-accent-400))', boxShadow: saving ? 'none' : 'var(--shadow-glow)' }}>
           {saving ? 'Saving...' : isEdit ? 'Update Offender' : 'Create Offender'}
         </button>
