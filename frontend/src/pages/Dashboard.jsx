@@ -94,7 +94,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* ── Header + Quick Links ─────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
@@ -116,7 +116,7 @@ export default function Dashboard() {
               : ' — Tirupati District'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {perms.canRegisterCase && (
             <Link to="/cases/new" className="btn btn-primary btn-sm">
               + New Case
@@ -176,7 +176,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Seizure Stats Row ────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {[
           { label: 'Contraband Seized', val: `${fmt(summary?.totalContrabandKg)} Kg`, color: '#f59e0b', Icon: IconPackage },
           { label: 'Cash Seized', val: `₹${fmt(summary?.totalCashSeized)}`, color: '#22c55e', Icon: IconDollar },

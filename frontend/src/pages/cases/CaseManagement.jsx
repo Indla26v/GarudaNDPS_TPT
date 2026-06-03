@@ -53,7 +53,7 @@ export default function CaseManagement() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
             Case Management
@@ -63,7 +63,7 @@ export default function CaseManagement() {
           </p>
         </div>
         {(perms.canRegisterCase) && (
-          <Link to="/cases/new" className="btn btn-primary">
+          <Link to="/cases/new" className="btn btn-primary whitespace-nowrap">
             + Register New Case
           </Link>
         )}

@@ -63,14 +63,14 @@ export default function DistrictAnalytics() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>District Analytics</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
             Real-time aggregated intelligence across all Police Stations
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <span
             className="w-2 h-2 rounded-full animate-pulse"
             style={{ background: isConnected ? '#22c55e' : '#ef4444' }}
@@ -82,7 +82,7 @@ export default function DistrictAnalytics() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {METRIC_CARDS.map((card) => (
           <div
             key={card.key}

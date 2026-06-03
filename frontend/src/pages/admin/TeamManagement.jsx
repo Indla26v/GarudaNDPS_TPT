@@ -121,7 +121,7 @@ export default function TeamManagement() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>Team Management</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
@@ -130,7 +130,7 @@ export default function TeamManagement() {
         </div>
         <button
           onClick={() => { setEditTeam(null); setForm({ name: '', department: 'OPERATIONS', description: '' }); setShowForm(true); }}
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-sm whitespace-nowrap"
         >
           + New Team
         </button>
