@@ -207,42 +207,78 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       stationsToQuery = await prisma.police_stations.findMany();
     }
 
-    const psWiseData = await Promise.all(stationsToQuery.map(async (ps) => {
-      const psId = ps.id;
+    const stationIds = stationsToQuery.map((ps) => Number(ps.id));
 
-      const psCases = await prisma.cases.count({ where: { ps_id: psId } });
-      const psOffenders = await prisma.offenders.count({ where: { ps_id: psId } });
+    // Fallback if no stations
+    if (stationIds.length === 0) {
+      stationIds.push(-1);
+    }
 
-      const psArrests = await prisma.case_accused.count({
-        where: {
-          cases: { ps_id: psId },
-          arrest_status: 'ARRESTED',
-        },
-      });
-      const psAbsconding = await prisma.case_accused.count({
-        where: {
-          cases: { ps_id: psId },
-          arrest_status: 'ABSCONDING',
-        },
-      });
+    const [casesGrouped, offendersGrouped, arrestsGrouped, seizuresGrouped] = await Promise.all([
+      prisma.cases.groupBy({
+        by: ['ps_id'],
+        where: { ps_id: { in: stationIds } },
+        _count: { id: true },
+      }),
+      prisma.offenders.groupBy({
+        by: ['ps_id'],
+        where: { ps_id: { in: stationIds } },
+        _count: { id: true },
+      }),
+      prisma.$queryRawUnsafe<{ ps_id: bigint; arrest_status: string; count: bigint }[]>(
+        `SELECT c.ps_id, ca.arrest_status, COUNT(*)::bigint as count
+         FROM case_accused ca
+         JOIN cases c ON c.id = ca.case_id
+         WHERE c.ps_id IN (${stationIds.join(',')})
+         GROUP BY 1, 2`
+      ),
+      prisma.$queryRawUnsafe<{ ps_id: bigint; contraband_kg: number; cash_amount: number }[]>(
+        `SELECT c.ps_id, SUM(s.contraband_kg) as contraband_kg, SUM(s.cash_amount) as cash_amount
+         FROM seizures s
+         JOIN cases c ON c.id = s.case_id
+         WHERE c.ps_id IN (${stationIds.join(',')})
+         GROUP BY 1`
+      ),
+    ]);
 
-      const psSeizureAgg = await prisma.seizures.aggregate({
-        where: { cases: { ps_id: psId } },
-        _sum: { contraband_kg: true, cash_amount: true },
+    const casesMap = new Map(casesGrouped.map(g => [Number(g.ps_id), g._count.id]));
+    const offendersMap = new Map(offendersGrouped.map(g => [Number(g.ps_id), g._count.id]));
+
+    const arrestsMap = new Map<number, number>();
+    const abscondersMap = new Map<number, number>();
+    arrestsGrouped.forEach(r => {
+      const psId = Number(r.ps_id);
+      if (r.arrest_status === 'ARRESTED') {
+        arrestsMap.set(psId, Number(r.count));
+      } else if (r.arrest_status === 'ABSCONDING') {
+        abscondersMap.set(psId, Number(r.count));
+      }
+    });
+
+    const seizuresMap = new Map<number, { contraband_kg: number; cash_amount: number }>();
+    seizuresGrouped.forEach(r => {
+      seizuresMap.set(Number(r.ps_id), {
+        contraband_kg: Number(r.contraband_kg) || 0,
+        cash_amount: Number(r.cash_amount) || 0,
       });
+    });
+
+    const psWiseData = stationsToQuery.map((ps) => {
+      const psId = Number(ps.id);
+      const seizureData = seizuresMap.get(psId) || { contraband_kg: 0, cash_amount: 0 };
 
       return {
-        psId: psId.toString(),
+        psId: ps.id.toString(),
         psName: ps.name,
         psCode: ps.ps_code,
-        totalCases: psCases,
-        totalOffenders: psOffenders,
-        totalArrests: psArrests,
-        totalAbsconders: psAbsconding,
-        totalContrabandKg: psSeizureAgg._sum.contraband_kg || 0,
-        totalCashSeized: psSeizureAgg._sum.cash_amount || 0,
+        totalCases: casesMap.get(psId) || 0,
+        totalOffenders: offendersMap.get(psId) || 0,
+        totalArrests: arrestsMap.get(psId) || 0,
+        totalAbsconders: abscondersMap.get(psId) || 0,
+        totalContrabandKg: seizureData.contraband_kg,
+        totalCashSeized: seizureData.cash_amount,
       };
-    }));
+    });
 
     // ── Recent activity / alerts (scoped) ────────────────────────────────
     const recentCases = await prisma.cases.findMany({
