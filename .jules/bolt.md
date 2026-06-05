@@ -1,0 +1,3 @@
+## 2023-10-25 - Backend N+1 Query in Dashboard
+**Learning:** Found an N+1 query issue in `backend/src/controllers/dashboard.controller.ts` where fetching `psWiseData` runs 5 distinct queries (`cases`, `offenders`, `arrests`, `absconders`, `seizures`) per police station in a loop (`Promise.all` over `stationsToQuery.map`). For a district admin viewing 20 stations, this generates 100 queries, crippling performance.
+**Action:** Replace `stationsToQuery.map(...)` containing individual `prisma.count` and `prisma.aggregate` queries with 5 grouped queries executed concurrently (`Promise.all` containing `prisma.groupBy` and `prisma.$queryRawUnsafe`). Then use Maps in memory to join the data. This converts O(N) queries to O(1) queries.
