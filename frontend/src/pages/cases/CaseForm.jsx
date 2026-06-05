@@ -216,9 +216,12 @@ export default function CaseForm() {
           : [],
       };
       if (isEdit) {
-        await api.put(`/cases/${id}`, payload);
-        if (accused.length) await api.post(`/cases/${id}/accused`, accused.map((a) => ({ offenderId: a.offenderId, arrestStatus: a.arrestStatus })));
-        if (payload.seizures?.length) await api.post(`/cases/${id}/seizures`, payload.seizures);
+        const promises = [api.put(`/cases/${id}`, payload)];
+        if (accused.length) promises.push(api.post(`/cases/${id}/accused`, accused.map((a) => ({ offenderId: a.offenderId, arrestStatus: a.arrestStatus }))));
+        if (payload.seizures?.length) promises.push(api.post(`/cases/${id}/seizures`, payload.seizures));
+
+        await Promise.all(promises);
+
         navigate(`/cases/${id}`);
       } else {
         const res = await api.post('/cases', payload);
