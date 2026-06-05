@@ -13,6 +13,7 @@ import editRequestRoutes from './routes/edit_request.routes';
 import adminRoutes from './routes/admin.routes';
 import sseRoutes from './routes/sse.routes';
 import enforcementRoutes from './routes/enforcement.routes';
+import { warmUpConnection } from './config/prisma';
 
 dotenv.config();
 
@@ -49,6 +50,18 @@ app.use('/api/sse', sseRoutes);
 
 // ── Enforcement routes ────────────────────────────────────────────────
 app.use('/api/enforcement', enforcementRoutes);
+
+// ── Wake-up endpoint (warms Neon DB from sleep) ───────────────────────
+app.get('/api/wake', async (req, res) => {
+  const start = Date.now();
+  const ok = await warmUpConnection();
+  const elapsed = Date.now() - start;
+  if (ok) {
+    res.json({ status: 'ok', dbReady: true, latencyMs: elapsed });
+  } else {
+    res.status(503).json({ status: 'error', dbReady: false, latencyMs: elapsed });
+  }
+});
 
 // ── Health check ──────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

@@ -3,6 +3,7 @@
  * 
  * Manages a Server-Sent Events connection for real-time dashboard updates.
  * Automatically reconnects on disconnection with exponential backoff.
+ * Uses Page Visibility API to pause/resume connections when the tab is idle.
  * 
  * Usage:
  *   const { lastEvent, isConnected } = useSSE();
@@ -11,6 +12,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const SSE_URL = '/api/sse/connect';
 const MAX_RETRY_DELAY = 30000; // 30 seconds max
+const MAX_RETRIES = 10; // Stop retrying after 10 consecutive failures
+const IDLE_PAUSE_MS = 2 * 60 * 1000; // Pause SSE after 2 min of tab hidden
 
 export function useSSE() {
   const [lastEvent, setLastEvent] = useState(null);
@@ -18,15 +21,30 @@ export function useSSE() {
   const eventSourceRef = useRef(null);
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef(null);
+  const pausedRef = useRef(false);
+  const hiddenSinceRef = useRef(null);
+
+  const disconnect = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsConnected(false);
+  }, []);
 
   const connect = useCallback(() => {
     const token = localStorage.getItem('garuda_access_token');
     if (!token) return;
 
+    // Don't reconnect if paused (tab hidden for too long)
+    if (pausedRef.current) return;
+
     // Close existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+    disconnect();
 
     // EventSource doesn't support custom headers natively,
     // so we pass the token as a query parameter
@@ -51,6 +69,19 @@ export function useSSE() {
       setIsConnected(false);
       es.close();
 
+      // Stop retrying after max attempts to prevent flooding
+      if (retryCountRef.current >= MAX_RETRIES) {
+        console.warn('SSE: max retries reached, stopping reconnection');
+        pausedRef.current = true;
+        return;
+      }
+
+      // Don't retry if tab is hidden
+      if (document.visibilityState === 'hidden') {
+        pausedRef.current = true;
+        return;
+      }
+
       // Exponential backoff reconnection
       const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), MAX_RETRY_DELAY);
       retryCountRef.current += 1;
@@ -61,20 +92,41 @@ export function useSSE() {
     };
 
     eventSourceRef.current = es;
-  }, []);
+  }, [disconnect]);
 
+  // Handle tab visibility changes
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenSinceRef.current = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const idleMs = hiddenSinceRef.current
+          ? Date.now() - hiddenSinceRef.current
+          : 0;
+        hiddenSinceRef.current = null;
+
+        // If tab was hidden for a long time, the SSE connection is likely dead.
+        // Reconnect once (reset retry count for a fresh start).
+        if (idleMs > IDLE_PAUSE_MS || pausedRef.current) {
+          pausedRef.current = false;
+          retryCountRef.current = 0;
+          connect();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [connect]);
+
+  // Initial connection
   useEffect(() => {
     connect();
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (retryTimerRef.current) {
-        clearTimeout(retryTimerRef.current);
-      }
+      disconnect();
     };
-  }, [connect]);
+  }, [connect, disconnect]);
 
   return { lastEvent, isConnected };
 }

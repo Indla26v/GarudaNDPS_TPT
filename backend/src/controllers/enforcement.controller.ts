@@ -18,6 +18,22 @@ import { successResponse } from '../utils/transformers';
 import { getDashboardScope, ScopeUser } from '../utils/scope';
 import { logAudit } from '../utils/auditLogger';
 
+const STATE_CODES: Record<string, string> = {
+  'andhra pradesh': 'AP',
+  'ap': 'AP',
+  'kerala': 'KL',
+  'kl': 'KL',
+  'karnataka': 'KA',
+  'ka': 'KA',
+  'telangana': 'TS',
+  'ts': 'TS',
+};
+
+const DISTRICT_NUMBERS: Record<string, string> = {
+  'tirupati': '39',
+  'chittoor': '03',
+};
+
 // ── Helper: build enforcement scoping where clause ─────────────────────
 function getEnforcementWhere(user: ScopeUser): Record<string, unknown> {
   const DISTRICT_ROLES = ['SP', 'ASP'];
@@ -31,7 +47,20 @@ function getEnforcementWhere(user: ScopeUser): Record<string, unknown> {
 export const createEnforcementCheck = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { subjectName, subjectAge, subjectGender, subjectAadhaar, placeOfEnforcement, photoUrl } = req.body;
+    const {
+      subjectName,
+      subjectAge,
+      subjectGender,
+      subjectAadhaar,
+      placeOfEnforcement,
+      photoUrl,
+      subjectPhone,
+      subjectPan,
+      subjectAddress,
+      subjectFatherName,
+      subjectLandmark,
+      subjectOccupation
+    } = req.body;
 
     if (!subjectName || !placeOfEnforcement) {
       return res.status(400).json({ message: 'Subject name and place of enforcement are required' });
@@ -108,6 +137,12 @@ export const createEnforcementCheck = async (req: Request, res: Response) => {
         subject_aadhaar: subjectAadhaar || null,
         photo_url: photoUrl || null,
         place_of_enforcement: placeOfEnforcement,
+        subject_phone: subjectPhone || null,
+        subject_pan: subjectPan || null,
+        subject_address: subjectAddress || null,
+        subject_father_name: subjectFatherName || null,
+        subject_landmark: subjectLandmark || null,
+        subject_occupation: subjectOccupation || null,
         ndps_match: ndpsMatch,
         matched_offender_id: matchedOffenderId,
         criminal_record_found: criminalRecordFound,
@@ -354,7 +389,20 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
     if (!id || typeof id !== 'string') {
       return res.status(400).json({ message: 'Invalid check ID' });
     }
-    const { action, reviewNotes } = req.body;
+    const {
+      action,
+      reviewNotes,
+      subjectName,
+      subjectAge,
+      subjectGender,
+      subjectAadhaar,
+      subjectPhone,
+      subjectPan,
+      subjectAddress,
+      subjectFatherName,
+      subjectLandmark,
+      subjectOccupation
+    } = req.body;
 
     if (!action || !['approve', 'reject'].includes(action)) {
       return res.status(400).json({ message: 'action must be "approve" or "reject"' });
@@ -381,38 +429,115 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
       return res.json(successResponse(updated, 'Enforcement check rejected'));
     }
 
+    // Update the check with any edited/filled details before creating the consumer
+    const checkUpdate: any = {};
+    if (subjectName !== undefined) checkUpdate.subject_name = subjectName;
+    if (subjectAge !== undefined) checkUpdate.subject_age = subjectAge ? parseInt(String(subjectAge)) : null;
+    if (subjectGender !== undefined) checkUpdate.subject_gender = subjectGender || null;
+    if (subjectAadhaar !== undefined) checkUpdate.subject_aadhaar = subjectAadhaar || null;
+    if (subjectPhone !== undefined) checkUpdate.subject_phone = subjectPhone || null;
+    if (subjectPan !== undefined) checkUpdate.subject_pan = subjectPan || null;
+    if (subjectAddress !== undefined) checkUpdate.subject_address = subjectAddress || null;
+    if (subjectFatherName !== undefined) checkUpdate.subject_father_name = subjectFatherName || null;
+    if (subjectLandmark !== undefined) checkUpdate.subject_landmark = subjectLandmark || null;
+    if (subjectOccupation !== undefined) checkUpdate.subject_occupation = subjectOccupation || null;
+
+    let updatedCheck = check;
+    if (Object.keys(checkUpdate).length > 0) {
+      updatedCheck = await prisma.enforcement_checks.update({
+        where: { id: BigInt(id) },
+        data: checkUpdate,
+      });
+    }
+
+    // Auto-generate the unique sl_no for consumer DB entry
+    let slNo: string | null = null;
+    let offenderDistrict = updatedCheck.district || '';
+    let offenderState = 'Andhra Pradesh';
+
+    const ps = await prisma.police_stations.findUnique({
+      where: { id: updatedCheck.ps_id }
+    });
+    if (ps) {
+      if (!offenderDistrict) offenderDistrict = ps.district;
+      if (ps.state) offenderState = ps.state;
+    }
+
+    const stateCode = STATE_CODES[offenderState.toLowerCase().trim()];
+    const districtNum = DISTRICT_NUMBERS[offenderDistrict.toLowerCase().trim()];
+
+    if (stateCode && districtNum) {
+      const prefix = `${stateCode}${districtNum}-`;
+      const count = await prisma.offenders.count({
+        where: {
+          sl_no: {
+            startsWith: prefix
+          }
+        }
+      });
+      const nextNum = count + 1;
+      slNo = `${prefix}${String(nextNum).padStart(4, '0')}`;
+    } else {
+      const prefix = 'SL-';
+      const count = await prisma.offenders.count({
+        where: {
+          sl_no: {
+            startsWith: prefix
+          }
+        }
+      });
+      slNo = `${prefix}${(100 + count).toString()}`;
+    }
+
     // Approve: create consumer entry in offenders table
     const newOffender = await prisma.offenders.create({
       data: {
-        full_name: check.subject_name,
-        age: check.subject_age,
-        gender: check.subject_gender,
+        sl_no: slNo,
+        full_name: updatedCheck.subject_name,
+        age: updatedCheck.subject_age,
+        gender: updatedCheck.subject_gender,
         category: 'CONSUMER',
         test_result: 'POSITIVE',
         status: 'ACTIVE',
-        ps_id: check.ps_id,
-        district: check.district,
+        ps_id: updatedCheck.ps_id,
+        district: updatedCheck.district,
         created_by: BigInt(user.userId),
-        photo_url: check.photo_url,
+        photo_url: updatedCheck.photo_url,
+        father_husband_name: updatedCheck.subject_father_name,
+        full_address: updatedCheck.subject_address,
+        landmark_area: updatedCheck.subject_landmark,
+        occupation: updatedCheck.subject_occupation,
       },
     });
 
-    // If Aadhaar was captured, store it
-    if (check.subject_aadhaar) {
+    // If Aadhaar or PAN was captured, store it
+    if (updatedCheck.subject_aadhaar || updatedCheck.subject_pan) {
       await prisma.offender_identity_docs.create({
         data: {
           offender_id: newOffender.id,
-          aadhaar_no: check.subject_aadhaar,
+          aadhaar_no: updatedCheck.subject_aadhaar,
+          pan_card: updatedCheck.subject_pan,
+        },
+      });
+    }
+
+    // If phone number was captured, store it in offender_contacts
+    if (updatedCheck.subject_phone) {
+      await prisma.offender_contacts.create({
+        data: {
+          offender_id: newOffender.id,
+          contact_type: 'MOBILE_PRIMARY',
+          value: updatedCheck.subject_phone,
         },
       });
     }
 
     // If consumption type was captured, create drug profile
-    if (check.consumption_type) {
+    if (updatedCheck.consumption_type) {
       await prisma.offender_drug_profile.create({
         data: {
           offender_id: newOffender.id,
-          addiction_type: 'GANJA_ONLY', // default; can be enhanced later
+          addiction_type: 'GANJA_ONLY', // default
         },
       });
     }
@@ -431,7 +556,7 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
     });
 
     await logAudit('CREATE', 'OFFENDER', newOffender.id, req,
-      `Consumer created from enforcement check #${id}. Name: ${check.subject_name}`);
+      `Consumer created from enforcement check #${id}. Name: ${updatedCheck.subject_name}`);
     await logAudit('UPDATE', 'ENFORCEMENT_CHECK', updated.id, req,
       `SHO approved. Consumer offender #${newOffender.id} created.`);
 

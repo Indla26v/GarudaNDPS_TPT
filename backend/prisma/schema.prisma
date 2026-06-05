@@ -744,6 +744,12 @@ model enforcement_checks {
   photo_url             String?                 @db.VarChar(500)
   place_of_enforcement  String                  @db.VarChar(500)
   district              String                  @default("Tirupati") @db.VarChar(100)
+  subject_phone         String?                 @db.VarChar(50)
+  subject_pan           String?                 @db.VarChar(10)
+  subject_address       String?
+  subject_father_name   String?                 @db.VarChar(200)
+  subject_landmark      String?                 @db.VarChar(200)
+  subject_occupation    String?                 @db.VarChar(100)
 
   // Lookup results
   ndps_match            Boolean                 @default(false)

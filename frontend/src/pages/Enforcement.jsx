@@ -100,7 +100,11 @@ export default function Enforcement() {
 // ─────────────────────────────────────────────────────────────────────────
 function FieldCheckTab() {
   const [step, setStep] = useState('form'); // form → lookup → test → done
-  const [form, setForm] = useState({ subjectName: '', subjectAge: '', subjectGender: '', subjectAadhaar: '', placeOfEnforcement: '', photoUrl: '' });
+  const [form, setForm] = useState({
+    subjectName: '', subjectAge: '', subjectGender: '', subjectAadhaar: '',
+    placeOfEnforcement: '', photoUrl: '', subjectPhone: '', subjectPan: '',
+    subjectAddress: '', subjectFatherName: '', subjectLandmark: '', subjectOccupation: ''
+  });
   const [loading, setLoading] = useState(false);
   const [checkResult, setCheckResult] = useState(null);
   const [lookupResults, setLookupResults] = useState([]);
@@ -116,7 +120,11 @@ function FieldCheckTab() {
 
   const resetForm = () => {
     setStep('form');
-    setForm({ subjectName: '', subjectAge: '', subjectGender: '', subjectAadhaar: '', placeOfEnforcement: '', photoUrl: '' });
+    setForm({
+      subjectName: '', subjectAge: '', subjectGender: '', subjectAadhaar: '',
+      placeOfEnforcement: '', photoUrl: '', subjectPhone: '', subjectPan: '',
+      subjectAddress: '', subjectFatherName: '', subjectLandmark: '', subjectOccupation: ''
+    });
     setCheckResult(null);
     setLookupResults([]);
     setTestResult('');
@@ -332,6 +340,48 @@ function FieldCheckTab() {
                 style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
                 placeholder="12-digit Aadhaar" />
             </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Phone Number</label>
+              <input type="text" value={form.subjectPhone} onChange={e => setForm(f => ({ ...f, subjectPhone: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="Phone number" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>PAN Number</label>
+              <input type="text" maxLength={10} value={form.subjectPan} onChange={e => setForm(f => ({ ...f, subjectPan: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="PAN number" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Father/Husband Name</label>
+              <input type="text" value={form.subjectFatherName} onChange={e => setForm(f => ({ ...f, subjectFatherName: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="Father/Husband Name" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Occupation</label>
+              <input type="text" value={form.subjectOccupation} onChange={e => setForm(f => ({ ...f, subjectOccupation: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="Occupation" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Landmark/Area</label>
+              <input type="text" value={form.subjectLandmark} onChange={e => setForm(f => ({ ...f, subjectLandmark: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="Landmark/Area" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Home Address</label>
+              <textarea rows={2} value={form.subjectAddress} onChange={e => setForm(f => ({ ...f, subjectAddress: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg text-sm border resize-none"
+                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                placeholder="Home Address" />
+            </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Place of Enforcement *</label>
               <input type="text" required value={form.placeOfEnforcement} onChange={e => setForm(f => ({ ...f, placeOfEnforcement: e.target.value }))}
@@ -447,7 +497,13 @@ function FieldCheckTab() {
                 { label: 'Name', value: checkResult.subject_name },
                 { label: 'Age/Gender', value: `${checkResult.subject_age || '—'} / ${checkResult.subject_gender || '—'}` },
                 { label: 'Aadhaar', value: checkResult.subject_aadhaar ? `****${checkResult.subject_aadhaar.slice(-4)}` : '—' },
+                { label: 'PAN', value: checkResult.subject_pan || '—' },
+                { label: 'Phone', value: checkResult.subject_phone || '—' },
+                { label: 'Father Name', value: checkResult.subject_father_name || '—' },
+                { label: 'Occupation', value: checkResult.subject_occupation || '—' },
                 { label: 'Place', value: checkResult.place_of_enforcement },
+                { label: 'Landmark', value: checkResult.subject_landmark || '—' },
+                { label: 'Address', value: checkResult.subject_address || '—' },
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-lg" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)' }}>
                   <div className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--color-garuda-500)' }}>{item.label}</div>
@@ -629,12 +685,31 @@ function SHOReviewTab() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [reviewNotes, setReviewNotes] = useState({});
+  const [edits, setEdits] = useState({});
   const [message, setMessage] = useState(null);
 
   const fetchPending = useCallback(async () => {
     try {
       const res = await api.get('/enforcement/pending-review');
-      setChecks(res.data.data.checks || []);
+      const list = res.data.data.checks || [];
+      setChecks(list);
+      
+      const initialEdits = {};
+      list.forEach(c => {
+        initialEdits[c.id] = {
+          subjectName: c.subject_name || '',
+          subjectAge: c.subject_age || '',
+          subjectGender: c.subject_gender || '',
+          subjectAadhaar: c.subject_aadhaar || '',
+          subjectPhone: c.subject_phone || '',
+          subjectPan: c.subject_pan || '',
+          subjectAddress: c.subject_address || '',
+          subjectFatherName: c.subject_father_name || '',
+          subjectLandmark: c.subject_landmark || '',
+          subjectOccupation: c.subject_occupation || ''
+        };
+      });
+      setEdits(initialEdits);
     } catch (err) {
       console.error('Failed to fetch pending reviews:', err);
     } finally {
@@ -644,14 +719,28 @@ function SHOReviewTab() {
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
+  const handleEditChange = (checkId, field, val) => {
+    setEdits(prev => ({
+      ...prev,
+      [checkId]: {
+        ...prev[checkId],
+        [field]: val
+      }
+    }));
+  };
+
   const handleReview = async (id, action) => {
     setActionLoading(id);
     setMessage(null);
     try {
-      const res = await api.put(`/enforcement/${id}/review`, {
+      const body = {
         action,
         reviewNotes: reviewNotes[id] || '',
-      });
+      };
+      if (action === 'approve' && edits[id]) {
+        Object.assign(body, edits[id]);
+      }
+      const res = await api.put(`/enforcement/${id}/review`, body);
       setMessage({ type: 'success', text: res.data.message });
       fetchPending(); // refresh list
     } catch (err) {
@@ -714,13 +803,6 @@ function SHOReviewTab() {
                     <h3 className="text-base font-bold" style={{ color: 'var(--color-garuda-100)' }}>
                       {check.subject_name}
                     </h3>
-                    <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      <span>Age: {check.subject_age || '—'}</span>
-                      <span>•</span>
-                      <span>Gender: {check.subject_gender || '—'}</span>
-                      <span>•</span>
-                      <span>PS: {check.police_station?.name || '—'}</span>
-                    </div>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase" style={{
@@ -728,12 +810,71 @@ function SHOReviewTab() {
                 }}>Test +ve</span>
               </div>
 
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                <div><span style={{ color: 'var(--color-garuda-500)' }}>Place:</span> <span style={{ color: 'var(--color-garuda-200)' }}>{check.place_of_enforcement}</span></div>
-                <div><span style={{ color: 'var(--color-garuda-500)' }}>Consumption:</span> <span style={{ color: 'var(--color-garuda-200)' }}>{check.consumption_type || '—'}</span></div>
+              {/* Metadata */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs p-3 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
+                <div><span style={{ color: 'var(--color-garuda-500)' }}>Place of Enforcement:</span> <span style={{ color: 'var(--color-garuda-200)' }}>{check.place_of_enforcement}</span></div>
                 <div><span style={{ color: 'var(--color-garuda-500)' }}>Officer:</span> <span style={{ color: 'var(--color-garuda-200)' }}>{check.officer?.full_name || '—'}</span></div>
                 <div><span style={{ color: 'var(--color-garuda-500)' }}>Date:</span> <span style={{ color: 'var(--color-garuda-200)' }}>{new Date(check.created_at).toLocaleDateString()}</span></div>
+              </div>
+
+              {/* Editable Demographics for Consumer Ingestion */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 rounded-xl border text-xs" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                <h4 className="col-span-full font-bold text-slate-300 uppercase tracking-wider text-[10px]">Verify & Fill Consumer Details</h4>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Subject Name</label>
+                  <input type="text" value={edits[check.id]?.subjectName || ''} onChange={e => handleEditChange(check.id, 'subjectName', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Age</label>
+                  <input type="number" value={edits[check.id]?.subjectAge || ''} onChange={e => handleEditChange(check.id, 'subjectAge', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Gender</label>
+                  <select value={edits[check.id]?.subjectGender || ''} onChange={e => handleEditChange(check.id, 'subjectGender', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }}>
+                    <option value="">Select</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Aadhaar (12 digits)</label>
+                  <input type="text" maxLength={12} value={edits[check.id]?.subjectAadhaar || ''} onChange={e => handleEditChange(check.id, 'subjectAadhaar', e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">PAN Number</label>
+                  <input type="text" maxLength={10} value={edits[check.id]?.subjectPan || ''} onChange={e => handleEditChange(check.id, 'subjectPan', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Phone Number</label>
+                  <input type="text" value={edits[check.id]?.subjectPhone || ''} onChange={e => handleEditChange(check.id, 'subjectPhone', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Father/Husband Name</label>
+                  <input type="text" value={edits[check.id]?.subjectFatherName || ''} onChange={e => handleEditChange(check.id, 'subjectFatherName', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Occupation</label>
+                  <input type="text" value={edits[check.id]?.subjectOccupation || ''} onChange={e => handleEditChange(check.id, 'subjectOccupation', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Landmark/Area</label>
+                  <input type="text" value={edits[check.id]?.subjectLandmark || ''} onChange={e => handleEditChange(check.id, 'subjectLandmark', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-[10px] text-slate-400 mb-1">Home Address</label>
+                  <textarea rows={2} value={edits[check.id]?.subjectAddress || ''} onChange={e => handleEditChange(check.id, 'subjectAddress', e.target.value)}
+                    className="w-full px-2 py-1 rounded border text-xs resize-none" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-600)', color: '#fff' }} />
+                </div>
               </div>
 
               {/* Lookup flags */}

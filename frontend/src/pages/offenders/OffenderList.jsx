@@ -2,6 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
+const getAvatarColor = (name) => {
+  const colors = [
+    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4'
+  ];
+  if (!name) return colors[0];
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) {
+    sum += name.charCodeAt(i);
+  }
+  return colors[sum % colors.length];
+};
+
 export default function OffenderList({ isConsumerOnly = false }) {
   const [offenders, setOffenders] = useState([]);
   const [search, setSearch] = useState('');
@@ -153,7 +165,25 @@ export default function OffenderList({ isConsumerOnly = false }) {
                       onClick={() => navigate(`/offenders/${o.id}/edit`)}
                     >
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.slNo || '-'}</td>
-                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{o.fullName}</td>
+                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
+                        <div className="flex items-center gap-3">
+                          {o.photoUrl ? (
+                            <img
+                              src={o.photoUrl}
+                              alt={o.fullName}
+                              className="w-8 h-8 rounded-full object-cover border border-slate-700 bg-slate-900 flex-shrink-0"
+                            />
+                          ) : (
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                              style={{ backgroundColor: getAvatarColor(o.fullName) }}
+                            >
+                              {o.fullName?.charAt(0).toUpperCase() || '?'}
+                            </div>
+                          )}
+                          <span>{o.fullName}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{o.alias || '-'}</td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-1 rounded-md text-xs font-medium" style={{ background: cat.bg, color: cat.color }}>

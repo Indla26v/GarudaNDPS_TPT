@@ -14,6 +14,7 @@
  *   - District-level (SP, ASP): data for the entire district (all PS)
  */
 import { useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const ROLE_HIERARCHY = {
   SP:        0,
@@ -27,10 +28,10 @@ const STATION_LEVEL_ROLES = ['SDPO', 'SHO', 'CONSTABLE'];
 const DISTRICT_LEVEL_ROLES = ['SP', 'ASP'];
 
 export function usePermissions() {
-  const user = JSON.parse(localStorage.getItem('garuda_user') || '{}');
-  const role = user.role || '';
-  const department = user.department || '';
-  const policeStationId = user.policeStationId || null;
+  const { user } = useAuth();
+  const role = user?.role || '';
+  const department = user?.department || '';
+  const policeStationId = user?.policeStationId || null;
 
   return useMemo(() => {
     const rank = ROLE_HIERARCHY[role] ?? 99;
@@ -121,6 +122,7 @@ export function usePermissions() {
       isDistrictLevel,
 
       // Identity
+      isAdmin: role === 'SP',
       isSP: role === 'SP',
       isASP: role === 'ASP',
       isSDPO: role === 'SDPO',
@@ -161,5 +163,5 @@ export function usePermissions() {
       canEnforcementCreate: hasMinRole('CONSTABLE'),
       canEnforcementReview: hasMinRole('SHO'),
     };
-  }, [role, department]);
+  }, [role, department, policeStationId]);
 }

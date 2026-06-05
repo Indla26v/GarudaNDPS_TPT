@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import apLogo from '../assets/Appolice(emblem).png';
@@ -9,8 +9,17 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [idleLogout, setIdleLogout] = useState(false);
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user was logged out due to inactivity
+  useEffect(() => {
+    if (sessionStorage.getItem('garuda_idle_logout') === 'true') {
+      setIdleLogout(true);
+      sessionStorage.removeItem('garuda_idle_logout');
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,6 +62,18 @@ export default function Login() {
           }}
         >
           <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-garuda-100)' }}>Sign in to your account</h2>
+
+          {idleLogout && (
+            <div
+              className="mb-4 px-4 py-3 rounded-lg text-sm animate-fade-in flex items-center gap-2"
+              style={{ background: 'rgba(234, 179, 8, 0.08)', color: '#b45309', border: '1px solid rgba(234, 179, 8, 0.25)' }}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Session expired due to 15 minutes of inactivity. Please sign in again.
+            </div>
+          )}
 
           {error && (
             <div

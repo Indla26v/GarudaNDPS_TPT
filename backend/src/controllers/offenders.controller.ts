@@ -7,6 +7,22 @@ import { paramId } from '../utils/params';
 import { maskAadhaar, canRevealAadhaar } from '../utils/pii';
 import { broadcastEvent } from './sse.controller';
 
+const STATE_CODES: Record<string, string> = {
+  'andhra pradesh': 'AP',
+  'ap': 'AP',
+  'kerala': 'KL',
+  'kl': 'KL',
+  'karnataka': 'KA',
+  'ka': 'KA',
+  'telangana': 'TS',
+  'ts': 'TS',
+};
+
+const DISTRICT_NUMBERS: Record<string, string> = {
+  'tirupati': '39',
+  'chittoor': '03',
+};
+
 export const getOffenders = async (req: Request, res: Response) => {
   try {
     const { query, psId, category, page = 0, size = 10 } = req.query;
@@ -60,7 +76,8 @@ export const getOffenders = async (req: Request, res: Response) => {
       psName: o.police_stations?.name,
       district: o.district,
       mobile: o.offender_contacts?.[0]?.value || null,
-      totalCases: o.case_accused.length
+      totalCases: o.case_accused.length,
+      photoUrl: o.photo_url
     }));
 
     res.json(successResponse({ content: formatted, totalElements: total, totalPages: Math.ceil(total / take) }));
@@ -226,8 +243,51 @@ export const createOffender = async (req: Request, res: Response) => {
       usual_consumption_spot: usualConsumptionSpot
     } : undefined;
 
+    let slNo = data.slNo || data.sl_no || null;
+    if (!slNo) {
+      let offenderDistrict = data.district || '';
+      let offenderState = data.state || '';
+      
+      if (!offenderDistrict || !offenderState) {
+        const ps = await prisma.police_stations.findUnique({
+          where: { id: BigInt(data.psId || data.ps_id) }
+        });
+        if (ps) {
+          if (!offenderDistrict) offenderDistrict = ps.district;
+          if (!offenderState) offenderState = ps.state;
+        }
+      }
+
+      const stateCode = STATE_CODES[offenderState.toLowerCase().trim()];
+      const districtNum = DISTRICT_NUMBERS[offenderDistrict.toLowerCase().trim()];
+
+      if (stateCode && districtNum) {
+        const prefix = `${stateCode}${districtNum}-`;
+        const count = await prisma.offenders.count({
+          where: {
+            sl_no: {
+              startsWith: prefix
+            }
+          }
+        });
+        const nextNum = count + 1;
+        slNo = `${prefix}${String(nextNum).padStart(4, '0')}`;
+      } else {
+        // Fallback to generic SL- prefix
+        const prefix = 'SL-';
+        const count = await prisma.offenders.count({
+          where: {
+            sl_no: {
+              startsWith: prefix
+            }
+          }
+        });
+        slNo = `${prefix}${(100 + count).toString()}`;
+      }
+    }
+
     const dataObj: any = {
-      sl_no: data.slNo || data.sl_no || null,
+      sl_no: slNo,
       full_name: data.fullName || data.full_name,
       alias: data.alias || null,
       father_husband_name: data.fatherHusbandName || data.father_husband_name || null,

@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleGuard from './components/RoleGuard';
 import Layout from './components/Layout';
+import ConnectionGuard from './components/ConnectionGuard';
 import Login from './pages/Login';
 import NoAccess from './pages/NoAccess';
 import Dashboard from './pages/Dashboard';
@@ -26,29 +27,21 @@ import AuditLogs from './pages/admin/AuditLogs';
 import DataImport from './pages/admin/DataImport';
 import DistrictAnalytics from './pages/DistrictAnalytics';
 import Enforcement from './pages/Enforcement';
-import { usePermissions } from './hooks/usePermissions';
 import './index.css';
 
 function IndexRedirect() {
-  const perms = usePermissions();
-  if (perms.isAdmin) {
-    return <Navigate to="/admin/users" replace />;
-  }
   return <Navigate to="/dashboard" replace />;
 }
 
 function DashboardRoute() {
-  const perms = usePermissions();
-  if (perms.isAdmin) {
-    return <Navigate to="/admin/users" replace />;
-  }
   return <Dashboard />;
 }
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
+    <ConnectionGuard>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           
@@ -148,8 +141,9 @@ createRoot(document.getElementById('root')).render(
             {/* Catch-all: any unknown route within the layout → No Access */}
             <Route path="*" element={<NoAccess />} />
           </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ConnectionGuard>
   </StrictMode>
 );

@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
+import { useIdleTimeout } from '../hooks/useIdleTimeout';
 
 const AuthContext = createContext(null);
 
@@ -9,8 +10,69 @@ export function AuthProvider({ children }) {
     return stored ? JSON.parse(stored) : null;
   });
   const [loading, setLoading] = useState(false);
+  const [sessionValidated, setSessionValidated] = useState(false);
+  const validatingRef = useRef(false);
 
   const isAuthenticated = !!user && !!localStorage.getItem('garuda_access_token');
+
+  /**
+   * Validate session against the server.
+   * Called on app mount and when the tab regains focus after idle.
+   * Handles Neon cold-start delays gracefully via axios retry interceptor.
+   */
+  const validateSession = useCallback(async () => {
+    const token = localStorage.getItem('garuda_access_token');
+    if (!token || validatingRef.current) {
+      setSessionValidated(true);
+      return;
+    }
+
+    validatingRef.current = true;
+    try {
+      const res = await api.get('/auth/me');
+      const serverUser = res.data.data;
+      // Sync user data from server (role/department may have changed)
+      const userData = {
+        username: serverUser.username,
+        fullName: serverUser.full_name,
+        role: serverUser.role,
+        department: serverUser.department || null,
+        policeStationId: serverUser.police_station_id || null,
+      };
+      localStorage.setItem('garuda_user', JSON.stringify(userData));
+      setUser(userData);
+    } catch (err) {
+      // If 401/403 after retries, the token is truly invalid — logout
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('garuda_access_token');
+        localStorage.removeItem('garuda_refresh_token');
+        localStorage.removeItem('garuda_user');
+        setUser(null);
+      }
+      // For network errors, axios retry interceptor will have already retried.
+      // If still failing, we let the ConnectionGuard handle it.
+    } finally {
+      validatingRef.current = false;
+      setSessionValidated(true);
+    }
+  }, []);
+
+  // Validate session on initial mount
+  useEffect(() => {
+    validateSession();
+  }, [validateSession]);
+
+  // Re-validate when tab regains focus after being hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated) {
+        validateSession();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isAuthenticated, validateSession]);
 
   const login = async (username, password) => {
     setLoading(true);
@@ -28,6 +90,7 @@ export function AuthProvider({ children }) {
       };
       localStorage.setItem('garuda_user', JSON.stringify(userData));
       setUser(userData);
+      setSessionValidated(true);
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || 'Login failed';
@@ -37,7 +100,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async (reason) => {
     try {
       await api.post('/auth/logout');
     } catch {
@@ -47,10 +110,21 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('garuda_refresh_token');
     localStorage.removeItem('garuda_user');
     setUser(null);
-  };
+    if (reason === 'idle') {
+      // Store a flag so the login page can show an informative message
+      sessionStorage.setItem('garuda_idle_logout', 'true');
+    }
+  }, []);
+
+  // Auto-logout after 15 minutes of inactivity
+  useIdleTimeout(
+    () => logout('idle'),
+    15 * 60 * 1000, // 15 minutes
+    isAuthenticated
+  );
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, sessionValidated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
