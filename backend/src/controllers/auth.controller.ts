@@ -6,11 +6,10 @@ import prisma from '../config/prisma';
 import { convertBigIntsToNumbers, successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn('JWT_SECRET not set — using development fallback. Set JWT_SECRET in production.');
+const JWT_KEY = process.env.JWT_SECRET;
+if (!JWT_KEY) {
+  throw new Error('FATAL ERROR: JWT_SECRET is not set.');
 }
-const JWT_KEY = JWT_SECRET || 'G4rud4-Ant1Drug-Pl4tf0rm-S3cur3-K3y-2026-M1n1mum-256-B1t-L3ngth!!';
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES = 15;
 
