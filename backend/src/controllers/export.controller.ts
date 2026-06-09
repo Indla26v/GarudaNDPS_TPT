@@ -49,7 +49,11 @@ export const exportOffendersCsv = async (req: Request, res: Response) => {
   try {
     const where = getOffenderWhere((req as any).user);
     const { psId, query, category } = req.query;
-    if (psId) (where as any).ps_id = BigInt(String(psId));
+    if (psId) {
+      (where as any).ps_id = BigInt(String(psId));
+    } else if (psId === '') {
+      delete (where as any).ps_id;
+    }
     if (category) (where as any).category = String(category) as any;
     if (query) {
       const q = String(query);

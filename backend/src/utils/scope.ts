@@ -15,10 +15,10 @@ export interface ScopeUser {
 }
 
 /** Roles that see only their own police station data */
-const STATION_LEVEL_ROLES = ['SDPO', 'SHO', 'CONSTABLE'];
+const STATION_LEVEL_ROLES = ['SHO', 'CONSTABLE'];
 
 /** Roles that see the entire district (all police stations) */
-const DISTRICT_LEVEL_ROLES = ['SP', 'ASP'];
+const DISTRICT_LEVEL_ROLES = ['SP', 'ASP', 'SDPO'];
 
 /**
  * Returns a Prisma `where` clause scoping cases by police station.

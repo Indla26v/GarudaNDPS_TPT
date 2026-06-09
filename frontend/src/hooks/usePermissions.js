@@ -24,8 +24,8 @@ const ROLE_HIERARCHY = {
   CONSTABLE: 4,
 };
 
-const STATION_LEVEL_ROLES = ['SDPO', 'SHO', 'CONSTABLE'];
-const DISTRICT_LEVEL_ROLES = ['SP', 'ASP'];
+const STATION_LEVEL_ROLES = ['SHO', 'CONSTABLE'];
+const DISTRICT_LEVEL_ROLES = ['SP', 'ASP', 'SDPO'];
 
 export function usePermissions() {
   const { user } = useAuth();

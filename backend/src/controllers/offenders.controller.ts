@@ -30,6 +30,8 @@ export const getOffenders = async (req: Request, res: Response) => {
     let whereClause: any = { ...getOffenderWhere((req as any).user) };
     if (psId) {
       whereClause.ps_id = BigInt(psId as string);
+    } else if (psId === '') {
+      delete whereClause.ps_id;
     }
     if (category) {
       whereClause.category = category as any;

@@ -26,6 +26,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
     }
     return user?.policeStationId ? String(user.policeStationId) : '';
   });
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -38,7 +39,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
 
   useEffect(() => {
     fetchOffenders();
-  }, [page, psFilter, isConsumerOnly]);
+  }, [page, psFilter, categoryFilter, isConsumerOnly]);
 
   const fetchStations = async () => {
     try {
@@ -50,9 +51,13 @@ export default function OffenderList({ isConsumerOnly = false }) {
   const handleExport = async () => {
     try {
       const params = {};
-      if (psFilter) params.psId = psFilter;
+      params.psId = psFilter;
       if (search.trim()) params.query = search.trim();
-      if (isConsumerOnly) params.category = 'CONSUMER';
+      if (isConsumerOnly) {
+        params.category = 'CONSUMER';
+      } else if (categoryFilter) {
+        params.category = categoryFilter;
+      }
       const res = await api.get('/offenders/export', { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
@@ -70,8 +75,12 @@ export default function OffenderList({ isConsumerOnly = false }) {
     try {
       const params = { page, size: 20 };
       if (search.trim()) params.query = search.trim();
-      if (psFilter) params.psId = psFilter;
-      if (isConsumerOnly) params.category = 'CONSUMER';
+      params.psId = psFilter;
+      if (isConsumerOnly) {
+        params.category = 'CONSUMER';
+      } else if (categoryFilter) {
+        params.category = categoryFilter;
+      }
       const res = await api.get('/offenders', { params });
       const data = res.data.data;
       setOffenders(data?.content || []);
@@ -90,6 +99,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
     CONSUMER: { bg: 'rgba(59, 130, 246, 0.08)', color: '#1d4ed8' },
     LOCAL_PEDDLER: { bg: 'rgba(245, 158, 11, 0.08)', color: '#b45309' },
     SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
+    LOCAL_SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
     LOCAL_KINGPIN: { bg: 'rgba(236, 72, 153, 0.08)', color: '#be185d' },
     TRANSPORTER: { bg: 'rgba(34, 197, 94, 0.08)', color: '#15803d' },
     INTERSTATE_KINGPIN: { bg: 'rgba(168, 85, 247, 0.08)', color: '#6d28d9' },
@@ -134,6 +144,22 @@ export default function OffenderList({ isConsumerOnly = false }) {
             Search
           </button>
         </form>
+        {!isConsumerOnly && (
+          <select
+            id="offender-category-filter"
+            value={categoryFilter}
+            onChange={(e) => { setCategoryFilter(e.target.value); setPage(0); }}
+            className="select"
+          >
+            <option value="">All Categories</option>
+            <option value="CONSUMER">Consumer</option>
+            <option value="LOCAL_PEDDLER">Local Peddler</option>
+            <option value="LOCAL_SUPPLIER">Local Supplier</option>
+            <option value="LOCAL_KINGPIN">Local Kingpin</option>
+            <option value="TRANSPORTER">Transporter</option>
+            <option value="INTERSTATE_KINGPIN">Interstate Kingpin</option>
+          </select>
+        )}
         <select
           id="offender-ps-filter"
           value={psFilter}
@@ -154,16 +180,16 @@ export default function OffenderList({ isConsumerOnly = false }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
-                {['Sl.No', 'Full Name', 'Alias', 'Category', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
+                {['Sl.No', 'Full Name', 'Alias', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>Loading...</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>Loading...</td></tr>
               ) : offenders.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>No offenders found</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>No offenders found</td></tr>
               ) : (
                 offenders.map((o, i) => {
                   const cat = categoryColors[o.category] || { bg: 'transparent', color: 'var(--color-garuda-300)' };
@@ -171,7 +197,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
                     <tr
                       key={o.id}
                       className="table-row cursor-pointer"
-                      onClick={() => navigate(`/offenders/${o.id}/edit`)}
+                      onClick={() => navigate(`/offenders/${o.id}`)}
                     >
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.slNo || '-'}</td>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
@@ -194,11 +220,6 @@ export default function OffenderList({ isConsumerOnly = false }) {
                         </div>
                       </td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{o.alias || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-1 rounded-md text-xs font-medium" style={{ background: cat.bg, color: cat.color }}>
-                          {o.category?.replace('_', ' ') || '-'}
-                        </span>
-                      </td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{o.psName}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.district || '-'}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>{o.mobile || '-'}</td>
@@ -208,12 +229,20 @@ export default function OffenderList({ isConsumerOnly = false }) {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigate(`/offenders/${o.id}/edit`); }}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/offenders/${o.id}`); }}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/offenders/${o.id}/edit`); }}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -235,7 +264,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
               return (
                 <div
                   key={o.id}
-                  onClick={() => navigate(`/offenders/${o.id}/edit`)}
+                  onClick={() => navigate(`/offenders/${o.id}`)}
                   className="rounded-xl border p-4 space-y-3 transition-colors active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
                   style={{
                     background: 'var(--color-garuda-900)',

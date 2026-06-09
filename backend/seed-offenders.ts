@@ -63,7 +63,7 @@ async function main() {
       data: {
         ps_id: ps.id,
         sl_no: `SL-${ps.ps_code}-${(100 + i).toString()}`,
-        full_name: `${name} (${ps.ps_code})`,
+        full_name: name,
         alias: `${firstName.toLowerCase()}_${ps.ps_code.toLowerCase()}`,
         father_husband_name: 'Subba Rao',
         age: 22 + (i % 25),

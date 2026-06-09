@@ -58,6 +58,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="consumers" element={<OffenderList isConsumerOnly={true} />} />
             <Route path="enforcement" element={<Enforcement />} />
             <Route path="offenders/new" element={<OffenderForm />} />
+            <Route path="offenders/:id" element={<OffenderForm />} />
             <Route path="offenders/:id/edit" element={<OffenderForm />} />
 
             {/* Case Management (Page 3) */}
