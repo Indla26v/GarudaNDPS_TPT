@@ -129,12 +129,12 @@ export default function CaseLifecyclePanel({ caseId, canEdit }) {
           </ul>
         )}
         {canEdit && (
-          <form onSubmit={addHearing} className="grid grid-cols-2 gap-3">
-            <input placeholder="SC Number" className="px-2 py-2 rounded text-sm" style={inputStyle} value={hearingForm.scNumber || ''} onChange={e => setHearingForm(f => ({ ...f, scNumber: e.target.value }))} />
-            <input placeholder="Court name" className="px-2 py-2 rounded text-sm" style={inputStyle} value={hearingForm.courtName || ''} onChange={e => setHearingForm(f => ({ ...f, courtName: e.target.value }))} />
-            <input type="date" className="px-2 py-2 rounded text-sm" style={inputStyle} value={hearingForm.hearingDate || ''} onChange={e => setHearingForm(f => ({ ...f, hearingDate: e.target.value }))} />
-            <input type="date" className="px-2 py-2 rounded text-sm" style={inputStyle} value={hearingForm.nextHearingDate || ''} onChange={e => setHearingForm(f => ({ ...f, nextHearingDate: e.target.value }))} />
-            <button type="submit" className="col-span-2 px-4 py-2 rounded text-sm text-white" style={{ background: 'var(--color-accent-500)' }}>Add Hearing</button>
+          <form onSubmit={addHearing} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input placeholder="SC Number" className="px-2 py-2.5 rounded text-sm" style={inputStyle} value={hearingForm.scNumber || ''} onChange={e => setHearingForm(f => ({ ...f, scNumber: e.target.value }))} />
+            <input placeholder="Court name" className="px-2 py-2.5 rounded text-sm" style={inputStyle} value={hearingForm.courtName || ''} onChange={e => setHearingForm(f => ({ ...f, courtName: e.target.value }))} />
+            <input type="date" className="px-2 py-2.5 rounded text-sm" style={inputStyle} value={hearingForm.hearingDate || ''} onChange={e => setHearingForm(f => ({ ...f, hearingDate: e.target.value }))} />
+            <input type="date" className="px-2 py-2.5 rounded text-sm" style={inputStyle} value={hearingForm.nextHearingDate || ''} onChange={e => setHearingForm(f => ({ ...f, nextHearingDate: e.target.value }))} />
+            <button type="submit" className="col-span-1 sm:col-span-2 px-4 py-2.5 rounded text-sm text-white font-semibold cursor-pointer" style={{ background: 'var(--color-accent-500)' }}>Add Hearing</button>
           </form>
         )}
       </div>
@@ -152,15 +152,15 @@ export default function CaseLifecyclePanel({ caseId, canEdit }) {
           </ul>
         )}
         {canEdit && (
-          <form onSubmit={addBail} className="grid grid-cols-2 gap-3">
-            <select className="px-2 py-2 rounded text-sm" style={inputStyle} value={bailForm.status || 'PENDING'} onChange={e => setBailForm(f => ({ ...f, status: e.target.value }))}>
+          <form onSubmit={addBail} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select className="px-2 py-2.5 rounded text-sm cursor-pointer" style={inputStyle} value={bailForm.status || 'PENDING'} onChange={e => setBailForm(f => ({ ...f, status: e.target.value }))}>
               <option value="PENDING">Pending</option>
               <option value="GRANTED">Granted</option>
               <option value="REJECTED">Rejected</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
-            <input placeholder="Court" className="px-2 py-2 rounded text-sm" style={inputStyle} value={bailForm.courtName || ''} onChange={e => setBailForm(f => ({ ...f, courtName: e.target.value }))} />
-            <button type="submit" className="col-span-2 px-4 py-2 rounded text-sm text-white" style={{ background: 'var(--color-accent-500)' }}>Add Bail Record</button>
+            <input placeholder="Court" className="px-2 py-2.5 rounded text-sm" style={inputStyle} value={bailForm.courtName || ''} onChange={e => setBailForm(f => ({ ...f, courtName: e.target.value }))} />
+            <button type="submit" className="col-span-1 sm:col-span-2 px-4 py-2.5 rounded text-sm text-white font-semibold cursor-pointer" style={{ background: 'var(--color-accent-500)' }}>Add Bail Record</button>
           </form>
         )}
       </div>

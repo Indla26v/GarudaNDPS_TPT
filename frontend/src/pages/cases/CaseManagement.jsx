@@ -130,8 +130,9 @@ export default function CaseManagement() {
           </p>
         </div>
       ) : (
-        <div className="card rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="card rounded-xl overflow-hidden border border-slate-100/50 dark:border-slate-800">
+          {/* Desktop View */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="table-header">
@@ -178,6 +179,49 @@ export default function CaseManagement() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="block sm:hidden p-4 space-y-3">
+            {cases.map((c) => {
+              const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
+              return (
+                <div
+                  key={c.id}
+                  onClick={() => navigate(`/cases/${c.id}`)}
+                  className="rounded-xl border p-4 space-y-3 transition-colors active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
+                  style={{
+                    background: 'var(--color-garuda-900)',
+                    borderColor: 'var(--color-garuda-700)',
+                  }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-sm" style={{ color: 'var(--color-garuda-100)' }}>FIR: {c.firNo}</h4>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>
+                        {c.psName || '—'} • {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
+                      </p>
+                    </div>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                      style={{ background: stage.bg + '14', color: stage.bg }}
+                    >
+                      {stage.label}
+                    </span>
+                  </div>
+
+                  <div className="text-xs py-1.5 px-2.5 rounded" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-250)' }}>
+                    <span className="font-semibold text-slate-500 mr-1">Section:</span>
+                    <span style={{ color: 'var(--color-garuda-100)' }}>{c.sectionOfLaw || '—'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span style={{ color: 'var(--color-garuda-400)' }}>Linked Accused</span>
+                    <span className="font-bold" style={{ color: 'var(--color-accent-400)' }}>{c.accused?.length || 0} accused</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

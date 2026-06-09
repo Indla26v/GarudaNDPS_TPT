@@ -149,6 +149,15 @@ body {
   min-height: 100vh;
 }
 
+/* ---- Hide Scrollbar Utility ---- */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 /* ---- Scrollbar Styling ---- */
 ::-webkit-scrollbar {
   width: 6px;

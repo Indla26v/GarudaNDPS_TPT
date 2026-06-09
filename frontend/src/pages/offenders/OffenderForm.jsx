@@ -278,11 +278,15 @@ export default function OffenderForm() {
       )}
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: 'var(--color-garuda-800)' }}>
+      <div className="flex overflow-x-auto whitespace-nowrap scrollbar-none gap-1 p-1 rounded-xl flex-row" style={{ background: 'var(--color-garuda-800)' }}>
         {TABS.map((tab, i) => (
           <button key={tab} onClick={() => setActiveTab(i)}
-            className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${activeTab === i ? 'text-white' : ''}`}
-            style={{ background: activeTab === i ? 'var(--color-garuda-600)' : 'transparent', color: activeTab === i ? 'white' : 'var(--color-garuda-400)' }}>
+            className="flex-shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            style={{
+              background: activeTab === i ? 'var(--color-garuda-600)' : 'transparent',
+              color: activeTab === i ? 'var(--color-garuda-100)' : 'var(--color-garuda-400)'
+            }}
+          >
             {tab}
           </button>
         ))}
@@ -407,13 +411,13 @@ export default function OffenderForm() {
         {activeTab === 2 && (
           <div className="space-y-4">
             {form.contacts.map((c, i) => (
-              <div key={i} className="flex gap-3 items-start p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
-                <select className="px-2 py-2 rounded text-xs" style={inputStyle} value={c.contactType} onChange={e => updateContact(i, 'contactType', e.target.value)}>
+              <div key={i} className="flex flex-col md:flex-row gap-3 items-stretch md:items-start p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
+                <select className="px-2 py-2.5 rounded text-xs w-full md:w-auto" style={inputStyle} value={c.contactType} onChange={e => updateContact(i, 'contactType', e.target.value)}>
                   {CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
                 </select>
-                <input className="flex-1 px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Value" value={c.value} onChange={e => updateContact(i, 'value', e.target.value)} />
-                <input className="w-40 px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Notes" value={c.notes||''} onChange={e => updateContact(i, 'notes', e.target.value)} />
-                <button onClick={() => removeContact(i)} className="px-2 py-2 rounded text-xs text-red-400 cursor-pointer" style={{ background: 'rgba(239,68,68,0.15)' }}>✕</button>
+                <input className="flex-1 px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Value" value={c.value} onChange={e => updateContact(i, 'value', e.target.value)} />
+                <input className="w-full md:w-40 px-3 py-2.5 rounded text-sm" style={inputStyle} placeholder="Notes" value={c.notes||''} onChange={e => updateContact(i, 'notes', e.target.value)} />
+                <button onClick={() => removeContact(i)} className="px-3 py-2 rounded text-xs text-red-400 cursor-pointer self-end md:self-start w-full md:w-auto" style={{ background: 'rgba(239,68,68,0.15)' }}>✕ Remove</button>
               </div>
             ))}
             <button onClick={addContact} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
@@ -473,20 +477,20 @@ export default function OffenderForm() {
         {/* Criminal History */}
         {activeTab === 5 && (
           <div className="space-y-4">
-            <div className="flex gap-4 items-center mb-2">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-center mb-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer" style={labelStyle}>
                 <input type="checkbox" checked={form.previousCrimeHistory} onChange={e => set('previousCrimeHistory', e.target.checked)} />
                 Previous crime history exists
               </label>
-              <Field label="History Sheet Status"><input className={inp + ' w-48'} style={inputStyle} value={form.historySheetStatus} onChange={e => set('historySheetStatus', e.target.value)} /></Field>
+              <Field label="History Sheet Status"><input className={inp + ' w-full sm:w-48'} style={inputStyle} value={form.historySheetStatus} onChange={e => set('historySheetStatus', e.target.value)} /></Field>
             </div>
             {form.criminalHistories.map((ch, i) => (
-              <div key={i} className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="CR No" value={ch.previousCrNo} onChange={e => updateCrimHistory(i, 'previousCrNo', e.target.value)} />
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Previous PS" value={ch.previousPs} onChange={e => updateCrimHistory(i, 'previousPs', e.target.value)} />
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Sections of Law" value={ch.sectionsOfLaw} onChange={e => updateCrimHistory(i, 'sectionsOfLaw', e.target.value)} />
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Case Stage" value={ch.caseStage} onChange={e => updateCrimHistory(i, 'caseStage', e.target.value)} />
-                <button onClick={() => removeCrimHistory(i)} className="px-2 py-2 rounded text-xs text-red-400 cursor-pointer" style={{ background: 'rgba(239,68,68,0.15)' }}>✕</button>
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="CR No" value={ch.previousCrNo} onChange={e => updateCrimHistory(i, 'previousCrNo', e.target.value)} />
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Previous PS" value={ch.previousPs} onChange={e => updateCrimHistory(i, 'previousPs', e.target.value)} />
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Sections of Law" value={ch.sectionsOfLaw} onChange={e => updateCrimHistory(i, 'sectionsOfLaw', e.target.value)} />
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Case Stage" value={ch.caseStage} onChange={e => updateCrimHistory(i, 'caseStage', e.target.value)} />
+                <button onClick={() => removeCrimHistory(i)} className="px-2 py-2 rounded text-xs text-red-400 cursor-pointer flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 sm:col-span-2 md:col-span-1 border border-red-500/20">✕ Remove</button>
               </div>
             ))}
             <button onClick={addCrimHistory} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
@@ -498,14 +502,14 @@ export default function OffenderForm() {
         {activeTab === 6 && (
           <div className="space-y-4">
             {form.supplyChainLinks.map((lk, i) => (
-              <div key={i} className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
-                <select className="px-2 py-2 rounded text-xs" style={inputStyle} value={lk.linkType} onChange={e => updateLink(i, 'linkType', e.target.value)}>
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
+                <select className="px-2 py-2.5 rounded text-xs w-full cursor-pointer" style={inputStyle} value={lk.linkType} onChange={e => updateLink(i, 'linkType', e.target.value)}>
                   {LINK_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
                 </select>
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Name" value={lk.linkedName||''} onChange={e => updateLink(i, 'linkedName', e.target.value)} />
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Contact" value={lk.linkedContact||''} onChange={e => updateLink(i, 'linkedContact', e.target.value)} />
-                <input className="px-3 py-2 rounded text-sm" style={inputStyle} placeholder="Notes" value={lk.notes||''} onChange={e => updateLink(i, 'notes', e.target.value)} />
-                <button onClick={() => removeLink(i)} className="px-2 py-2 rounded text-xs text-red-400 cursor-pointer" style={{ background: 'rgba(239,68,68,0.15)' }}>✕</button>
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Name" value={lk.linkedName||''} onChange={e => updateLink(i, 'linkedName', e.target.value)} />
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Contact" value={lk.linkedContact||''} onChange={e => updateLink(i, 'linkedContact', e.target.value)} />
+                <input className="px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Notes" value={lk.notes||''} onChange={e => updateLink(i, 'notes', e.target.value)} />
+                <button onClick={() => removeLink(i)} className="px-2 py-2 rounded text-xs text-red-400 cursor-pointer flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 sm:col-span-2 md:col-span-1 border border-red-500/20">✕ Remove</button>
               </div>
             ))}
             <button onClick={addLink} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"

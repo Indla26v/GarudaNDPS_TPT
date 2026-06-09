@@ -130,12 +130,11 @@ const DEPT_FULL_LABELS = {
   POLICE:          'Police Department',
   CYBER_ANALYTICS: 'Cyber Analytics (STF)',
   EXCISE:          'Excise Department',
-};
-
-export default function Layout() {
+};export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [policeStationName, setPoliceStationName] = useState(null);
   const [darkMode] = useState(() => {
@@ -169,26 +168,48 @@ export default function Layout() {
   const deptLabel = DEPT_LABELS[user?.department] || user?.department;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden relative">
+      {/* Backdrop overlay on mobile */}
+      {mobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 md:hidden" 
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* ---- Sidebar ---- */}
       <aside
-        className={`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col transform ${
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 md:static md:flex md:flex-col ${
+          sidebarOpen ? 'md:w-64' : 'md:w-16'
+        } transition-all duration-300`}
         style={{ background: '#e8750a', borderRight: '1px solid rgba(255,255,255,0.15)' }}
       >
         {/* Brand */}
-        <div className="flex items-center justify-center px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+        <div className={`flex items-center ${sidebarOpen ? 'justify-between px-4' : 'justify-center px-2'} md:justify-center py-5`} style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
           <img 
             src={apLogo}
             alt="AP Police Logo" 
             className="w-15 h-15 object-contain flex-shrink-0 bg-white rounded-full p-0.5"
           />
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            className="p-1.5 rounded-lg text-white hover:bg-white/10 md:hidden cursor-pointer"
+            aria-label="Close sidebar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Nav Items — grouped by section, conditionally rendered based on role + department */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {navSections.map((section, si) => (
             <div key={section.title} className={si > 0 ? 'mt-5' : ''}>
-              {sidebarOpen && (
+              {(sidebarOpen || mobileSidebarOpen) && (
                 <p
                   className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-2"
                   style={{ color: 'rgba(255,255,255,0.5)' }}
@@ -206,6 +227,7 @@ export default function Layout() {
                       key={item.path}
                       to={item.path}
                       id={`nav-${item.path.replace(/\//g, '-').replace(/^-/, '')}`}
+                      onClick={() => setMobileSidebarOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
                       style={{
                         background: active ? 'rgba(255,255,255,0.2)' : 'transparent',
@@ -215,7 +237,7 @@ export default function Layout() {
                       onMouseOut={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <NavIcon size={18} color={active ? '#fff' : 'rgba(255,255,255,0.75)'} />
-                      {sidebarOpen && <span>{item.label}</span>}
+                      {(sidebarOpen || mobileSidebarOpen) && <span>{item.label}</span>}
                     </Link>
                   );
                 })}
@@ -227,7 +249,7 @@ export default function Layout() {
         {/* Toggle */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="px-4 py-3 text-sm transition-colors cursor-pointer"
+          className="hidden md:block px-4 py-3 text-sm transition-colors cursor-pointer"
           style={{ color: 'rgba(255,255,255,0.65)', borderTop: '1px solid rgba(255,255,255,0.15)' }}
         >
           {sidebarOpen ? '← Collapse' : '→'}
@@ -238,21 +260,31 @@ export default function Layout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header
-          className="flex flex-wrap items-center justify-between px-6 py-3 min-h-[101px] gap-4 flex-shrink-0"
+          className="flex items-center justify-between px-4 sm:px-6 py-3 min-h-[101px] gap-4 flex-shrink-0"
           style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)' }}
         >
-          <div className="flex items-center h-full">
+          <div className="flex items-center gap-3 h-full">
+            {/* Hamburger menu for mobile */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 md:hidden cursor-pointer flex items-center justify-center"
+              aria-label="Open sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             <img 
               src={garudaLogo} 
               alt="Garuda Logo" 
-              className="h-20 object-contain pl-4"
+              className="h-10 sm:h-20 max-w-[150px] sm:max-w-none object-contain"
             />
           </div>
           <div className="flex items-center gap-4 relative">
             <button
               id="user-profile-badge"
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 cursor-pointer select-none"
+              className="flex items-center gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full sm:rounded-lg border transition-all duration-200 cursor-pointer select-none"
               style={{
                 borderColor: 'var(--color-garuda-700)',
                 background: 'var(--color-dropdown-bg, #ffffff)',
@@ -263,13 +295,19 @@ export default function Layout() {
               onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-garuda-600)'; }}
               onMouseOut={(e) => { e.currentTarget.style.background = 'var(--color-dropdown-bg, #ffffff)'; }}
             >
-              <span className="font-semibold">{user?.fullName || 'Rama Krishna'}</span>
-              <span style={{ color: 'var(--color-garuda-500)' }}>|</span>
-              <span style={{ color: 'var(--color-garuda-400)', fontSize: '12px' }}>
+              {/* Mobile Initials Avatar */}
+              <span className="sm:hidden w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs bg-indigo-100 text-indigo-700 border border-indigo-200/50">
+                {user?.fullName ? user.fullName.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'LS'}
+              </span>
+
+              {/* Desktop Details */}
+              <span className="hidden sm:inline font-semibold">{user?.fullName || 'Rama Krishna'}</span>
+              <span style={{ color: 'var(--color-garuda-500)' }} className="hidden sm:inline">|</span>
+              <span style={{ color: 'var(--color-garuda-400)', fontSize: '12px' }} className="hidden sm:inline">
                 {(roleLabel || 'ASP')} {(deptLabel || 'STF')}
               </span>
               <svg 
-                className={`w-3.5 h-3.5 ml-1 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} 
+                className={`hidden sm:inline w-3.5 h-3.5 ml-1 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24" 
@@ -356,7 +394,7 @@ export default function Layout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6" style={{ background: 'var(--color-garuda-900)' }}>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ background: 'var(--color-garuda-900)' }}>
           <Outlet />
         </main>
       </div>

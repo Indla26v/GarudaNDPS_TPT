@@ -120,14 +120,14 @@ export default function DistrictAnalytics() {
 
             return (
               <div key={ps.psId} className="space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                   <span className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>
                     {ps.psName}
                     <span className="text-xs ml-2 font-mono" style={{ color: 'var(--color-garuda-500)' }}>
                       {ps.psCode}
                     </span>
                   </span>
-                  <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-x-4 gap-y-1 text-xs flex-wrap">
                     <span style={{ color: '#2563eb' }}>{formatNumber(ps.totalCases)} cases</span>
                     <span style={{ color: '#16a34a' }}>{formatNumber(ps.totalArrests)} arrests</span>
                     <span style={{ color: '#dc2626' }}>{formatNumber(ps.totalAbsconders)} absconders</span>

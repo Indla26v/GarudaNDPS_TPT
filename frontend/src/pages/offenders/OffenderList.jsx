@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 const getAvatarColor = (name) => {
   const colors = [
@@ -15,9 +16,16 @@ const getAvatarColor = (name) => {
 };
 
 export default function OffenderList({ isConsumerOnly = false }) {
+  const { user } = useAuth();
   const [offenders, setOffenders] = useState([]);
   const [search, setSearch] = useState('');
-  const [psFilter, setPsFilter] = useState('');
+  const [psFilter, setPsFilter] = useState(() => {
+    const role = user?.role;
+    if (role === 'SP' || role === 'ASP' || role === 'SDPO') {
+      return '';
+    }
+    return user?.policeStationId ? String(user.policeStationId) : '';
+  });
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -140,8 +148,9 @@ export default function OffenderList({ isConsumerOnly = false }) {
       </div>
 
       {/* Table */}
-      <div className="card rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="card rounded-xl overflow-hidden border border-slate-100/50 dark:border-slate-800">
+        {/* Desktop View */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
@@ -212,6 +221,70 @@ export default function OffenderList({ isConsumerOnly = false }) {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block sm:hidden p-4 space-y-3">
+          {loading ? (
+            <div className="py-8 text-center text-sm" style={{ color: 'var(--color-garuda-500)' }}>Loading...</div>
+          ) : offenders.length === 0 ? (
+            <div className="py-8 text-center text-sm" style={{ color: 'var(--color-garuda-500)' }}>No profiles found</div>
+          ) : (
+            offenders.map((o) => {
+              const cat = categoryColors[o.category] || { bg: 'transparent', color: 'var(--color-garuda-300)' };
+              return (
+                <div
+                  key={o.id}
+                  onClick={() => navigate(`/offenders/${o.id}/edit`)}
+                  className="rounded-xl border p-4 space-y-3 transition-colors active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
+                  style={{
+                    background: 'var(--color-garuda-900)',
+                    borderColor: 'var(--color-garuda-700)',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    {o.photoUrl ? (
+                      <img
+                        src={o.photoUrl}
+                        alt={o.fullName}
+                        className="w-10 h-10 rounded-full object-cover border border-slate-700 bg-slate-900 flex-shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ backgroundColor: getAvatarColor(o.fullName) }}
+                      >
+                        {o.fullName?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm truncate" style={{ color: 'var(--color-garuda-100)' }}>{o.fullName}</h4>
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>
+                        Alias: {o.alias || '—'} • Mobile: {o.mobile || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: 'var(--color-garuda-700)' }}>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider" style={{ background: cat.bg, color: cat.color }}>
+                      {o.category?.replace('_', ' ') || '-'}
+                    </span>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold" style={{ color: 'var(--color-garuda-200)' }}>{o.psName}</p>
+                      <p className="text-[10px]" style={{ color: 'var(--color-garuda-500)' }}>{o.district || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-lg text-xs" style={{ background: 'var(--color-garuda-600)' }}>
+                    <span style={{ color: 'var(--color-garuda-400)' }}>Cases Linked</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(59,130,246,0.08)', color: '#1d4ed8' }}>
+                      {o.totalCases || 0}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Pagination */}

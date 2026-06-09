@@ -32,7 +32,7 @@ export default function NoAccess() {
       <div
         className="text-center p-10 rounded-2xl max-w-lg mx-auto"
         style={{
-          background: 'linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95))',
+          background: 'linear-gradient(135deg, var(--color-garuda-800), var(--color-garuda-900))',
           border: '1px solid var(--color-garuda-700)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         }}

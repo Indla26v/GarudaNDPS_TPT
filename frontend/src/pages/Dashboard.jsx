@@ -161,7 +161,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {KPI_CARDS.map((card, i) => (
           <div
             key={card.key}

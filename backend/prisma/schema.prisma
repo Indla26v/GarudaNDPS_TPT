@@ -47,34 +47,34 @@ model case_accused {
 }
 
 model cases {
-  id                   BigInt            @id @default(autoincrement())
-  fir_no               String            @db.VarChar(50)
-  ps_id                BigInt
-  section_of_law       String?           @db.VarChar(300)
-  case_date            DateTime?         @db.Date
-  stage                case_stage        @default(FIR)
-  nature_of_offence    String?           @db.VarChar(500)
-  contraband_type      contraband_type?
-  quantity             Decimal?          @db.Decimal(12, 3)
-  quantity_unit        quantity_unit?
-  street_value         Decimal?          @db.Decimal(15, 2)
-  source_location      String?           @db.VarChar(300)
-  destination_location String?           @db.VarChar(300)
-  intelligence_notes   String?
-  department           case_department   @default(POLICE)
-  created_by           BigInt?
-  created_at           DateTime          @default(now()) @db.Timestamp(6)
-  is_history_sheet     Boolean           @default(false)
-  is_rowdy_sheet       Boolean           @default(false)
-  relevant_files       String?           @db.VarChar(1000)
-  updated_at           DateTime          @default(now()) @db.Timestamp(6)
-  case_accused         case_accused[]
-  users                users?            @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  police_stations      police_stations   @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  seizures             seizures[]
-  charge_sheets        charge_sheets?
-  court_hearings       court_hearings[]
-  bail_records         bail_records[]
+  id                     BigInt                   @id @default(autoincrement())
+  fir_no                 String                   @db.VarChar(50)
+  ps_id                  BigInt
+  section_of_law         String?                  @db.VarChar(300)
+  case_date              DateTime?                @db.Date
+  stage                  case_stage               @default(FIR)
+  nature_of_offence      String?                  @db.VarChar(500)
+  contraband_type        contraband_type?
+  quantity               Decimal?                 @db.Decimal(12, 3)
+  quantity_unit          quantity_unit?
+  street_value           Decimal?                 @db.Decimal(15, 2)
+  source_location        String?                  @db.VarChar(300)
+  destination_location   String?                  @db.VarChar(300)
+  intelligence_notes     String?
+  department             case_department          @default(POLICE)
+  created_by             BigInt?
+  created_at             DateTime                 @default(now()) @db.Timestamp(6)
+  is_history_sheet       Boolean                  @default(false)
+  is_rowdy_sheet         Boolean                  @default(false)
+  relevant_files         String?                  @db.VarChar(1000)
+  updated_at             DateTime                 @default(now()) @db.Timestamp(6)
+  case_accused           case_accused[]
+  users                  users?                   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_stations        police_stations          @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seizures               seizures[]
+  charge_sheets          charge_sheets?
+  court_hearings         court_hearings[]
+  bail_records           bail_records[]
   interrogation_sessions interrogation_sessions[]
 
   @@index([case_date], map: "idx_cases_date")
@@ -222,16 +222,16 @@ model offenders {
 }
 
 model charge_sheets {
-  id                      BigInt    @id @default(autoincrement())
-  case_id                 BigInt    @unique
+  id                       BigInt    @id @default(autoincrement())
+  case_id                  BigInt    @unique
   expected_submission_date DateTime? @db.Date
-  actual_submission_date  DateTime? @db.Date
-  missing_documents       String?
-  prosecutor_name         String?   @db.VarChar(200)
-  notes                   String?
-  created_at              DateTime  @default(now()) @db.Timestamp(6)
-  updated_at              DateTime  @default(now()) @db.Timestamp(6)
-  cases                   cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actual_submission_date   DateTime? @db.Date
+  missing_documents        String?
+  prosecutor_name          String?   @db.VarChar(200)
+  notes                    String?
+  created_at               DateTime  @default(now()) @db.Timestamp(6)
+  updated_at               DateTime  @default(now()) @db.Timestamp(6)
+  cases                    cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([case_id], map: "idx_cs_case")
 }
@@ -253,43 +253,43 @@ model court_hearings {
 }
 
 model bail_records {
-  id               BigInt      @id @default(autoincrement())
+  id               BigInt        @id @default(autoincrement())
   case_id          BigInt
   case_accused_id  BigInt?
-  application_date DateTime?   @db.Date
-  status           bail_status @default(PENDING)
-  granted_date     DateTime?   @db.Date
-  court_name       String?     @db.VarChar(200)
+  application_date DateTime?     @db.Date
+  status           bail_status   @default(PENDING)
+  granted_date     DateTime?     @db.Date
+  court_name       String?       @db.VarChar(200)
   surety_details   String?
   conditions       String?
-  cancelled_at     DateTime?   @db.Timestamp(6)
+  cancelled_at     DateTime?     @db.Timestamp(6)
   notes            String?
-  created_at       DateTime    @default(now()) @db.Timestamp(6)
-  cases            cases       @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at       DateTime      @default(now()) @db.Timestamp(6)
+  cases            cases         @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   case_accused     case_accused? @relation(fields: [case_accused_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([case_id], map: "idx_br_case")
 }
 
 model interrogation_sessions {
-  id               BigInt    @id @default(autoincrement())
-  offender_id      BigInt
-  case_id          BigInt?
-  officer_id       BigInt?
-  session_at       DateTime  @default(now()) @db.Timestamp(6)
-  source_info      String?
-  purchase_price   String?   @db.VarChar(200)
-  selling_price    String?   @db.VarChar(200)
-  delivery_mode    String?   @db.VarChar(200)
-  payment_mode     String?   @db.VarChar(200)
-  network_members  String?
+  id                BigInt    @id @default(autoincrement())
+  offender_id       BigInt
+  case_id           BigInt?
+  officer_id        BigInt?
+  session_at        DateTime  @default(now()) @db.Timestamp(6)
+  source_info       String?
+  purchase_price    String?   @db.VarChar(200)
+  selling_price     String?   @db.VarChar(200)
+  delivery_mode     String?   @db.VarChar(200)
+  payment_mode      String?   @db.VarChar(200)
+  network_members   String?
   mobiles_disclosed String?
-  intel_inputs     String?
-  notes            String?
-  created_at       DateTime  @default(now()) @db.Timestamp(6)
-  offenders        offenders @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  cases            cases?    @relation(fields: [case_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  users            users?    @relation(fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intel_inputs      String?
+  notes             String?
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  offenders         offenders @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cases             cases?    @relation(fields: [case_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  users             users?    @relation(fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([offender_id], map: "idx_is_offender")
   @@index([case_id], map: "idx_is_case")
@@ -309,6 +309,8 @@ model police_stations {
   offenders           offenders[]
   users               users[]
   enforcement_checks  enforcement_checks[]
+  village_visits      village_visits[]
+  lodge_checks        lodge_checks[]
 
   @@index([district], map: "idx_ps_district")
 }
@@ -407,20 +409,22 @@ model users {
   team                 teams?                 @relation(fields: [team_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   // Deletion request relations
-  deletion_requests_flagged    deletion_requests[] @relation("flagged_by_user")
-  deletion_requests_escalated  deletion_requests[] @relation("escalated_by_user")
-  deletion_requests_requested  deletion_requests[] @relation("requested_by_user")
-  deletion_requests_approved   deletion_requests[] @relation("approved_by_user")
-  deletion_requests_deleted    deletion_requests[] @relation("deleted_by_user")
+  deletion_requests_flagged   deletion_requests[] @relation("flagged_by_user")
+  deletion_requests_escalated deletion_requests[] @relation("escalated_by_user")
+  deletion_requests_requested deletion_requests[] @relation("requested_by_user")
+  deletion_requests_approved  deletion_requests[] @relation("approved_by_user")
+  deletion_requests_deleted   deletion_requests[] @relation("deleted_by_user")
 
   // Edit request relations
-  edit_requests_created        edit_requests[] @relation("edit_requested_by_user")
-  edit_requests_approved       edit_requests[] @relation("edit_approved_by_user")
-  interrogation_sessions       interrogation_sessions[]
+  edit_requests_created  edit_requests[]          @relation("edit_requested_by_user")
+  edit_requests_approved edit_requests[]          @relation("edit_approved_by_user")
+  interrogation_sessions interrogation_sessions[]
 
   // Enforcement relations
-  enforcement_checks_created   enforcement_checks[] @relation("enforcement_created_by")
-  enforcement_checks_reviewed  enforcement_checks[] @relation("enforcement_reviewed_by")
+  enforcement_checks_created  enforcement_checks[] @relation("enforcement_created_by")
+  enforcement_checks_reviewed enforcement_checks[] @relation("enforcement_reviewed_by")
+  village_visits_created      village_visits[]     @relation("village_visit_officer")
+  lodge_checks_created        lodge_checks[]       @relation("lodge_check_officer")
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
@@ -433,37 +437,37 @@ model users {
 // ============================================================
 
 model deletion_requests {
-  id            BigInt                  @id @default(autoincrement())
-  entity_type   String                  @db.VarChar(50)
-  entity_id     BigInt
-  reason        String?
-  status        deletion_request_status @default(FLAGGED)
+  id          BigInt                  @id @default(autoincrement())
+  entity_type String                  @db.VarChar(50)
+  entity_id   BigInt
+  reason      String?
+  status      deletion_request_status @default(FLAGGED)
 
-  flagged_by    BigInt
-  flagged_at    DateTime                @default(now()) @db.Timestamp(6)
+  flagged_by BigInt
+  flagged_at DateTime @default(now()) @db.Timestamp(6)
 
-  escalated_by  BigInt?
-  escalated_at  DateTime?               @db.Timestamp(6)
+  escalated_by BigInt?
+  escalated_at DateTime? @db.Timestamp(6)
 
-  requested_by  BigInt?
-  requested_at  DateTime?               @db.Timestamp(6)
+  requested_by BigInt?
+  requested_at DateTime? @db.Timestamp(6)
 
-  approved_by   BigInt?
-  approved_at   DateTime?               @db.Timestamp(6)
+  approved_by BigInt?
+  approved_at DateTime? @db.Timestamp(6)
 
-  deleted_by    BigInt?
-  deleted_at    DateTime?               @db.Timestamp(6)
+  deleted_by BigInt?
+  deleted_at DateTime? @db.Timestamp(6)
 
   rejection_reason String?
 
-  created_at    DateTime                @default(now()) @db.Timestamp(6)
-  updated_at    DateTime                @default(now()) @db.Timestamp(6)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
 
-  flagged_user    users  @relation("flagged_by_user", fields: [flagged_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  escalated_user  users? @relation("escalated_by_user", fields: [escalated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  requested_user  users? @relation("requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_user   users? @relation("approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  deleted_user    users? @relation("deleted_by_user", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  flagged_user   users  @relation("flagged_by_user", fields: [flagged_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  escalated_user users? @relation("escalated_by_user", fields: [escalated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requested_user users? @relation("requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approved_user  users? @relation("approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deleted_user   users? @relation("deleted_by_user", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([status], map: "idx_dr_status")
   @@index([entity_type, entity_id], map: "idx_dr_entity")
@@ -475,26 +479,26 @@ model deletion_requests {
 // ============================================================
 
 model edit_requests {
-  id              BigInt             @id @default(autoincrement())
-  entity_type     String             @db.VarChar(50)
-  entity_id       BigInt
-  changes_json    String
-  reason          String?
-  status          edit_request_status @default(PENDING)
+  id           BigInt              @id @default(autoincrement())
+  entity_type  String              @db.VarChar(50)
+  entity_id    BigInt
+  changes_json String
+  reason       String?
+  status       edit_request_status @default(PENDING)
 
-  requested_by    BigInt
-  requested_at    DateTime           @default(now()) @db.Timestamp(6)
+  requested_by BigInt
+  requested_at DateTime @default(now()) @db.Timestamp(6)
 
-  approved_by     BigInt?
-  approved_at     DateTime?          @db.Timestamp(6)
+  approved_by BigInt?
+  approved_at DateTime? @db.Timestamp(6)
 
   rejection_reason String?
 
-  created_at      DateTime           @default(now()) @db.Timestamp(6)
-  updated_at      DateTime           @default(now()) @db.Timestamp(6)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
 
-  requested_user  users  @relation("edit_requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_user   users? @relation("edit_approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requested_user users  @relation("edit_requested_by_user", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approved_user  users? @relation("edit_approved_by_user", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([status], map: "idx_er_status")
   @@index([entity_type, entity_id], map: "idx_er_entity")
@@ -696,14 +700,14 @@ enum department_type {
 
 // Teams — created by Admin, assigned to a department
 model teams {
-  id            BigInt          @id @default(autoincrement())
-  name          String          @db.VarChar(200)
-  department    department_type
-  description   String?
-  is_active     Boolean         @default(true)
-  created_at    DateTime        @default(now()) @db.Timestamp(6)
-  updated_at    DateTime        @default(now()) @updatedAt @db.Timestamp(6)
-  members       users[]
+  id          BigInt          @id @default(autoincrement())
+  name        String          @db.VarChar(200)
+  department  department_type
+  description String?
+  is_active   Boolean         @default(true)
+  created_at  DateTime        @default(now()) @db.Timestamp(6)
+  updated_at  DateTime        @default(now()) @updatedAt @db.Timestamp(6)
+  members     users[]
 
   @@unique([name])
 }
@@ -734,55 +738,55 @@ enum edit_request_status {
 // ============================================================
 
 model enforcement_checks {
-  id                    BigInt                  @id @default(autoincrement())
+  id BigInt @id @default(autoincrement())
 
   // Demographics captured in field
-  subject_name          String                  @db.VarChar(200)
-  subject_age           Int?
-  subject_gender        gender_type?
-  subject_aadhaar       String?                 @db.VarChar(12)
-  photo_url             String?                 @db.VarChar(500)
-  place_of_enforcement  String                  @db.VarChar(500)
-  district              String                  @default("Tirupati") @db.VarChar(100)
-  subject_phone         String?                 @db.VarChar(50)
-  subject_pan           String?                 @db.VarChar(10)
-  subject_address       String?
-  subject_father_name   String?                 @db.VarChar(200)
-  subject_landmark      String?                 @db.VarChar(200)
-  subject_occupation    String?                 @db.VarChar(100)
+  subject_name         String       @db.VarChar(200)
+  subject_age          Int?
+  subject_gender       gender_type?
+  subject_aadhaar      String?      @db.VarChar(12)
+  photo_url            String?      @db.VarChar(500)
+  place_of_enforcement String       @db.VarChar(500)
+  district             String       @default("Tirupati") @db.VarChar(100)
+  subject_phone        String?      @db.VarChar(50)
+  subject_pan          String?      @db.VarChar(10)
+  subject_address      String?
+  subject_father_name  String?      @db.VarChar(200)
+  subject_landmark     String?      @db.VarChar(200)
+  subject_occupation   String?      @db.VarChar(100)
 
   // Lookup results
-  ndps_match            Boolean                 @default(false)
+  ndps_match            Boolean @default(false)
   matched_offender_id   BigInt?
-  criminal_record_found Boolean                 @default(false)
+  criminal_record_found Boolean @default(false)
   lookup_summary        String?
 
   // Drug test
-  test_result           enforcement_test_result @default(PENDING)
-  consumption_type      String?                 @db.VarChar(200)
+  test_result      enforcement_test_result @default(PENDING)
+  consumption_type String?                 @db.VarChar(200)
 
   // Workflow status
-  status                enforcement_status      @default(FIELD_CREATED)
+  status enforcement_status @default(FIELD_CREATED)
 
   // Officer who created (field officer)
-  created_by            BigInt
-  ps_id                 BigInt
+  created_by BigInt
+  ps_id      BigInt
 
   // SHO review
   reviewed_by           BigInt?
-  reviewed_at           DateTime?               @db.Timestamp(6)
+  reviewed_at           DateTime? @db.Timestamp(6)
   review_notes          String?
   committed_offender_id BigInt?
 
-  created_at            DateTime                @default(now()) @db.Timestamp(6)
-  updated_at            DateTime                @default(now()) @db.Timestamp(6)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
 
   // Relations
-  officer               users                   @relation("enforcement_created_by", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  reviewer              users?                  @relation("enforcement_reviewed_by", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  police_station        police_stations         @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  matched_offender      offenders?              @relation("enforcement_matched_offender", fields: [matched_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  committed_offender    offenders?              @relation("enforcement_committed_offender", fields: [committed_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer            users           @relation("enforcement_created_by", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer           users?          @relation("enforcement_reviewed_by", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  police_station     police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  matched_offender   offenders?      @relation("enforcement_matched_offender", fields: [matched_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  committed_offender offenders?      @relation("enforcement_committed_offender", fields: [committed_offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([ps_id], map: "idx_ec_ps")
   @@index([created_by], map: "idx_ec_created_by")
@@ -803,4 +807,83 @@ enum enforcement_status {
   PENDING_SHO_REVIEW
   SHO_APPROVED
   SHO_REJECTED
+}
+
+// ============================================================
+// Preventive Enforcement Modules
+// ============================================================
+
+model village_visits {
+  id           BigInt   @id @default(autoincrement())
+  ps_id        BigInt
+  officer_id   BigInt
+  village_name String   @db.VarChar(200)
+  visit_date   DateTime @default(now()) @db.Timestamp(6)
+
+  // Checklist activities
+  verified_bad_chars   Boolean @default(false)
+  verified_rowdies     Boolean @default(false)
+  verified_bound_overs Boolean @default(false)
+  verified_habitual    Boolean @default(false)
+  interacted_elders    Boolean @default(false)
+  intel_collected      Boolean @default(false)
+  drug_peddler_check   Boolean @default(false)
+  drone_surveillance   Boolean @default(false)
+  vehicle_checking     Boolean @default(false)
+  palle_nidra          Boolean @default(false)
+
+  // Notes and zero-finding flag
+  no_suspicious_activity Boolean @default(false)
+  intel_notes            String?
+
+  // GPS & Media
+  geo_lat   Decimal? @db.Decimal(10, 7)
+  geo_lng   Decimal? @db.Decimal(10, 7)
+  photo_url String?  @db.VarChar(500)
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("village_visit_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_vv_ps")
+  @@index([officer_id], map: "idx_vv_officer")
+  @@index([visit_date], map: "idx_vv_date")
+}
+
+model lodge_checks {
+  id           BigInt   @id @default(autoincrement())
+  ps_id        BigInt
+  officer_id   BigInt
+  lodge_name   String   @db.VarChar(200)
+  owner_name   String?  @db.VarChar(200)
+  manager_name String?  @db.VarChar(200)
+  location     String?  @db.VarChar(300)
+  check_date   DateTime @default(now()) @db.Timestamp(6)
+
+  // Checklist activities
+  checked_guest_register Boolean @default(false)
+  verified_foreigners    Boolean @default(false)
+  verified_strangers     Boolean @default(false)
+  verified_suspicious    Boolean @default(false)
+
+  // Notes and zero-finding flag
+  no_suspicious_activity Boolean @default(false)
+  findings_notes         String?
+
+  // GPS & Media
+  geo_lat   Decimal? @db.Decimal(10, 7)
+  geo_lng   Decimal? @db.Decimal(10, 7)
+  photo_url String?  @db.VarChar(500)
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("lodge_check_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_lc_ps")
+  @@index([officer_id], map: "idx_lc_officer")
+  @@index([check_date], map: "idx_lc_date")
 }

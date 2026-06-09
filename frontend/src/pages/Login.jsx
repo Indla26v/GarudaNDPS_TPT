@@ -56,7 +56,7 @@ export default function Login() {
         <div
           className="rounded-xl p-8"
           style={{
-            background: '#ffffff',
+            background: 'var(--color-garuda-800)',
             border: '1px solid var(--color-garuda-700)',
             boxShadow: 'var(--shadow-elevated)',
           }}
