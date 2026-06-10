@@ -919,10 +919,11 @@ export default function OffenderForm() {
           {isView ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {form.contacts.map((c, i) => (
-                <div key={i} className="p-3 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                <div key={i} className="p-3 rounded-lg border relative" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                  <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded animate-fade-in" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>#{i + 1}</span>
                   <span className="block text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-garuda-400)' }}>{c.contactType?.replace('_', ' ')}</span>
-                  <span className="block text-sm font-semibold mt-1" style={{ color: 'var(--color-garuda-100)' }}>{c.value || '—'}</span>
-                  {c.notes && <span className="block text-[11px] mt-0.5" style={{ color: 'var(--color-garuda-300)' }}>Note: {c.notes}</span>}
+                  <span className="block text-sm font-semibold mt-1 animate-fade-in" style={{ color: 'var(--color-garuda-100)' }}>{c.value || '—'}</span>
+                  {c.notes && <span className="block text-[11px] mt-0.5 animate-fade-in" style={{ color: 'var(--color-garuda-300)' }}>Note: {c.notes}</span>}
                 </div>
               ))}
               {form.contacts.length === 0 && <p className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>No contacts added.</p>}
@@ -930,10 +931,13 @@ export default function OffenderForm() {
           ) : (
             <div className="space-y-4">
               {form.contacts.map((c, i) => (
-                <div key={i} className="flex flex-col md:flex-row gap-3 items-stretch md:items-start p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
-                  <select className="px-2 py-2.5 rounded text-xs w-full md:w-auto cursor-pointer" style={inputStyle} value={c.contactType} onChange={e => updateContact(i, 'contactType', e.target.value)}>
-                    {CORE_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-                  </select>
+                <div key={i} className="flex flex-col md:flex-row gap-3 items-center p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
+                  <div className="flex items-center gap-2.5 w-full md:w-auto">
+                    <span className="flex items-center justify-center text-xs font-bold w-6 h-6 rounded-full" style={{ background: 'var(--color-garuda-800)', color: 'var(--color-garuda-300)' }}>{i + 1}</span>
+                    <select className="px-2 py-2.5 rounded text-xs w-full md:w-auto cursor-pointer" style={inputStyle} value={c.contactType} onChange={e => updateContact(i, 'contactType', e.target.value)}>
+                      {CORE_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                    </select>
+                  </div>
                   <input className="flex-1 px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="e.g. 9848012345 or email@gmail.com" value={c.value} onChange={e => updateContact(i, 'value', e.target.value)} />
                   <input className="w-full md:w-40 px-3 py-2.5 rounded text-sm" style={inputStyle} placeholder="Notes" value={c.notes||''} onChange={e => updateContact(i, 'notes', e.target.value)} />
                   <button type="button" onClick={() => removeContact(i)} className="px-3 py-2 rounded text-xs text-red-400 cursor-pointer self-end md:self-start w-full md:w-auto" style={{ background: 'rgba(239,68,68,0.15)' }}>✕ Remove</button>
@@ -953,7 +957,8 @@ export default function OffenderForm() {
               {form.socialMedia
                 .filter(s => s.value?.trim())
                 .map((s, i) => (
-                  <div key={i} className="p-3 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                  <div key={i} className="p-3 rounded-lg border relative animate-fade-in" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                    <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>#{i + 1}</span>
                     <span className="block text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-garuda-400)' }}>{s.contactType?.replace('_', ' ')}</span>
                     <span className="block text-sm font-semibold mt-1" style={{ color: 'var(--color-garuda-100)' }}>{s.value || '—'}</span>
                     {s.notes && <span className="block text-[11px] mt-0.5" style={{ color: 'var(--color-garuda-300)' }}>Note: {s.notes}</span>}
@@ -967,9 +972,12 @@ export default function OffenderForm() {
             <div className="space-y-4">
               {form.socialMedia.map((s, i) => (
                 <div key={i} className="flex flex-col md:flex-row gap-3 items-center p-3.5 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
-                  <select className="px-3 py-2 rounded-lg text-sm font-semibold outline-none cursor-pointer w-full md:w-48" style={inputStyle} value={s.contactType} onChange={e => updateSocialMedia(i, 'contactType', e.target.value)}>
-                    {SOCIAL_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-                  </select>
+                  <div className="flex items-center gap-2.5 w-full md:w-auto">
+                    <span className="flex items-center justify-center text-xs font-bold w-6 h-6 rounded-full animate-fade-in" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>{i + 1}</span>
+                    <select className="px-3 py-2 rounded-lg text-sm font-semibold outline-none cursor-pointer w-full md:w-48" style={inputStyle} value={s.contactType} onChange={e => updateSocialMedia(i, 'contactType', e.target.value)}>
+                      {SOCIAL_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                    </select>
+                  </div>
                   <input className="flex-1 px-3 py-2 rounded-lg text-sm w-full outline-none" style={inputStyle} placeholder="Username or Profile Link" value={s.value} onChange={e => updateSocialMedia(i, 'value', e.target.value)} />
                   <input className="w-full md:w-64 px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} placeholder="Notes" value={s.notes||''} onChange={e => updateSocialMedia(i, 'notes', e.target.value)} />
                   <button type="button" onClick={() => removeSocialMedia(i)} className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer border flex items-center justify-center gap-1 w-full md:w-auto transition-colors duration-200 hover:bg-red-500/20" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>✕ Remove</button>

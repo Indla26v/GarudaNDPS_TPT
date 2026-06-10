@@ -298,16 +298,16 @@ export default function OffenderList({ isConsumerOnly = false }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
-                {['CR.NO', 'Full Name', 'Alias', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
+                {['S.No', 'CR.NO', 'Full Name', 'Alias', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>Loading...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>Loading...</td></tr>
               ) : offenders.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>No offenders found</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>No offenders found</td></tr>
               ) : (
                 offenders.map((o, i) => {
                   const cat = categoryColors[o.category] || { bg: 'transparent', color: 'var(--color-garuda-300)' };
@@ -317,6 +317,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
                       className="table-row cursor-pointer"
                       onClick={() => navigate(`/offenders/${o.id}`)}
                     >
+                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-400)' }}>{page * 20 + i + 1}</td>
                       <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.crNo || '-'}</td>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
                         <div className="flex items-center gap-3">
