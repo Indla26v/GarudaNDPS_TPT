@@ -214,6 +214,23 @@ export const getOffenderById = async (req: Request, res: Response) => {
 export const createOffender = async (req: Request, res: Response) => {
   try {
     const data = req.body;
+
+    if (data.financials && Array.isArray(data.financials)) {
+      const hasBankAccount = data.financials.some((f: any) => (f.finType === 'BANK_ACCOUNT_NO' || f.fin_type === 'BANK_ACCOUNT_NO') && f.value?.trim());
+      const hasIfsc = data.financials.some((f: any) => (f.finType === 'IFSC_CODE' || f.fin_type === 'IFSC_CODE') && f.value?.trim());
+      
+      if (hasBankAccount && !hasIfsc) {
+        return res.status(400).json({ message: 'An IFSC Code is required when a Bank Account Number is provided.' });
+      }
+
+      const hasUpiId = data.financials.some((f: any) => (f.finType === 'UPI_ID' || f.fin_type === 'UPI_ID') && f.value?.trim());
+      const hasUpiMobile = data.financials.some((f: any) => (f.finType === 'UPI_LINKED_MOBILE' || f.fin_type === 'UPI_LINKED_MOBILE') && f.value?.trim());
+      
+      if (hasUpiId && !hasUpiMobile) {
+        return res.status(400).json({ message: 'A UPI Linked Phone Number is required when a UPI ID is provided.' });
+      }
+    }
+    
     let userId = null;
     if ((req as any).user) {
        userId = BigInt((req as any).user.userId);
@@ -359,6 +376,22 @@ export const updateOffender = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = req.body;
+
+    if (data.financials && Array.isArray(data.financials)) {
+      const hasBankAccount = data.financials.some((f: any) => (f.finType === 'BANK_ACCOUNT_NO' || f.fin_type === 'BANK_ACCOUNT_NO') && f.value?.trim());
+      const hasIfsc = data.financials.some((f: any) => (f.finType === 'IFSC_CODE' || f.fin_type === 'IFSC_CODE') && f.value?.trim());
+      
+      if (hasBankAccount && !hasIfsc) {
+        return res.status(400).json({ message: 'An IFSC Code is required when a Bank Account Number is provided.' });
+      }
+
+      const hasUpiId = data.financials.some((f: any) => (f.finType === 'UPI_ID' || f.fin_type === 'UPI_ID') && f.value?.trim());
+      const hasUpiMobile = data.financials.some((f: any) => (f.finType === 'UPI_LINKED_MOBILE' || f.fin_type === 'UPI_LINKED_MOBILE') && f.value?.trim());
+      
+      if (hasUpiId && !hasUpiMobile) {
+        return res.status(400).json({ message: 'A UPI Linked Phone Number is required when a UPI ID is provided.' });
+      }
+    }
     
     // Find first
     const existing = await prisma.offenders.findUnique({ where: { id: BigInt(id as string) } });

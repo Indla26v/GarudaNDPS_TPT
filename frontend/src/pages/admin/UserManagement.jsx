@@ -33,9 +33,10 @@ export default function UserManagement() {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Filter States
+  // Filter and Search States
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form States
   const [showForm, setShowForm] = useState(false);
@@ -150,32 +151,71 @@ export default function UserManagement() {
   const clearFilters = () => {
     setSelectedState('');
     setSelectedDistrict('');
+    setSearchQuery('');
   };
 
-  // Grouped data structure
-  const districtStationsRaw = useMemo(() => {
-    if (!selectedState || !selectedDistrict) return [];
-    return stations.filter(s => s.state === selectedState && s.district === selectedDistrict);
-  }, [selectedState, selectedDistrict, stations]);
-
-  const stationsWithUsers = useMemo(() => {
-    const psList = districtStationsRaw.map(station => ({
-      ...station,
-      users: users.filter(u => u.policeStationId === station.id),
-    }));
+  const filteredStationsWithUsers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     
-    // Add a virtual station for users without a police station
-    const unassignedUsers = users.filter(u => !u.policeStationId);
-    if (unassignedUsers.length > 0) {
+    if (!query) {
+      if (!selectedState || !selectedDistrict) return [];
+      
+      const psList = stations
+        .filter(s => s.state === selectedState && s.district === selectedDistrict)
+        .map(station => ({
+          ...station,
+          users: users.filter(u => u.policeStationId === station.id),
+        }));
+      
+      const unassignedUsers = users.filter(u => !u.policeStationId);
+      if (unassignedUsers.length > 0) {
+        psList.unshift({
+          id: 'hq',
+          name: 'Headquarters / Specialized Units',
+          psCode: 'HQ',
+          users: unassignedUsers,
+        });
+      }
+      return psList;
+    }
+
+    const matchedStationsMap = new Map();
+
+    const matchingUnassigned = users.filter(u => {
+      if (u.policeStationId) return false;
+      const nameMatch = u.fullName?.toLowerCase().includes(query) || u.username?.toLowerCase().includes(query);
+      const stationMatch = 'headquarters'.includes(query) || 'hq'.includes(query) || 'specialized'.includes(query);
+      return nameMatch || stationMatch;
+    });
+
+    stations.forEach(station => {
+      const stationMatch = station.name?.toLowerCase().includes(query) || station.psCode?.toLowerCase().includes(query);
+      const stationUsers = users.filter(u => u.policeStationId === station.id);
+      
+      const matchingUsers = stationUsers.filter(u => {
+        if (stationMatch) return true;
+        return u.fullName?.toLowerCase().includes(query) || u.username?.toLowerCase().includes(query);
+      });
+
+      if (stationMatch || matchingUsers.length > 0) {
+        matchedStationsMap.set(station.id.toString(), {
+          ...station,
+          users: stationMatch ? stationUsers : matchingUsers,
+        });
+      }
+    });
+
+    const psList = Array.from(matchedStationsMap.values());
+    if (matchingUnassigned.length > 0) {
       psList.unshift({
         id: 'hq',
         name: 'Headquarters / Specialized Units',
         psCode: 'HQ',
-        users: unassignedUsers,
+        users: matchingUnassigned,
       });
     }
     return psList;
-  }, [districtStationsRaw, users]);
+  }, [users, stations, searchQuery, selectedState, selectedDistrict]);
 
 
   if (loading) {
@@ -348,6 +388,37 @@ export default function UserManagement() {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div 
+        className="p-4 rounded-xl flex items-center gap-3"
+        style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
+      >
+        <div className="relative flex-1">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-garuda-400" style={{ fill: 'var(--color-garuda-400)' }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            placeholder="Search officers by name, username, or police station (name/code)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input w-full"
+            style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', paddingLeft: '2.75rem' }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm font-medium hover:text-white"
+              style={{ color: 'var(--color-garuda-400)' }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Cascading Filters */}
       <div 
         className="p-4 rounded-xl flex flex-col md:flex-row gap-4 items-end"
@@ -390,7 +461,7 @@ export default function UserManagement() {
       </div>
 
       {/* Main Content Area */}
-      {!selectedState || !selectedDistrict ? (
+      {!searchQuery.trim() && (!selectedState || !selectedDistrict) ? (
         // Empty State (No selection)
         <div 
           className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
@@ -401,10 +472,10 @@ export default function UserManagement() {
               <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.05 19.43 4.07 15.95 4.07 12C4.07 11.83 4.08 11.66 4.09 11.5H11V19.93ZM13 19.93V11.5H19.91C19.92 11.66 19.93 11.83 19.93 12C19.93 15.95 16.95 19.43 13 19.93ZM19.74 9.5H13V4.26C16.39 5.05 19.04 7.54 19.74 9.5ZM11 4.26V9.5H4.26C4.96 7.54 7.61 5.05 11 4.26Z" fill="var(--color-garuda-400)"/>
             </svg>
           </div>
-          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>Please select a State and District to view officers</h3>
+          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>Please select a State and District, or use the search bar above</h3>
           <p className="text-sm mt-2" style={{ color: 'var(--color-garuda-400)' }}>Use the filters above to navigate through locations.</p>
         </div>
-      ) : stationsWithUsers.length === 0 ? (
+      ) : filteredStationsWithUsers.length === 0 ? (
         // Empty State (No stations/officers found)
         <div 
           className="flex flex-col items-center justify-center p-12 rounded-xl text-center"
@@ -413,12 +484,12 @@ export default function UserManagement() {
           <div className="text-4xl mb-3" style={{ color: 'var(--color-garuda-400)' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
-          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>No police stations found for this district</h3>
+          <h3 className="text-lg font-medium" style={{ color: 'var(--color-garuda-200)' }}>No police stations or officers matched your search</h3>
         </div>
       ) : (
         // Grid of Police Stations
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {stationsWithUsers.map(station => (
+          {filteredStationsWithUsers.map(station => (
             <div 
               key={station.id} 
               className="rounded-xl overflow-hidden flex flex-col h-full"

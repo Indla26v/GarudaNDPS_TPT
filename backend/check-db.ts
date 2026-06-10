@@ -8,14 +8,16 @@ async function main() {
   const accusedCount = await prisma.case_accused.count();
   const usersCount = await prisma.users.count();
   const psCount = await prisma.police_stations.count();
+  const enforcementCount = await prisma.enforcement_checks.count();
 
   console.log('--- DATABASE COUNTS ---');
-  console.log(`Cases:          ${casesCount}`);
-  console.log(`Offenders:      ${offendersCount}`);
-  console.log(`Seizures:       ${seizuresCount}`);
-  console.log(`Case Accused:   ${accusedCount}`);
-  console.log(`Users:          ${usersCount}`);
-  console.log(`PS/Excise:      ${psCount}`);
+  console.log(`Cases:              ${casesCount}`);
+  console.log(`Offenders:          ${offendersCount}`);
+  console.log(`Seizures:           ${seizuresCount}`);
+  console.log(`Case Accused:       ${accusedCount}`);
+  console.log(`Users:              ${usersCount}`);
+  console.log(`PS/Excise:          ${psCount}`);
+  console.log(`Enforcement Checks: ${enforcementCount}`);
   
   if (casesCount > 0) {
     const sampleCases = await prisma.cases.findMany({ take: 3, include: { police_stations: true } });

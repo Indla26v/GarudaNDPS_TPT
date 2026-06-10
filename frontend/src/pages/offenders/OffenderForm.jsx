@@ -7,14 +7,13 @@ import { OffenderCaseHistory, OffenderInterrogationPanel } from '../../component
 const CATEGORIES = ['CONSUMER','LOCAL_PEDDLER','LOCAL_SUPPLIER','LOCAL_KINGPIN','TRANSPORTER','INTERSTATE_KINGPIN'];
 const GENDERS = ['MALE','FEMALE','OTHER'];
 const PURCHASE_MODES = ['CASH','UPI','CREDIT','BARTER','OTHER'];
-const CONTACT_TYPES = ['MOBILE_PRIMARY','MOBILE_SECONDARY','MOBILE_SIBLING','GMAIL','WHATSAPP','TELEGRAM','INSTAGRAM','FACEBOOK','OTHER_SOCIAL'];
+const CORE_CONTACT_TYPES = ['MOBILE_PRIMARY','MOBILE_SECONDARY','MOBILE_SIBLING','GMAIL'];
+const SOCIAL_CONTACT_TYPES = ['WHATSAPP','TELEGRAM','INSTAGRAM','FACEBOOK','OTHER_SOCIAL'];
 const LINK_TYPES = ['CO_CONSUMER','PEDDLER','SUPPLIER','TRANSPORTER','KINGPIN'];
 const FIN_TYPES = [
   { value: 'BANK_ACCOUNT_NO', label: 'Bank Account No' },
   { value: 'BANK_NAME', label: 'Bank Name' },
-  { value: 'IFSC_CODE', label: 'IFSC Code' },
   { value: 'UPI_ID', label: 'UPI ID' },
-  { value: 'UPI_LINKED_MOBILE', label: 'UPI Linked Mobile' },
   { value: 'ATM_CARD', label: 'ATM Card No' },
 ];
 
@@ -66,6 +65,11 @@ export default function OffenderForm() {
     aadhaarNo:'', voterId:'', panCard:'', photoUrl:'',
     previousCrimeHistory: false, historySheetStatus:'',
     contacts: [],
+    socialMedia: [
+      { contactType: 'WHATSAPP', value: '', notes: '' },
+      { contactType: 'INSTAGRAM', value: '', notes: '' },
+      { contactType: 'FACEBOOK', value: '', notes: '' }
+    ],
     financials: [],
     criminalHistories: [],
     supplyChainLinks: [],
@@ -103,8 +107,95 @@ export default function OffenderForm() {
         panCard: d.identityDocs?.panCard || d.panCard || '',
         photoUrl: d.photoUrl||'',
         previousCrimeHistory: d.previousCrimeHistory||false, historySheetStatus: d.historySheetStatus||'',
-        contacts: d.contacts||[],
-        financials: (d.financials||[]).map(f => ({ finType: f.finType, value: f.value, bankName: f.bankName||'', notes: f.notes||'' })),
+        contacts: (d.contacts || []).filter(c => CORE_CONTACT_TYPES.includes(c.contactType || c.contact_type)),
+        socialMedia: (() => {
+          const loadedSocial = (d.contacts || [])
+            .filter(c => SOCIAL_CONTACT_TYPES.includes(c.contactType || c.contact_type))
+            .map(c => ({
+              id: c.id,
+              contactType: c.contactType || c.contact_type,
+              value: c.value || '',
+              notes: c.notes || ''
+            }));
+
+          const defaults = ['WHATSAPP', 'INSTAGRAM', 'FACEBOOK'];
+          const result = [];
+          
+          defaults.forEach(defType => {
+            const foundIndex = loadedSocial.findIndex(s => s.contactType === defType);
+            if (foundIndex !== -1) {
+              result.push(loadedSocial[foundIndex]);
+              loadedSocial.splice(foundIndex, 1);
+            } else {
+              result.push({ contactType: defType, value: '', notes: '' });
+            }
+          });
+          
+          result.push(...loadedSocial);
+          return result;
+        })(),
+        financials: (() => {
+          const rawFinancials = d.financials || [];
+          const uiFinancials = [];
+          const pairedIds = new Set();
+
+          // 1. Process Bank Accounts
+          rawFinancials.filter(f => f.finType === 'BANK_ACCOUNT_NO').forEach(ba => {
+            const ifsc = rawFinancials.find(f => 
+              f.finType === 'IFSC_CODE' && 
+              !pairedIds.has(f.id) && 
+              (f.bankName === ba.bankName || !pairedIds.has(f.id))
+            );
+
+            uiFinancials.push({
+              id: ba.id,
+              finType: 'BANK_ACCOUNT_NO',
+              value: ba.value || '',
+              ifscValue: ifsc ? ifsc.value : '',
+              bankName: ba.bankName || '',
+              notes: ba.notes || ''
+            });
+
+            pairedIds.add(ba.id);
+            if (ifsc) pairedIds.add(ifsc.id);
+          });
+
+          // 2. Process UPI IDs
+          rawFinancials.filter(f => f.finType === 'UPI_ID').forEach(upi => {
+            const upiMobile = rawFinancials.find(f => 
+              f.finType === 'UPI_LINKED_MOBILE' && 
+              !pairedIds.has(f.id)
+            );
+
+            uiFinancials.push({
+              id: upi.id,
+              finType: 'UPI_ID',
+              value: upi.value || '',
+              upiMobileValue: upiMobile ? upiMobile.value : '',
+              bankName: upi.bankName || '',
+              notes: upi.notes || ''
+            });
+
+            pairedIds.add(upi.id);
+            if (upiMobile) pairedIds.add(upiMobile.id);
+          });
+
+          // 3. Process remaining financials
+          rawFinancials.forEach(f => {
+            if (pairedIds.has(f.id)) return;
+            if (f.finType === 'IFSC_CODE' || f.finType === 'UPI_LINKED_MOBILE') return;
+
+            uiFinancials.push({
+              id: f.id,
+              finType: f.finType,
+              value: f.value || '',
+              bankName: f.bankName || '',
+              notes: f.notes || ''
+            });
+          });
+
+          return uiFinancials;
+        })(),
         criminalHistories: d.criminalHistories||[], supplyChainLinks: d.supplyChainLinks||[],
       });
       setAadhaarMasked(d.identityDocs?.aadhaarMasked ?? !!String(d.aadhaarNo || '').includes('XXXX'));
@@ -237,6 +328,28 @@ export default function OffenderForm() {
                 </tbody>
               </table>
             ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No contacts recorded.</p>'}
+
+            <h2>Social Media Profiles</h2>
+            ${form.socialMedia.filter(s => s.value?.trim()).length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${form.socialMedia.filter(s => s.value?.trim()).map(s => `
+                    <tr>
+                      <td style="font-weight: 500;">${val(s.contactType?.replace(/_/g, ' '))}</td>
+                      <td>${val(s.value)}</td>
+                      <td style="color: #64748b;">${val(s.notes)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No social media profiles recorded.</p>'}
 
             <h2>Drug Abuse Profile</h2>
             <div class="grid">
@@ -409,13 +522,85 @@ export default function OffenderForm() {
   const handleSubmit = async () => {
     if (!form.fullName.trim()) { setError('Full name is required'); return; }
     if (!form.psId) { setError('Police station is required'); return; }
+    
+    // Financial validation:
+    const financials = form.financials || [];
+    
+    for (const f of financials) {
+      if (f.finType === 'BANK_ACCOUNT_NO' && f.value?.trim()) {
+        if (!f.ifscValue?.trim()) {
+          setError('An IFSC Code is required for the Bank Account Number.');
+          return;
+        }
+      }
+      if (f.finType === 'UPI_ID' && f.value?.trim()) {
+        if (!f.upiMobileValue?.trim()) {
+          setError('A UPI Linked Phone Number is required for the UPI ID.');
+          return;
+        }
+      }
+    }
+
+    const flattenedFinancials = [];
+    financials.forEach(f => {
+      if (f.finType === 'BANK_ACCOUNT_NO') {
+        flattenedFinancials.push({
+          finType: 'BANK_ACCOUNT_NO',
+          value: f.value || '',
+          bankName: f.bankName || '',
+          notes: f.notes || ''
+        });
+        if (f.ifscValue?.trim()) {
+          flattenedFinancials.push({
+            finType: 'IFSC_CODE',
+            value: f.ifscValue.trim(),
+            bankName: f.bankName || '',
+            notes: f.notes || ''
+          });
+        }
+      } else if (f.finType === 'UPI_ID') {
+        flattenedFinancials.push({
+          finType: 'UPI_ID',
+          value: f.value || '',
+          bankName: f.bankName || '',
+          notes: f.notes || ''
+        });
+        if (f.upiMobileValue?.trim()) {
+          flattenedFinancials.push({
+            finType: 'UPI_LINKED_MOBILE',
+            value: f.upiMobileValue.trim(),
+            bankName: f.bankName || '',
+            notes: f.notes || ''
+          });
+        }
+      } else {
+        flattenedFinancials.push({
+          finType: f.finType,
+          value: f.value || '',
+          bankName: f.bankName || '',
+          notes: f.notes || ''
+        });
+      }
+    });
+
     setSaving(true); setError('');
     try {
+      const { socialMedia, ...restForm } = form;
+      const combinedContacts = [
+        ...(form.contacts || [])
+          .filter(c => c.value?.trim())
+          .map(c => ({ contactType: c.contactType, value: c.value.trim(), notes: c.notes || '' })),
+        ...(form.socialMedia || [])
+          .filter(s => s.value?.trim())
+          .map(s => ({ contactType: s.contactType, value: s.value.trim(), notes: s.notes || '' }))
+      ];
       const body = {
-        ...form,
+        ...restForm,
         age: form.age ? Number(form.age) : null,
         monthlyIncome: form.monthlyIncome ? Number(form.monthlyIncome) : null,
-        psId: Number(form.psId)
+        psId: Number(form.psId),
+        contacts: combinedContacts,
+        financials: flattenedFinancials
       };
       if (isEdit) {
         await api.put(`/offenders/${id}`, body);
@@ -437,6 +622,13 @@ export default function OffenderForm() {
     const c = [...form.contacts]; c[i] = { ...c[i], [key]: val }; set('contacts', c);
   };
 
+  // Social media helpers
+  const addSocialMedia = () => set('socialMedia', [...form.socialMedia, { contactType:'WHATSAPP', value:'', notes:'' }]);
+  const removeSocialMedia = (i) => set('socialMedia', form.socialMedia.filter((_, j) => j !== i));
+  const updateSocialMedia = (i, key, val) => {
+    const s = [...form.socialMedia]; s[i] = { ...s[i], [key]: val }; set('socialMedia', s);
+  };
+
   // Criminal history helpers
   const addCrimHistory = () => set('criminalHistories', [...form.criminalHistories, { previousCrNo:'', previousPs:'', sectionsOfLaw:'', caseStage:'', notes:'' }]);
   const removeCrimHistory = (i) => set('criminalHistories', form.criminalHistories.filter((_, j) => j !== i));
@@ -452,7 +644,7 @@ export default function OffenderForm() {
   };
 
   // Financial helpers
-  const addFinancial = () => set('financials', [...form.financials, { finType:'BANK_ACCOUNT_NO', value:'', bankName:'', notes:'' }]);
+  const addFinancial = () => set('financials', [...form.financials, { finType:'BANK_ACCOUNT_NO', value:'', ifscValue:'', upiMobileValue:'', bankName:'', notes:'' }]);
   const removeFinancial = (i) => set('financials', form.financials.filter((_, j) => j !== i));
   const updateFinancial = (i, key, val) => {
     const c = [...form.financials]; c[i] = { ...c[i], [key]: val }; set('financials', c);
@@ -723,7 +915,7 @@ export default function OffenderForm() {
 
         {/* Division 3: Contacts */}
         <div className="card rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>Contacts</h3>
+          <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>Phone & Email Contacts</h3>
           {isView ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {form.contacts.map((c, i) => (
@@ -740,15 +932,51 @@ export default function OffenderForm() {
               {form.contacts.map((c, i) => (
                 <div key={i} className="flex flex-col md:flex-row gap-3 items-stretch md:items-start p-3 rounded-lg" style={{ background: 'var(--color-garuda-700)' }}>
                   <select className="px-2 py-2.5 rounded text-xs w-full md:w-auto cursor-pointer" style={inputStyle} value={c.contactType} onChange={e => updateContact(i, 'contactType', e.target.value)}>
-                    {CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                    {CORE_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
                   </select>
-                  <input className="flex-1 px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="Value" value={c.value} onChange={e => updateContact(i, 'value', e.target.value)} />
+                  <input className="flex-1 px-3 py-2.5 rounded text-sm w-full" style={inputStyle} placeholder="e.g. 9848012345 or email@gmail.com" value={c.value} onChange={e => updateContact(i, 'value', e.target.value)} />
                   <input className="w-full md:w-40 px-3 py-2.5 rounded text-sm" style={inputStyle} placeholder="Notes" value={c.notes||''} onChange={e => updateContact(i, 'notes', e.target.value)} />
                   <button type="button" onClick={() => removeContact(i)} className="px-3 py-2 rounded text-xs text-red-400 cursor-pointer self-end md:self-start w-full md:w-auto" style={{ background: 'rgba(239,68,68,0.15)' }}>✕ Remove</button>
                 </div>
               ))}
               <button type="button" onClick={addContact} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
                 style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-200)' }}>+ Add Contact</button>
+            </div>
+          )}
+        </div>
+
+        {/* Division 3.5: Social Media */}
+        <div className="card rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>Social Media & Messaging Profiles</h3>
+          {isView ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {form.socialMedia
+                .filter(s => s.value?.trim())
+                .map((s, i) => (
+                  <div key={i} className="p-3 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                    <span className="block text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-garuda-400)' }}>{s.contactType?.replace('_', ' ')}</span>
+                    <span className="block text-sm font-semibold mt-1" style={{ color: 'var(--color-garuda-100)' }}>{s.value || '—'}</span>
+                    {s.notes && <span className="block text-[11px] mt-0.5" style={{ color: 'var(--color-garuda-300)' }}>Note: {s.notes}</span>}
+                  </div>
+                ))}
+              {form.socialMedia.filter(s => s.value?.trim()).length === 0 && (
+                <p className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>No social media profiles added.</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {form.socialMedia.map((s, i) => (
+                <div key={i} className="flex flex-col md:flex-row gap-3 items-center p-3.5 rounded-lg border" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                  <select className="px-3 py-2 rounded-lg text-sm font-semibold outline-none cursor-pointer w-full md:w-48" style={inputStyle} value={s.contactType} onChange={e => updateSocialMedia(i, 'contactType', e.target.value)}>
+                    {SOCIAL_CONTACT_TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+                  </select>
+                  <input className="flex-1 px-3 py-2 rounded-lg text-sm w-full outline-none" style={inputStyle} placeholder="Username or Profile Link" value={s.value} onChange={e => updateSocialMedia(i, 'value', e.target.value)} />
+                  <input className="w-full md:w-64 px-3 py-2 rounded-lg text-sm outline-none" style={inputStyle} placeholder="Notes" value={s.notes||''} onChange={e => updateSocialMedia(i, 'notes', e.target.value)} />
+                  <button type="button" onClick={() => removeSocialMedia(i)} className="px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer border flex items-center justify-center gap-1 w-full md:w-auto transition-colors duration-200 hover:bg-red-500/20" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>✕ Remove</button>
+                </div>
+              ))}
+              <button type="button" onClick={addSocialMedia} className="px-4 py-2 rounded-lg text-sm font-medium cursor-pointer"
+                style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-200)' }}>+ Add Social Media Profile</button>
             </div>
           )}
         </div>
@@ -780,6 +1008,12 @@ export default function OffenderForm() {
                 <div key={i} className="p-3 rounded-lg border space-y-1" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
                   <span className="block text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-garuda-400)' }}>{f.finType?.replace(/_/g, ' ')}</span>
                   <span className="block text-sm font-semibold" style={{ color: 'var(--color-garuda-100)' }}>{f.value || '—'}</span>
+                  {f.finType === 'BANK_ACCOUNT_NO' && f.ifscValue && (
+                    <p className="text-xs" style={{ color: 'var(--color-garuda-200)' }}>IFSC: <span className="font-mono">{f.ifscValue}</span></p>
+                  )}
+                  {f.finType === 'UPI_ID' && f.upiMobileValue && (
+                    <p className="text-xs" style={{ color: 'var(--color-garuda-200)' }}>Linked Phone: {f.upiMobileValue}</p>
+                  )}
                   {f.bankName && <p className="text-[11px]" style={{ color: 'var(--color-garuda-200)' }}>Bank: {f.bankName}</p>}
                   {f.notes && <p className="text-[11px]" style={{ color: 'var(--color-garuda-300)' }}>Note: {f.notes}</p>}
                 </div>
@@ -788,7 +1022,7 @@ export default function OffenderForm() {
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>Bank accounts, UPI IDs, IFSC codes, and other financial details linked to this person.</p>
+              <p className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>Bank accounts, UPI IDs, and other financial details linked to this person.</p>
               {form.financials.map((fin, i) => (
                 <div key={i} className="p-4 rounded-lg space-y-3" style={{ background: 'var(--color-garuda-700)' }}>
                   <div className="flex items-center justify-between">
@@ -801,12 +1035,27 @@ export default function OffenderForm() {
                         {FIN_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                       </select>
                     </Field>
-                    <Field label="Value">
-                      <input className={inp} style={inputStyle} placeholder={fin.finType === 'UPI_ID' ? 'e.g. name@upi' : fin.finType === 'IFSC_CODE' ? 'e.g. SBIN0001234' : 'Enter value'} value={fin.value} onChange={e => updateFinancial(i, 'value', e.target.value)} />
+                    
+                    <Field label={fin.finType === 'BANK_ACCOUNT_NO' ? 'Account Number' : fin.finType === 'UPI_ID' ? 'UPI ID' : 'Value'}>
+                      <input className={inp} style={inputStyle} placeholder={fin.finType === 'UPI_ID' ? 'e.g. name@upi' : 'Enter value'} value={fin.value} onChange={e => updateFinancial(i, 'value', e.target.value)} />
                     </Field>
+
+                    {fin.finType === 'BANK_ACCOUNT_NO' && (
+                      <Field label="IFSC Code *">
+                        <input className={inp} style={inputStyle} placeholder="e.g. SBIN0001234" value={fin.ifscValue || ''} onChange={e => updateFinancial(i, 'ifscValue', e.target.value)} />
+                      </Field>
+                    )}
+
+                    {fin.finType === 'UPI_ID' && (
+                      <Field label="UPI Linked Phone Number *">
+                        <input className={inp} style={inputStyle} placeholder="e.g. 9848012345" value={fin.upiMobileValue || ''} onChange={e => updateFinancial(i, 'upiMobileValue', e.target.value)} />
+                      </Field>
+                    )}
+
                     <Field label="Bank Name">
                       <input className={inp} style={inputStyle} placeholder="e.g. State Bank of India" value={fin.bankName} onChange={e => updateFinancial(i, 'bankName', e.target.value)} />
                     </Field>
+                    
                     <Field label="Notes">
                       <input className={inp} style={inputStyle} placeholder="Optional notes" value={fin.notes} onChange={e => updateFinancial(i, 'notes', e.target.value)} />
                     </Field>
