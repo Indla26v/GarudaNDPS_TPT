@@ -277,12 +277,18 @@ export default function Dashboard() {
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-2 mt-2 justify-center">
-            {(summary?.drugTypeBreakdown || []).map(d => (
-              <span key={d.type} className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--color-garuda-300)' }}>
-                <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
-                {d.type} ({d.value}%)
-              </span>
-            ))}
+            {(() => {
+              const total = (summary?.drugTypeBreakdown || []).reduce((acc, cur) => acc + cur.value, 0);
+              return (summary?.drugTypeBreakdown || []).map(d => {
+                const percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                return (
+                  <span key={d.type} className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--color-garuda-300)' }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
+                    {d.type} ({d.value} cases - {percentage}%)
+                  </span>
+                );
+              });
+            })()}
           </div>
         </div>
       </div>

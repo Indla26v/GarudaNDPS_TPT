@@ -388,6 +388,39 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       (prisma as any).bus_stand_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
     ]);
 
+    // Fetch counts for last month to determine trends dynamically
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthWhere: any = { ...where, created_at: { gte: lastMonthStart, lt: lastMonthEnd } };
+    const lastVillageMonthWhere: any = { ...where, visit_date: { gte: lastMonthStart, lt: lastMonthEnd } };
+    const lastLodgeMonthWhere: any = { ...where, check_date: { gte: lastMonthStart, lt: lastMonthEnd } };
+
+    const [
+      totalLastMonth,
+      villageVisitsLastMonth,
+      lodgeChecksLastMonth,
+      drunkDriveLastMonth,
+      courierLastMonth,
+      railwayLastMonth,
+      busStandLastMonth,
+    ] = await Promise.all([
+      prisma.enforcement_checks.count({ where: lastMonthWhere }),
+      prisma.village_visits.count({ where: lastVillageMonthWhere }),
+      prisma.lodge_checks.count({ where: lastLodgeMonthWhere }),
+      (prisma as any).drunk_drive_checks.count({ where: lastMonthWhere }),
+      (prisma as any).courier_checks.count({ where: lastMonthWhere }),
+      (prisma as any).railway_checks.count({ where: lastMonthWhere }),
+      (prisma as any).bus_stand_checks.count({ where: lastMonthWhere }),
+    ]);
+
+    const calculateTrend = (curr: number, prev: number) => {
+      if (prev === 0) {
+        return curr > 0 ? `+${curr}%` : '0%';
+      }
+      const pct = ((curr - prev) / prev) * 100;
+      return `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}%`;
+    };
+
     // Resolve the stations for this user's scope to build psCondition
     let stationsToQuery;
     if (where.ps_id) {
@@ -711,6 +744,15 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         courier: courierChecksCount,
         railway: railwayChecksCount,
         bus: busStandChecksCount,
+      },
+      trends: {
+        villageVisits: calculateTrend(villageVisitsCount, villageVisitsLastMonth),
+        lodgeChecks: calculateTrend(lodgeChecksCount, lodgeChecksLastMonth),
+        ndps: calculateTrend(totalThisMonth, totalLastMonth),
+        drunkDrive: calculateTrend(drunkDriveChecksCount, drunkDriveLastMonth),
+        courier: calculateTrend(courierChecksCount, courierLastMonth),
+        railway: calculateTrend(railwayChecksCount, railwayLastMonth),
+        bus: calculateTrend(busStandChecksCount, busStandLastMonth),
       },
       allTime: { total: totalAllTime, positive: positiveAllTime, negative: negativeAllTime },
       pendingReview,

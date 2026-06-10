@@ -402,6 +402,14 @@ function GarudaCommandDashboard() {
   const railwayCount = summary?.thisMonth?.railway || 0;
   const busCount = summary?.thisMonth?.bus || 0;
 
+  const villageVisitsTrend = summary?.trends?.villageVisits || '0%';
+  const lodgeChecksTrend = summary?.trends?.lodgeChecks || '0%';
+  const ndpsTrend = summary?.trends?.ndps || '0%';
+  const drunkDriveTrend = summary?.trends?.drunkDrive || '0%';
+  const courierTrend = summary?.trends?.courier || '0%';
+  const railwayTrend = summary?.trends?.railway || '0%';
+  const busTrend = summary?.trends?.bus || '0%';
+
   // Dynamic mock weekly data scaled to actual current counts
   const data = [
     { name: 'Mon', visits: Math.round(villageVisitsCount * 0.15), lodges: Math.round(lodgeChecksCount * 0.1) },
@@ -463,13 +471,13 @@ function GarudaCommandDashboard() {
       {/* High-level KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         {[
-          { label: 'Village Visits', value: villageVisitsCount, trend: '+12%', color: 'text-blue-400' },
-          { label: 'Lodge Checks', value: lodgeChecksCount, trend: '+5%', color: 'text-purple-400' },
-          { label: 'NDPS Verifications', value: ndpsChecksCount, trend: '+18%', color: 'text-amber-400' },
-          { label: 'Drunk & Drive', value: drunkDriveCount, trend: '+8%', color: 'text-red-400' },
-          { label: 'Courier Checks', value: courierCount, trend: '+10%', color: 'text-pink-400' },
-          { label: 'Railway Checks', value: railwayCount, trend: '+6%', color: 'text-cyan-400' },
-          { label: 'Bus Stand Checks', value: busCount, trend: '+7%', color: 'text-teal-400' },
+          { label: 'Village Visits', value: villageVisitsCount, trend: villageVisitsTrend, color: 'text-blue-400' },
+          { label: 'Lodge Checks', value: lodgeChecksCount, trend: lodgeChecksTrend, color: 'text-purple-400' },
+          { label: 'NDPS Verifications', value: ndpsChecksCount, trend: ndpsTrend, color: 'text-amber-400' },
+          { label: 'Drunk & Drive', value: drunkDriveCount, trend: drunkDriveTrend, color: 'text-red-400' },
+          { label: 'Courier Checks', value: courierCount, trend: courierTrend, color: 'text-pink-400' },
+          { label: 'Railway Checks', value: railwayCount, trend: railwayTrend, color: 'text-cyan-400' },
+          { label: 'Bus Stand Checks', value: busCount, trend: busTrend, color: 'text-teal-400' },
         ].map(kpi => (
           <div key={kpi.label} className="card p-5 animate-fade-in" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>{kpi.label}</h3>
