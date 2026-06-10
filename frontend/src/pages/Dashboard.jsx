@@ -239,8 +239,9 @@ export default function Dashboard() {
               <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} />
               <YAxis stroke="#94a3b8" fontSize={11} />
               <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#334155' }}
-                labelStyle={{ color: '#1e293b' }}
+                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
+                labelStyle={{ color: 'var(--color-garuda-100)' }}
+                itemStyle={{ color: 'var(--color-garuda-200)' }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Line type="monotone" dataKey="cases" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} name="Cases" />
@@ -269,7 +270,9 @@ export default function Dashboard() {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
+                labelStyle={{ color: 'var(--color-garuda-100)' }}
+                itemStyle={{ color: 'var(--color-garuda-200)' }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -296,7 +299,9 @@ export default function Dashboard() {
               <XAxis dataKey="psName" stroke="#94a3b8" fontSize={10} angle={-30} textAnchor="end" height={60} />
               <YAxis stroke="#94a3b8" fontSize={11} />
               <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
+                labelStyle={{ color: 'var(--color-garuda-100)' }}
+                itemStyle={{ color: 'var(--color-garuda-200)' }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="totalCases" fill="#3b82f6" name="Cases" radius={[4, 4, 0, 0]} />

@@ -35,11 +35,30 @@ const DISTRICT_NUMBERS: Record<string, string> = {
 };
 
 // ── Helper: build enforcement scoping where clause ─────────────────────
-function getEnforcementWhere(user: ScopeUser): Record<string, unknown> {
-  const DISTRICT_ROLES = ['SP', 'ASP'];
+function getEnforcementWhere(user: ScopeUser): Record<string, any> {
   if (!user?.role) return { id: BigInt(-1) };
-  if (DISTRICT_ROLES.includes(user.role)) return {};
-  if (user.policeStationId) return { ps_id: BigInt(user.policeStationId) };
+
+  // SP and ASP roles: scoped to district
+  if (user.role === 'SP' || user.role === 'ASP') {
+    if (user.district) {
+      return { police_station: { district: user.district } };
+    }
+    return {};
+  }
+
+  // SDPO role: scoped to subdivision
+  if (user.role === 'SDPO') {
+    if (user.divisionId) {
+      return { police_station: { sdpo: user.divisionId } };
+    }
+    return {};
+  }
+
+  // Station-level: scope to their police station
+  if (user.policeStationId) {
+    return { ps_id: BigInt(user.policeStationId) };
+  }
+
   return {};
 }
 
@@ -357,9 +376,27 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       prisma.lodge_checks.count({ where: lodgeMonthWhere }),
     ]);
 
+    // Resolve the stations for this user's scope to build psCondition
+    let stationsToQuery;
+    if (where.ps_id) {
+      stationsToQuery = await prisma.police_stations.findMany({
+        where: { id: where.ps_id as bigint },
+      });
+    } else if (where.police_station) {
+      stationsToQuery = await prisma.police_stations.findMany({
+        where: where.police_station,
+      });
+    } else {
+      stationsToQuery = await prisma.police_stations.findMany();
+    }
+
     // Monthly trend (last 6 months)
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const psCondition = (where as any).ps_id ? `AND ps_id = ${(where as any).ps_id}` : '';
+    const psCondition = where.ps_id
+      ? `AND ps_id = ${where.ps_id}`
+      : (stationsToQuery && stationsToQuery.length > 0
+          ? `AND ps_id IN (${stationsToQuery.map(s => s.id).join(',')})`
+          : 'AND 1=0');
 
     const monthlyTrend = await prisma.$queryRawUnsafe<{ month: string; positive: bigint; negative: bigint; total: bigint }[]>(
       `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
@@ -453,33 +490,38 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
 
     // Station-wise breakdown (for SDPO/SP) leaderboard counting all activity types
     let stationBreakdown: any[] = [];
-    const DISTRICT_ROLES = ['SP', 'ASP'];
-    if (DISTRICT_ROLES.includes(user.role)) {
-      const allStations = await prisma.police_stations.findMany({
-        select: { id: true, name: true }
-      });
+    if (['SP', 'ASP', 'SDPO'].includes(user.role)) {
+      const breakdownStations = where.police_station
+        ? await prisma.police_stations.findMany({
+            where: where.police_station,
+            select: { id: true, name: true }
+          })
+        : await prisma.police_stations.findMany({
+            select: { id: true, name: true }
+          });
 
+      const stationIds = breakdownStations.map(s => s.id);
       const [vvCounts, lcCounts, ecCounts] = await Promise.all([
         prisma.village_visits.groupBy({
           by: ['ps_id'],
-          where: { visit_date: { gte: monthStart } },
+          where: { ps_id: { in: stationIds }, visit_date: { gte: monthStart } },
           _count: { id: true },
         }),
         prisma.lodge_checks.groupBy({
           by: ['ps_id'],
-          where: { check_date: { gte: monthStart } },
+          where: { ps_id: { in: stationIds }, check_date: { gte: monthStart } },
           _count: { id: true },
         }),
         prisma.enforcement_checks.groupBy({
           by: ['ps_id'],
-          where: { created_at: { gte: monthStart } },
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
           _count: { id: true },
         }),
       ]);
 
       const breakdownMap = new Map<string, { ps_id: string; ps_name: string; visits: number; lodges: number; ndps: number; total: number }>();
       
-      allStations.forEach(s => {
+      breakdownStations.forEach(s => {
         breakdownMap.set(s.id.toString(), {
           ps_id: s.id.toString(),
           ps_name: s.name,

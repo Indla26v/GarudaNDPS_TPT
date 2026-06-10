@@ -40,9 +40,17 @@ export default function UserManagement() {
   // Form States
   const [showForm, setShowForm] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [form, setForm] = useState({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' });
+  const [form, setForm] = useState({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'POLICE', badgeNumber: '', district: '', divisionId: '' });
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const uniqueDistricts = useMemo(() => {
+    return [...new Set(stations.map(s => s.district).filter(Boolean))].sort();
+  }, [stations]);
+
+  const uniqueSdpos = useMemo(() => {
+    return [...new Set(stations.map(s => s.sdpo).filter(Boolean))].sort();
+  }, [stations]);
 
   useEffect(() => {
     fetchData();
@@ -68,21 +76,28 @@ export default function UserManagement() {
     setFormError('');
     setSaving(true);
     try {
+      const payload = {
+        fullName: form.fullName,
+        role: form.role,
+        department: form.department,
+        badgeNumber: form.badgeNumber || null,
+        policeStationId: (form.role !== 'SP' && form.role !== 'ASP' && form.role !== 'SDPO') ? (form.policeStationId || null) : null,
+        district: (form.role === 'SP' || form.role === 'ASP') ? (form.district || null) : null,
+        divisionId: (form.role === 'SDPO') ? (form.divisionId || null) : null,
+        ...(form.password && { password: form.password }),
+      };
       if (editUser) {
-        await api.put(`/admin/users/${editUser.id}`, {
-          fullName: form.fullName,
-          role: form.role,
-          department: form.department,
-          badgeNumber: form.badgeNumber || null,
-          policeStationId: form.policeStationId || null,
-          ...(form.password && { password: form.password }),
-        });
+        await api.put(`/admin/users/${editUser.id}`, payload);
       } else {
-        await api.post('/admin/users', form);
+        await api.post('/admin/users', {
+          ...payload,
+          username: form.username,
+          password: form.password,
+        });
       }
       setShowForm(false);
       setEditUser(null);
-      setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' });
+      setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'POLICE', badgeNumber: '', district: '', divisionId: '' });
       await fetchData();
     } catch (err) {
       setFormError(err.response?.data?.message || 'Failed to save user');
@@ -98,9 +113,11 @@ export default function UserManagement() {
       password: '',
       fullName: user.fullName,
       role: user.role,
-      department: user.department || 'OPERATIONS',
+      department: user.department || 'POLICE',
       badgeNumber: user.badgeNumber || '',
       policeStationId: user.policeStationId || '',
+      district: user.district || '',
+      divisionId: user.divisionId || '',
     });
     setShowForm(true);
   };
@@ -180,7 +197,7 @@ export default function UserManagement() {
           </p>
         </div>
         <button
-          onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'OPERATIONS', badgeNumber: '' }); setShowForm(true); }}
+          onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'POLICE', badgeNumber: '', district: '', divisionId: '' }); setShowForm(true); }}
           className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap"
           style={{ background: 'var(--color-accent-500)', color: '#fff' }}
         >
@@ -208,8 +225,7 @@ export default function UserManagement() {
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
                   disabled={!!editUser}
                   required={!editUser}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="input w-full"
                 />
               </div>
               <div>
@@ -221,8 +237,7 @@ export default function UserManagement() {
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   required={!editUser}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="input w-full"
                 />
               </div>
               <div>
@@ -232,8 +247,7 @@ export default function UserManagement() {
                   value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                   required
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="input w-full"
                 />
               </div>
               <div>
@@ -241,8 +255,7 @@ export default function UserManagement() {
                 <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="select w-full"
                 >
                   {ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>)}
                 </select>
@@ -252,8 +265,7 @@ export default function UserManagement() {
                 <select
                   value={form.department}
                   onChange={(e) => setForm({ ...form, department: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="select w-full"
                 >
                   {DEPARTMENTS.map(d => <option key={d} value={d}>{DEPT_LABELS[d] || d}</option>)}
                 </select>
@@ -265,22 +277,51 @@ export default function UserManagement() {
                   value={form.badgeNumber}
                   onChange={(e) => setForm({ ...form, badgeNumber: e.target.value })}
                   placeholder="Optional"
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+                  className="input w-full"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station</label>
-                <select
-                  value={form.policeStationId}
-                  onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
-                  style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
-                >
-                  <option value="">— None (District Level) —</option>
-                  {stations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.psCode})</option>)}
-                </select>
-              </div>
+              {(form.role === 'SP' || form.role === 'ASP') && (
+                <div className="md:col-span-2">
+                  <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>District</label>
+                  <select
+                    value={form.district}
+                    onChange={(e) => setForm({ ...form, district: e.target.value })}
+                    required
+                    className="select w-full"
+                  >
+                    <option value="">— Select District —</option>
+                    {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              )}
+              {form.role === 'SDPO' && (
+                <div className="md:col-span-2">
+                  <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>SDPO Station / Subdivision</label>
+                  <select
+                    value={form.divisionId}
+                    onChange={(e) => setForm({ ...form, divisionId: e.target.value })}
+                    required
+                    className="select w-full"
+                  >
+                    <option value="">— Select SDPO Subdivision —</option>
+                    {uniqueSdpos.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+              {form.role !== 'SP' && form.role !== 'ASP' && form.role !== 'SDPO' && (
+                <div className="md:col-span-2">
+                  <label className="text-xs font-medium block mb-1" style={{ color: 'var(--color-garuda-300)' }}>Police Station</label>
+                  <select
+                    value={form.policeStationId}
+                    onChange={(e) => setForm({ ...form, policeStationId: e.target.value })}
+                    required
+                    className="select w-full"
+                  >
+                    <option value="">— Select Police Station —</option>
+                    {stations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.psCode})</option>)}
+                  </select>
+                </div>
+              )}
               <div className="md:col-span-2 flex justify-end gap-3 mt-2">
                 <button
                   type="button"
@@ -317,8 +358,7 @@ export default function UserManagement() {
           <select
             value={selectedState}
             onChange={(e) => setSelectedState(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm cursor-pointer"
-            style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+            className="select w-full"
           >
             <option value="">— Select a State —</option>
             {uniqueStates.map(state => <option key={state} value={state}>{state}</option>)}
@@ -331,8 +371,7 @@ export default function UserManagement() {
             value={selectedDistrict}
             onChange={(e) => setSelectedDistrict(e.target.value)}
             disabled={!selectedState}
-            className="w-full px-3 py-2 rounded-lg text-sm disabled:opacity-50 cursor-pointer"
-            style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+            className="select w-full disabled:opacity-50"
           >
             <option value="">— Select a District —</option>
             {availableDistricts.map(district => <option key={district} value={district}>{district}</option>)}
@@ -445,6 +484,22 @@ export default function UserManagement() {
                               >
                                 {DEPT_LABELS[u.department] || u.department}
                               </span>
+                              {u.district && (
+                                <span
+                                  className="text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded"
+                                  style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                                >
+                                  Dist: {u.district}
+                                </span>
+                              )}
+                              {u.divisionId && (
+                                <span
+                                  className="text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded"
+                                  style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                                >
+                                  SDPO: {u.divisionId}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="px-5 py-3 text-right">

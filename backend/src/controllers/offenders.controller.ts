@@ -46,7 +46,8 @@ export const getOffenders = async (req: Request, res: Response) => {
           { voter_id: { contains: q, mode: 'insensitive' } },
           { pan_card: { contains: q, mode: 'insensitive' } }
         ] } } },
-        { offender_contacts: { some: { value: { contains: q, mode: 'insensitive' } } } }
+        { offender_contacts: { some: { value: { contains: q, mode: 'insensitive' } } } },
+        { case_accused: { some: { cases: { fir_no: { contains: q, mode: 'insensitive' } } } } }
       ];
     }
 
@@ -59,7 +60,15 @@ export const getOffenders = async (req: Request, res: Response) => {
         include: {
           police_stations: true,
           offender_contacts: { where: { contact_type: 'MOBILE_PRIMARY' } },
-          case_accused: true
+          case_accused: {
+            include: {
+              cases: {
+                select: {
+                  fir_no: true
+                }
+              }
+            }
+          }
         },
         skip,
         take
@@ -70,6 +79,7 @@ export const getOffenders = async (req: Request, res: Response) => {
     const formatted = offenders.map(o => ({
       id: o.id.toString(),
       slNo: o.sl_no,
+      crNo: o.case_accused.map(ca => ca.cases?.fir_no).filter(Boolean).join(', ') || null,
       fullName: o.full_name,
       alias: o.alias,
       category: o.category,
@@ -158,6 +168,7 @@ export const getOffenderById = async (req: Request, res: Response) => {
       sourceOfProcurement: o.offender_drug_profile?.source_of_procurement || null,
       modeOfPurchase: o.offender_drug_profile?.mode_of_purchase || null,
       usualConsumptionSpot: o.offender_drug_profile?.usual_consumption_spot || null,
+      sectionOfLaw: o.offender_drug_profile?.section_of_law || null,
       drugProfile: o.offender_drug_profile
         ? {
             id: o.offender_drug_profile.id.toString(),
@@ -166,6 +177,7 @@ export const getOffenderById = async (req: Request, res: Response) => {
             sourceOfProcurement: o.offender_drug_profile.source_of_procurement,
             modeOfPurchase: o.offender_drug_profile.mode_of_purchase,
             usualConsumptionSpot: o.offender_drug_profile.usual_consumption_spot,
+            sectionOfLaw: o.offender_drug_profile.section_of_law,
           }
         : null,
       contacts: o.offender_contacts.map(c => ({
@@ -236,13 +248,15 @@ export const createOffender = async (req: Request, res: Response) => {
     const sourceOfProcurement = data.sourceOfProcurement ?? data.drugProfile?.sourceOfProcurement ?? null;
     const modeOfPurchase = data.modeOfPurchase ?? data.drugProfile?.modeOfPurchase ?? null;
     const usualConsumptionSpot = data.usualConsumptionSpot ?? data.drugProfile?.usualConsumptionSpot ?? null;
-
-    const drugProfileCreate = (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot) ? {
+    const sectionOfLaw = data.sectionOfLaw ?? data.drugProfile?.sectionOfLaw ?? null;
+ 
+    const drugProfileCreate = (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot || sectionOfLaw) ? {
       addiction_type: addictionType,
       consumption_frequency: consumptionFrequency,
       source_of_procurement: sourceOfProcurement,
       mode_of_purchase: modeOfPurchase,
-      usual_consumption_spot: usualConsumptionSpot
+      usual_consumption_spot: usualConsumptionSpot,
+      section_of_law: sectionOfLaw
     } : undefined;
 
     let slNo = data.slNo || data.sl_no || null;
@@ -440,8 +454,9 @@ export const updateOffender = async (req: Request, res: Response) => {
        const sourceOfProcurement = data.sourceOfProcurement ?? data.drugProfile?.sourceOfProcurement ?? null;
        const modeOfPurchase = data.modeOfPurchase ?? data.drugProfile?.modeOfPurchase ?? null;
        const usualConsumptionSpot = data.usualConsumptionSpot ?? data.drugProfile?.usualConsumptionSpot ?? null;
+       const sectionOfLaw = data.sectionOfLaw ?? data.drugProfile?.sectionOfLaw ?? null;
 
-       if (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot) {
+       if (addictionType || consumptionFrequency || sourceOfProcurement || modeOfPurchase || usualConsumptionSpot || sectionOfLaw) {
          await tx.offender_drug_profile.create({
            data: {
              offender_id: BigInt(id as string),
@@ -449,7 +464,8 @@ export const updateOffender = async (req: Request, res: Response) => {
              consumption_frequency: consumptionFrequency,
              source_of_procurement: sourceOfProcurement,
              mode_of_purchase: modeOfPurchase,
-             usual_consumption_spot: usualConsumptionSpot
+             usual_consumption_spot: usualConsumptionSpot,
+             section_of_law: sectionOfLaw
            }
          });
        }

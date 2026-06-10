@@ -42,10 +42,14 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const offenderWhere: any = { ...psFilter };
     const caseAccusedWhere: any = psFilter.ps_id
       ? { cases: { ps_id: psFilter.ps_id } }
-      : {};
+      : (psFilter.police_stations
+          ? { cases: { police_stations: psFilter.police_stations } }
+          : {});
     const seizureWhere: any = psFilter.ps_id
       ? { cases: { ps_id: psFilter.ps_id } }
-      : {};
+      : (psFilter.police_stations
+          ? { cases: { police_stations: psFilter.police_stations } }
+          : {});
 
     // ── Core KPIs ──────────────────────────────────────────────────────
     const totalCases = await prisma.cases.count({ where: caseWhere });
@@ -92,6 +96,20 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const totalCash = seizureAgg._sum.cash_amount || 0;
     const totalVehicles = seizureAgg._sum.vehicles_count || 0;
 
+    // Resolve the stations for this user's scope
+    let stationsToQuery: any[];
+    if (isStationLevel && psFilter.ps_id) {
+      stationsToQuery = await prisma.police_stations.findMany({
+        where: { id: psFilter.ps_id as bigint },
+      });
+    } else if (psFilter.police_stations) {
+      stationsToQuery = await prisma.police_stations.findMany({
+        where: psFilter.police_stations,
+      });
+    } else {
+      stationsToQuery = await prisma.police_stations.findMany();
+    }
+
     // ── Year-wise trend ────────────────────────────────────────────────
     const historicalBaseline: Record<number, { cases: number; arrests: number }> = {
       2016: { cases: 2, arrests: 2 },
@@ -107,7 +125,11 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     };
 
     // Build dynamic SQL for year-wise trend, scoped by PS
-    const psCondition = psFilter.ps_id ? `AND c.ps_id = ${psFilter.ps_id}` : '';
+    const psCondition = psFilter.ps_id
+      ? `AND c.ps_id = ${psFilter.ps_id}`
+      : (stationsToQuery && stationsToQuery.length > 0
+          ? `AND c.ps_id IN (${stationsToQuery.map(s => s.id).join(',')})`
+          : 'AND 1=0');
 
     const casesByYear = await prisma.$queryRawUnsafe<{ year: number; count: bigint }[]>(
       `SELECT EXTRACT(YEAR FROM case_date)::int AS year, COUNT(*)::bigint AS count
@@ -134,8 +156,8 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       const dbCases = caseYearMap.get(y) ?? 0;
       const dbArrests = arrestYearMap.get(y) ?? 0;
       const baseline = historicalBaseline[y];
-      // Only use baseline for district-level / admin (station-level users shouldn't see district baselines)
-      const useFallback = !isStationLevel;
+      // Only use baseline fallback for district-wide view with no filter
+      const useFallback = !isStationLevel && (!psFilter.police_stations || !psFilter.police_stations.sdpo);
       yearWiseTrend.push({
         year: y,
         cases: dbCases > 0 ? dbCases : (useFallback ? (baseline?.cases ?? 0) : 0),
@@ -198,14 +220,6 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     // ── Station-wise breakdown ──────────────────────────────────────────
     // Station-level users: only show their own PS
     // District-level/Admin: show all
-    let stationsToQuery;
-    if (isStationLevel && psFilter.ps_id) {
-      stationsToQuery = await prisma.police_stations.findMany({
-        where: { id: psFilter.ps_id as bigint },
-      });
-    } else {
-      stationsToQuery = await prisma.police_stations.findMany();
-    }
 
     const psWiseData = await Promise.all(stationsToQuery.map(async (ps) => {
       const psId = ps.id;

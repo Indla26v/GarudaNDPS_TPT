@@ -66,8 +66,7 @@ export default function AuditLogs() {
           id="filter-action"
           value={filters.action}
           onChange={(e) => { setFilters({ ...filters, action: e.target.value }); setPage(0); }}
-          className="px-3 py-2 rounded-lg text-sm cursor-pointer"
-          style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+          className="select"
         >
           <option value="">All Actions</option>
           {Object.keys(ACTION_COLORS).map(a => <option key={a} value={a}>{a}</option>)}
@@ -76,8 +75,7 @@ export default function AuditLogs() {
           id="filter-entity"
           value={filters.entityType}
           onChange={(e) => { setFilters({ ...filters, entityType: e.target.value }); setPage(0); }}
-          className="px-3 py-2 rounded-lg text-sm cursor-pointer"
-          style={{ background: '#ffffff', color: 'var(--color-garuda-50)', border: '1px solid var(--color-garuda-700)' }}
+          className="select"
         >
           <option value="">All Entities</option>
           <option value="ADMINISTRATION">ADMINISTRATION</option>

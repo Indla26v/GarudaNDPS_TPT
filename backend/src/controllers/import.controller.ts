@@ -35,6 +35,106 @@ function parseContrabandType(raw: string): string | null {
   return 'OTHER';
 }
 
+const STATE_CODES: Record<string, string> = {
+  'andhra pradesh': 'AP',
+  'ap': 'AP',
+  'kerala': 'KL',
+  'kl': 'KL',
+  'karnataka': 'KA',
+  'ka': 'KA',
+  'telangana': 'TS',
+  'ts': 'TS',
+};
+
+const DISTRICT_NUMBERS: Record<string, string> = {
+  'tirupati': '39',
+  'chittoor': '03',
+};
+
+interface ParsedAccused {
+  offenderId: string;
+  fullName: string;
+  age: number | null;
+  guardianName: string | null;
+  address: string | null;
+}
+
+function parseAccusedDetails(raw: string): ParsedAccused {
+  let str = raw.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // 1. Offender ID
+  let offenderId = '';
+  const idMatch = str.match(/^(A\d+)\.?\s*/i);
+  if (idMatch) {
+    offenderId = idMatch[1] || '';
+    str = str.substring(idMatch[0].length).trim();
+  }
+
+  // 2. Full Name
+  const markerRegex = /\b(age\s*:|\d+\s*yrs|s\/o|d\/o|w\/o|d\.?no|door\s*no|d-no|h\.?no|h-no)\b/i;
+  const markerMatch = str.match(markerRegex);
+  let fullName = '';
+  if (markerMatch && markerMatch.index !== undefined) {
+    fullName = str.substring(0, markerMatch.index).trim();
+  } else {
+    fullName = str.trim();
+  }
+  fullName = fullName.replace(/,\s*$/, '').trim();
+
+  // 3. Age
+  let age: number | null = null;
+  const ageMatch = str.match(/age\s*:\s*(\d+)/i) || str.match(/(\d+)\s*Yrs/i);
+  if (ageMatch) {
+    age = parseInt(ageMatch[1] || ageMatch[2] || '0', 10);
+  }
+
+  // 4. Guardian Name
+  let guardianName: string | null = null;
+  const guardianMatch = str.match(/\b([SDW]\/o)\.?\s*([^,]+)/i);
+  if (guardianMatch) {
+    guardianName = (guardianMatch[2] || '').trim();
+  }
+
+  // 5. Address
+  let address: string | null = str;
+  if (fullName) {
+    address = address.replace(fullName, '');
+  }
+  const agePhraseMatch = str.match(/age\s*:\s*\d+\s*(?:yrs)?/i) || str.match(/\d+\s*yrs/i);
+  if (agePhraseMatch) {
+    address = address.replace(agePhraseMatch[0], '');
+  }
+  if (guardianMatch) {
+    address = address.replace(guardianMatch[0], '');
+  }
+
+  address = address
+    .replace(/\b[SDW]\/o\.?\s*/gi, '')
+    .replace(/\bage\s*:?\s*/gi, '')
+    .replace(/yrs/gi, '')
+    .replace(/^[,\s]+|[,\s]+$/g, '')
+    .replace(/,\s*,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (address === '') {
+    address = null;
+  }
+
+  return {
+    offenderId,
+    fullName,
+    age,
+    guardianName,
+    address,
+  };
+}
+
+function cleanString(s: string | null | undefined): string | null {
+  if (!s) return null;
+  return s.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 export const importDprExcel = async (req: Request, res: Response) => {
   try {
     if (!req.file?.buffer) {
@@ -68,7 +168,16 @@ export const importDprExcel = async (req: Request, res: Response) => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
       try {
-        const psName = pick(row, 'PS Name', 'Police Station', 'Station', 'PS');
+        const crNo = cleanString(pick(row, 'Cr. No.', 'Cr No', 'CR No.', 'CR No'));
+        const accusedDetails = cleanString(pick(row, 'Accused Details', 'AccusedDetails'));
+
+        if (!crNo || !accusedDetails) {
+          stats.skipped++;
+          stats.errors.push(`Row ${i + 2}: Missing "Cr. No." or "Accused Details"`);
+          continue;
+        }
+
+        const psName = pick(row, 'Police station', 'Police Station', 'PS');
         const psCode = pick(row, 'PS Code', 'ps_code');
         let ps = psByCode.get(normKey(psCode));
         if (!ps) {
@@ -88,29 +197,32 @@ export const importDprExcel = async (req: Request, res: Response) => {
           continue;
         }
 
-        const accusedName = pick(row, 'Accused name', 'Accused Name', 'Name of Accused', 'Accused');
-        if (!accusedName) {
-          stats.skipped++;
-          continue;
-        }
+        const secOfLaw = cleanString(pick(row, 'Sec of Law', 'Section of Law', 'Sec. of Law')) || null;
+        const district = cleanString(pick(row, 'District')) || null;
+        const mandal = cleanString(pick(row, 'Mandal')) || null;
+        const state = cleanString(pick(row, 'State')) || null;
 
-        const firNo = pick(row, 'CR No', 'CR No.', 'FIR No', 'FIR', 'Cr No') || `${ps.ps_code}/${pick(row, 'Year') || new Date().getFullYear()}/${i + 1}`;
-        const yearStr = pick(row, 'Year');
-        const caseDate = yearStr ? new Date(`${yearStr}-06-15`) : new Date();
+        const caseDate = new Date();
 
         const existingCase = await prisma.cases.findFirst({
-          where: { fir_no: firNo, ps_id: ps.id },
+          where: { fir_no: crNo, ps_id: ps.id },
         });
 
         let caseId: bigint;
         if (existingCase) {
           caseId = existingCase.id;
+          if (!existingCase.section_of_law && secOfLaw) {
+            await prisma.cases.update({
+              where: { id: caseId },
+              data: { section_of_law: secOfLaw },
+            });
+          }
         } else {
           const created = await prisma.cases.create({
             data: {
-              fir_no: firNo,
+              fir_no: crNo,
               ps_id: ps.id,
-              section_of_law: pick(row, 'Sec of Law', 'Section', 'Section of Law') || null,
+              section_of_law: secOfLaw,
               case_date: caseDate,
               stage: 'FIR',
               nature_of_offence: pick(row, 'Nature of offence', 'Nature of Offence') || null,
@@ -145,53 +257,121 @@ export const importDprExcel = async (req: Request, res: Response) => {
           }
         }
 
-        let offender = await prisma.offenders.findFirst({
-          where: { ps_id: ps.id, full_name: { equals: accusedName, mode: 'insensitive' } },
-        });
+        const rawDetails = accusedDetails;
+        const accusedLines = rawDetails.split(/(?=A\d+\b)/i).map(l => l.trim()).filter(Boolean);
 
-        if (!offender) {
-          const ageStr = pick(row, 'Age');
-          const contactsVal = pick(row, 'Mobile', 'Mobile No');
-          const aadhaarVal = pick(row, 'Aadhaar', 'Aadhaar No');
+        for (const line of accusedLines) {
+          const parsed = parseAccusedDetails(line);
+          const fullName = cleanString(parsed.fullName);
 
-          const offenderDataObj: any = {
-            ps_id: ps.id,
-            full_name: accusedName,
-            father_husband_name: pick(row, "Father's name", 'Father Name', 'Father') || null,
-            age: ageStr ? parseInt(ageStr, 10) || null : null,
-            full_address: pick(row, 'Address', 'Permanent Address') || null,
-            created_by: userId,
-          };
-
-          if (contactsVal) {
-            offenderDataObj.offender_contacts = {
-              create: [{ contact_type: 'MOBILE_PRIMARY', value: contactsVal }],
-            };
-          }
-          if (aadhaarVal) {
-            offenderDataObj.offender_identity_docs = {
-              create: [{ aadhaar_no: aadhaarVal.replace(/\D/g, '').slice(0, 12) }],
-            };
+          if (!fullName) {
+            continue;
           }
 
-          offender = await prisma.offenders.create({
-            data: offenderDataObj
+          let offender = await prisma.offenders.findFirst({
+            where: { ps_id: ps.id, full_name: { equals: fullName, mode: 'insensitive' } },
           });
-          stats.offendersCreated++;
-        }
 
-        const linked = await prisma.case_accused.findFirst({
-          where: { case_id: caseId, offender_id: offender.id },
-        });
-        if (!linked) {
-          const arrestStatus = pick(row, 'Arrest status', 'Arrest Status');
-          await prisma.case_accused.create({
-            data: {
-              case_id: caseId,
-              offender_id: offender.id,
-              arrest_status: arrestStatus.toUpperCase().includes('ABS') ? 'ABSCONDING' : 'ARRESTED',
-            },
+          const guardianName = cleanString(parsed.guardianName);
+          const address = cleanString(parsed.address);
+          const age = parsed.age;
+
+          if (!offender) {
+            let slNo = null;
+            const offenderDistrict = district || ps.district || '';
+            const offenderState = state || ps.state || '';
+            const stateCode = STATE_CODES[offenderState.toLowerCase().trim()];
+            const districtNum = DISTRICT_NUMBERS[offenderDistrict.toLowerCase().trim()];
+
+            if (stateCode && districtNum) {
+              const prefix = `${stateCode}${districtNum}-`;
+              const count = await prisma.offenders.count({
+                where: {
+                  sl_no: {
+                    startsWith: prefix
+                  }
+                }
+              });
+              const nextNum = count + 1;
+              slNo = `${prefix}${String(nextNum).padStart(4, '0')}`;
+            } else {
+              const prefix = 'SL-';
+              const count = await prisma.offenders.count({
+                where: {
+                  sl_no: {
+                    startsWith: prefix
+                  }
+                }
+              });
+              slNo = `${prefix}${(100 + count).toString()}`;
+            }
+
+            const offenderDataObj: any = {
+              sl_no: slNo,
+              ps_id: ps.id,
+              full_name: fullName,
+              father_husband_name: guardianName,
+              age: age,
+              full_address: address,
+              district: offenderDistrict || null,
+              state: offenderState || null,
+              created_by: userId,
+            };
+
+            offender = await prisma.offenders.create({
+              data: offenderDataObj
+            });
+            stats.offendersCreated++;
+          } else {
+            const updateObj: any = {};
+            if (!offender.father_husband_name && guardianName) updateObj.father_husband_name = guardianName;
+            if (!offender.age && age) updateObj.age = age;
+            if (!offender.full_address && address) updateObj.full_address = address;
+            if (!offender.district && district) updateObj.district = district;
+            if (!offender.state && state) updateObj.state = state;
+
+            if (Object.keys(updateObj).length > 0) {
+              offender = await prisma.offenders.update({
+                where: { id: offender.id },
+                data: updateObj,
+              });
+            }
+          }
+
+          if (secOfLaw) {
+            const profile = await prisma.offender_drug_profile.findUnique({
+              where: { offender_id: offender.id }
+            });
+            if (profile) {
+              if (profile.section_of_law !== secOfLaw) {
+                await prisma.offender_drug_profile.update({
+                  where: { offender_id: offender.id },
+                  data: { section_of_law: secOfLaw }
+                });
+              }
+            } else {
+              await prisma.offender_drug_profile.create({
+                data: {
+                  offender_id: offender.id,
+                  section_of_law: secOfLaw
+                }
+              });
+            }
+          }
+
+          const linked = await prisma.case_accused.findFirst({
+            where: { case_id: caseId, offender_id: offender.id },
           });
+          if (!linked) {
+            const arrestStatus = pick(row, 'Arrest status', 'Arrest Status');
+            await prisma.case_accused.create({
+              data: {
+                case_id: caseId,
+                offender_id: offender.id,
+                arrest_status: arrestStatus.toUpperCase().includes('ABS') ? 'ABSCONDING' : 'ARRESTED',
+              },
+            });
+          }
         }
       } catch (e: any) {
         stats.errors.push(`Row ${i + 2}: ${e.message || 'error'}`);

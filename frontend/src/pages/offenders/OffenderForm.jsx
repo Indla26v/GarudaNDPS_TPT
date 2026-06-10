@@ -62,7 +62,7 @@ export default function OffenderForm() {
     fullAddress:'', landmark:'', district:'', state:'',
     occupation:'', monthlyIncome:'',
     addictionType:'', consumptionFrequency:'', sourceOfProcurement:'',
-    testResult:'', modeOfPurchase:'', usualConsumptionSpot:'',
+    testResult:'', modeOfPurchase:'', usualConsumptionSpot:'', sectionOfLaw:'',
     aadhaarNo:'', voterId:'', panCard:'', photoUrl:'',
     previousCrimeHistory: false, historySheetStatus:'',
     contacts: [],
@@ -97,6 +97,7 @@ export default function OffenderForm() {
         addictionType: d.addictionType||'', consumptionFrequency: d.consumptionFrequency||'',
         sourceOfProcurement: d.sourceOfProcurement||'', testResult: d.testResult||'',
         modeOfPurchase: d.modeOfPurchase||'', usualConsumptionSpot: d.usualConsumptionSpot||'',
+        sectionOfLaw: d.sectionOfLaw || d.drugProfile?.sectionOfLaw || '',
         aadhaarNo: d.identityDocs?.aadhaarNo || d.aadhaarNo || '',
         voterId: d.identityDocs?.voterId || d.voterId || '',
         panCard: d.identityDocs?.panCard || d.panCard || '',
@@ -121,6 +122,264 @@ export default function OffenderForm() {
       setAadhaarMasked(false);
     } catch {
       setError('Not authorized to view Aadhaar');
+    }
+  };
+
+  const printProfile = async () => {
+    try {
+      setError('');
+      const [casesRes, intRes] = await Promise.all([
+        api.get(`/cases/offender/${id}`),
+        api.get(`/offenders/${id}/interrogations`)
+      ]);
+      const cases = casesRes.data?.data || [];
+      const sessions = intRes.data?.data || [];
+      
+      const matchedStation = stations.find(s => String(s.id) === String(form.psId));
+      const stationName = matchedStation ? `${matchedStation.name} (${matchedStation.psCode})` : '—';
+      
+      const w = window.open('', '_blank');
+      if (!w) return;
+      
+      const val = (v) => v || '—';
+      
+      w.document.write(`
+        <html>
+          <head>
+            <title>Offender Profile - ${form.fullName}</title>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+              body { font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; background: #fff; }
+              .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px double #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
+              .header-title h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+              .header-title p { font-size: 12px; color: #64748b; margin: 5px 0 0 0; font-weight: 500; }
+              .badge { font-size: 11px; font-weight: 700; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; color: #334155; }
+              h2 { font-size: 14px; color: #ea580c; border-bottom: 1.5px solid #fed7aa; padding-bottom: 4px; margin-top: 30px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+              .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+              .col-span-2 { grid-column: span 2; }
+              .col-span-3 { grid-column: span 3; }
+              .field { margin-bottom: 10px; }
+              .label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; }
+              .value { font-size: 13px; font-weight: 500; color: #0f172a; margin-top: 3px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+              th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 12px; }
+              th { background-color: #f8fafc; font-weight: 600; color: #475569; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+              .photo-container { display: flex; gap: 25px; align-items: flex-start; margin-bottom: 25px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; }
+              .photo { width: 120px; height: 120px; border: 1px solid #cbd5e1; border-radius: 8px; object-fit: cover; background: #fff; }
+              .photo-placeholder { width: 120px; height: 120px; border: 1px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fff; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+              .header-info { flex-grow: 1; }
+              .print-footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; }
+              @media print {
+                body { padding: 0; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="header-title">
+                <h1>NDPS Offender Dossier</h1>
+                <p>Garuda NDPS Intelligence & Monitoring System</p>
+              </div>
+              <div class="badge">${val(form.category?.replace(/_/g, ' '))}</div>
+            </div>
+            
+            <div class="photo-container">
+              ${form.photoUrl ? `<img src="${form.photoUrl}" class="photo" alt="Offender Photo" />` : `<div class="photo-placeholder">No Photo Available</div>`}
+              <div class="header-info">
+                <div class="grid">
+                  <div class="field col-span-2"><div class="label">Full Name</div><div class="value" style="font-size: 18px; font-weight: 700; color: #0f172a;">${val(form.fullName)}</div></div>
+                  <div class="field"><div class="label">Alias</div><div class="value" style="font-weight: 600; color: #334155;">${val(form.alias)}</div></div>
+                  <div class="field"><div class="label">Father's/Husband's Name</div><div class="value">${val(form.fatherHusbandName)}</div></div>
+                  <div class="field"><div class="label">Age</div><div class="value">${val(form.age)} years</div></div>
+                  <div class="field"><div class="label">Gender</div><div class="value">${val(form.gender)}</div></div>
+                </div>
+              </div>
+            </div>
+
+            <h2>Administrative & Basic Info</h2>
+            <div class="grid">
+              <div class="field"><div class="label">Allotted PS</div><div class="value">${val(stationName)}</div></div>
+              <div class="field"><div class="label">District</div><div class="value">${val(form.district)}</div></div>
+              <div class="field"><div class="label">State</div><div class="value">${val(form.state)}</div></div>
+              <div class="field"><div class="label">Occupation</div><div class="value">${val(form.occupation)}</div></div>
+              <div class="field"><div class="label">Monthly Income</div><div class="value">${form.monthlyIncome ? '₹' + form.monthlyIncome : '—'}</div></div>
+              <div class="field"><div class="label">History Sheet Status</div><div class="value">${val(form.historySheetStatus?.replace(/_/g, ' '))}</div></div>
+              <div class="field"><div class="label">Aadhaar No</div><div class="value">${val(form.aadhaarNo)}</div></div>
+              <div class="field"><div class="label">Voter ID</div><div class="value">${val(form.voterId)}</div></div>
+              <div class="field"><div class="label">PAN Card</div><div class="value">${val(form.panCard)}</div></div>
+            </div>
+
+            <h2>Address Details</h2>
+            <div class="grid">
+              <div class="field col-span-2"><div class="label">Full Address</div><div class="value">${val(form.fullAddress)}</div></div>
+              <div class="field"><div class="label">Landmark</div><div class="value">${val(form.landmark)}</div></div>
+            </div>
+
+            <h2>Contacts</h2>
+            ${form.contacts.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${form.contacts.map(c => `
+                    <tr>
+                      <td style="font-weight: 500;">${val(c.contactType?.replace(/_/g, ' '))}</td>
+                      <td>${val(c.value)}</td>
+                      <td style="color: #64748b;">${val(c.notes)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No contacts recorded.</p>'}
+
+            <h2>Drug Abuse Profile</h2>
+            <div class="grid">
+              <div class="field"><div class="label">Addiction Type</div><div class="value">${val(form.addictionType?.replace(/_/g, ' '))}</div></div>
+              <div class="field"><div class="label">Consumption Frequency</div><div class="value">${val(form.consumptionFrequency?.replace(/_/g, ' '))}</div></div>
+              <div class="field"><div class="label">Source of Procurement</div><div class="value">${val(form.sourceOfProcurement?.replace(/_/g, ' '))}</div></div>
+              <div class="field"><div class="label">Mode of Purchase</div><div class="value">${val(form.modeOfPurchase?.replace(/_/g, ' '))}</div></div>
+              <div class="field"><div class="label">Section of Law</div><div class="value">${val(form.sectionOfLaw)}</div></div>
+              <div class="field col-span-2"><div class="label">Usual Consumption Spot</div><div class="value">${val(form.usualConsumptionSpot)}</div></div>
+            </div>
+
+            <h2>Financial Profile</h2>
+            ${form.financials.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Bank Name</th>
+                    <th>Account No / Value</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${form.financials.map(f => `
+                    <tr>
+                      <td style="font-weight: 500;">${val(f.finType?.replace(/_/g, ' '))}</td>
+                      <td>${val(f.bankName)}</td>
+                      <td style="font-family: monospace;">${val(f.value)}</td>
+                      <td style="color: #64748b;">${val(f.notes)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No financial details recorded.</p>'}
+
+            <h2>Prior Criminal History</h2>
+            ${form.criminalHistories.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Crime No / Year</th>
+                    <th>Under Section</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${form.criminalHistories.map(ch => `
+                    <tr>
+                      <td style="font-weight: 500;">${val(ch.crimeNo)} / ${val(ch.crimeYear)}</td>
+                      <td>${val(ch.underSection)}</td>
+                      <td>${val(ch.quantityGanja)} kg</td>
+                      <td>${val(ch.caseStatus?.replace(/_/g, ' '))}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No prior crime records added.</p>'}
+
+            <h2>Supply Chain Links</h2>
+            ${form.supplyChainLinks.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Link Type</th>
+                    <th>Name</th>
+                    <th>Contact</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${form.supplyChainLinks.map(lk => `
+                    <tr>
+                      <td style="font-weight: 500; color: #b45309;">${val(lk.linkType?.replace(/_/g, ' '))}</td>
+                      <td style="font-weight: 500;">${val(lk.linkedName)}</td>
+                      <td>${val(lk.linkedContact)}</td>
+                      <td style="color: #64748b;">${val(lk.notes)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No supply chain links recorded.</p>'}
+
+            <h2>Linked Case History</h2>
+            ${cases.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>FIR No</th>
+                    <th>Police Station</th>
+                    <th>Stage</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${cases.map(c => `
+                    <tr>
+                      <td style="font-weight: 500;">${val(c.firNo)}</td>
+                      <td>${val(c.psName)}</td>
+                      <td>${val(c.stage)}</td>
+                      <td>${c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No linked cases found in Garuda database.</p>'}
+
+            <h2>Interrogation Sessions</h2>
+            ${sessions.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>Session Date / Time</th>
+                    <th>Interrogating Officer</th>
+                    <th>Contraband Source</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${sessions.map(s => `
+                    <tr>
+                      <td>${new Date(s.sessionAt).toLocaleString('en-IN')}</td>
+                      <td style="font-weight: 500;">${val(s.officerName)}</td>
+                      <td>${val(s.sourceInfo)}</td>
+                      <td style="color: #64748b;">${val(s.notes)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : '<p style="font-size:12px;color:#64748b;margin:0 0 10px 0;">No interrogation sessions logged.</p>'}
+
+            <div class="print-footer">
+              <div>Printed on: ${new Date().toLocaleString('en-IN')}</div>
+              <div>CONFIDENTIAL — FOR POLICE USE ONLY</div>
+            </div>
+          </body>
+        </html>
+      `);
+      w.document.close();
+      w.print();
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load profile details for printing');
     }
   };
 
@@ -311,8 +570,12 @@ export default function OffenderForm() {
             </button>
           )}
           {(isEdit || isView) && (
-            <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
-              style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>Print History Sheet</button>
+            <>
+              <button type="button" onClick={printProfile} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
+                style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>Print Profile</button>
+              <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
+                style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>Print History Sheet</button>
+            </>
           )}
           <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
             style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>← Back</button>
@@ -433,7 +696,7 @@ export default function OffenderForm() {
                 <div className="flex gap-2">
                   <input maxLength={12} className={`${inp} flex-1`} style={inputStyle} value={form.aadhaarNo} onChange={e => set('aadhaarNo', e.target.value)} readOnly={aadhaarMasked && !aadhaarRevealed} />
                   {isEdit && aadhaarMasked && perms.hasMinRole('CI') && (
-                    <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded text-xs whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: '#fff' }}>
+                    <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded text-xs whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
                       Reveal
                     </button>
                   )}
@@ -504,6 +767,7 @@ export default function OffenderForm() {
               </select>
             )}
             {renderField("Usual Consumption Spot", form.usualConsumptionSpot, <input className={inp} style={inputStyle} value={form.usualConsumptionSpot} onChange={e => set('usualConsumptionSpot', e.target.value)} />)}
+            {renderField("Section of Law", form.sectionOfLaw, <input className={inp} style={inputStyle} value={form.sectionOfLaw} onChange={e => set('sectionOfLaw', e.target.value)} placeholder="e.g. Section 8(c) r/w 20(b)(ii)(A)" />)}
           </div>
         </div>
 

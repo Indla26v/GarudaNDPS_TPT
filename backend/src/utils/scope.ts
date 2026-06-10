@@ -12,46 +12,63 @@ export interface ScopeUser {
   role: string;
   department?: string | null;
   policeStationId?: number | string | null;
+  district?: string | null;
+  divisionId?: string | null;
 }
 
-/** Roles that see only their own police station data */
-const STATION_LEVEL_ROLES = ['SHO', 'CONSTABLE'];
-
-/** Roles that see the entire district (all police stations) */
-const DISTRICT_LEVEL_ROLES = ['SP', 'ASP', 'SDPO'];
-
 /**
- * Returns a Prisma `where` clause scoping cases by police station.
- * Station-level roles → ps_id = their station
- * District-level roles → {} (no filter)
+ * Returns a Prisma `where` clause scoping cases by police station or district/division.
  */
-export function getCaseWhere(user: ScopeUser): Record<string, unknown> {
+export function getCaseWhere(user: ScopeUser): Record<string, any> {
   if (!user?.role) return { id: BigInt(-1) };
 
-  if (DISTRICT_LEVEL_ROLES.includes(user.role)) {
+  // SP and ASP roles: scoped to district
+  if (user.role === 'SP' || user.role === 'ASP') {
+    if (user.district) {
+      return { police_stations: { district: user.district } };
+    }
+    return {};
+  }
+
+  // SDPO role: scoped to subdivision
+  if (user.role === 'SDPO') {
+    if (user.divisionId) {
+      return { police_stations: { sdpo: user.divisionId } };
+    }
     return {};
   }
 
   // Station-level: scope to their police station
-  if (STATION_LEVEL_ROLES.includes(user.role) && user.policeStationId) {
+  if (user.policeStationId) {
     return { ps_id: BigInt(user.policeStationId) };
   }
 
-  // Fallback: if no policeStationId is set, return nothing
   return {};
 }
 
 /**
- * Returns a Prisma `where` clause scoping offenders by police station.
+ * Returns a Prisma `where` clause scoping offenders by police station or district/division.
  */
-export function getOffenderWhere(user: ScopeUser): Record<string, unknown> {
+export function getOffenderWhere(user: ScopeUser): Record<string, any> {
   if (!user?.role) return { id: BigInt(-1) };
 
-  if (DISTRICT_LEVEL_ROLES.includes(user.role)) {
+  // SP and ASP roles: scoped to district
+  if (user.role === 'SP' || user.role === 'ASP') {
+    if (user.district) {
+      return { police_stations: { district: user.district } };
+    }
     return {};
   }
 
-  if (STATION_LEVEL_ROLES.includes(user.role) && user.policeStationId) {
+  // SDPO role: scoped to subdivision
+  if (user.role === 'SDPO') {
+    if (user.divisionId) {
+      return { police_stations: { sdpo: user.divisionId } };
+    }
+    return {};
+  }
+
+  if (user.policeStationId) {
     return { ps_id: BigInt(user.policeStationId) };
   }
 
@@ -60,19 +77,27 @@ export function getOffenderWhere(user: ScopeUser): Record<string, unknown> {
 
 /**
  * Returns a Prisma `where` clause for dashboard queries.
- * Station-level: { ps_id: X }
- * District-level: {} (all stations)
  */
-export function getDashboardScope(user: ScopeUser): { psFilter: Record<string, unknown>; isStationLevel: boolean } {
+export function getDashboardScope(user: ScopeUser): { psFilter: Record<string, any>; isStationLevel: boolean } {
   if (!user?.role) {
     return { psFilter: { id: BigInt(-1) }, isStationLevel: true };
   }
 
-  if (DISTRICT_LEVEL_ROLES.includes(user.role)) {
+  if (user.role === 'SP' || user.role === 'ASP') {
+    if (user.district) {
+      return { psFilter: { police_stations: { district: user.district } }, isStationLevel: false };
+    }
     return { psFilter: {}, isStationLevel: false };
   }
 
-  if (STATION_LEVEL_ROLES.includes(user.role) && user.policeStationId) {
+  if (user.role === 'SDPO') {
+    if (user.divisionId) {
+      return { psFilter: { police_stations: { sdpo: user.divisionId } }, isStationLevel: false };
+    }
+    return { psFilter: {}, isStationLevel: false };
+  }
+
+  if (user.policeStationId) {
     return { psFilter: { ps_id: BigInt(user.policeStationId) }, isStationLevel: true };
   }
 

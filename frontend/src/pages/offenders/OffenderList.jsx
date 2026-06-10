@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSSE } from '../../hooks/useSSE';
 
 const getAvatarColor = (name) => {
   const colors = [
@@ -32,6 +33,71 @@ export default function OffenderList({ isConsumerOnly = false }) {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const { lastEvent } = useSSE();
+  const [importLogs, setImportLogs] = useState([]);
+
+  useEffect(() => {
+    if (lastEvent?.type === 'data_updated' && lastEvent?.data?.source === 'import') {
+      const stats = lastEvent.data.stats;
+      const logMessage = {
+        id: 'sse_' + Date.now() + Math.random(),
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'success',
+        text: `Excel Import Processed: Parsed ${stats.rows} rows, Created ${stats.casesCreated} cases, Registered ${stats.offendersCreated} offenders.`,
+        errors: stats.errors || []
+      };
+      setImportLogs(prev => {
+        const exists = prev.some(l => l.text === logMessage.text);
+        if (exists) return prev;
+        return [logMessage, ...prev];
+      });
+      fetchOffenders();
+    }
+  }, [lastEvent]);
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post('/offenders/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const stats = res.data.data;
+      const logMessage = {
+        id: 'user_' + Date.now() + Math.random(),
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'success',
+        text: `Excel Import Processed: Parsed ${stats.rows} rows, Created ${stats.casesCreated} cases, Registered ${stats.offendersCreated} offenders.`,
+        errors: stats.errors || []
+      };
+      setImportLogs(prev => {
+        const exists = prev.some(l => l.text === logMessage.text);
+        if (exists) return prev;
+        return [logMessage, ...prev];
+      });
+      fetchOffenders();
+    } catch (err) {
+      console.error(err);
+      const logMessage = {
+        id: 'err_' + Date.now() + Math.random(),
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'error',
+        text: `Import Failed: ${err.response?.data?.message || err.message || 'Unknown error'}`,
+        errors: [err.response?.data?.message || err.message || 'Unknown error']
+      };
+      setImportLogs(prev => [logMessage, ...prev]);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     fetchStations();
@@ -117,6 +183,26 @@ export default function OffenderList({ isConsumerOnly = false }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {importing ? (
+            <span className="text-xs animate-pulse font-semibold self-center" style={{ color: 'var(--color-garuda-400)' }}>Importing...</span>
+          ) : (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImportExcel}
+                accept=".xlsx, .xls"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-secondary btn-sm"
+              >
+                Import Excel
+              </button>
+            </>
+          )}
           <button type="button" onClick={handleExport} className="btn btn-secondary btn-sm">
             Export CSV
           </button>
@@ -128,6 +214,38 @@ export default function OffenderList({ isConsumerOnly = false }) {
           </button>
         </div>
       </div>
+
+      {/* Real-time Import Logs Section */}
+      {importLogs.length > 0 && (
+        <div className="space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Real-time Import Logs
+              </h3>
+            </div>
+            <button
+              onClick={() => setImportLogs([])}
+              className="text-xs hover:underline cursor-pointer border-none bg-transparent text-slate-400"
+            >
+              Clear Logs
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            {importLogs.map((log) => (
+              <ImportLogCard 
+                key={log.id} 
+                log={log} 
+                onDismiss={(id) => setImportLogs(prev => prev.filter(l => l.id !== id))} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="card flex flex-col md:flex-row gap-3 p-4 rounded-xl">
@@ -180,7 +298,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
-                {['Sl.No', 'Full Name', 'Alias', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
+                {['CR.NO', 'Full Name', 'Alias', 'PS', 'District', 'Mobile', 'Cases', 'Actions'].map((h) => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
@@ -199,7 +317,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
                       className="table-row cursor-pointer"
                       onClick={() => navigate(`/offenders/${o.id}`)}
                     >
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.slNo || '-'}</td>
+                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-400)' }}>{o.crNo || '-'}</td>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
                         <div className="flex items-center gap-3">
                           {o.photoUrl ? (
@@ -339,6 +457,77 @@ export default function OffenderList({ isConsumerOnly = false }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ImportLogCard({ log, onDismiss }) {
+  const [showErrors, setShowErrors] = useState(false);
+  const hasErrors = log.errors && log.errors.length > 0;
+
+  return (
+    <div 
+      className="card rounded-xl p-4 border relative overflow-hidden transition-all duration-300"
+      style={{ 
+        background: 'var(--color-garuda-800)',
+        borderColor: hasErrors ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+      }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
+            style={{ 
+              background: hasErrors ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+              color: hasErrors ? '#f87171' : '#34d399'
+            }}
+          >
+            {hasErrors ? '⚠️' : '✓'}
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
+              {log.text}
+            </p>
+            <p className="text-[10px] mt-1" style={{ color: 'var(--color-garuda-400)' }}>
+              Received at {log.timestamp} • {hasErrors ? `${log.errors.length} item(s) logged` : 'Clean import'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => onDismiss(log.id)}
+          className="text-xs hover:text-white cursor-pointer bg-transparent border-none text-slate-500"
+        >
+          ✕
+        </button>
+      </div>
+
+      {hasErrors && (
+        <div className="mt-3 pt-3 border-t border-slate-700/50">
+          <button
+            onClick={() => setShowErrors(!showErrors)}
+            className="text-xs font-semibold hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none text-left"
+            style={{ color: 'var(--color-accent-400)' }}
+          >
+            {showErrors ? 'Hide details' : `Show logs / errors (${log.errors.length})`}
+          </button>
+          {showErrors && (
+            <div 
+              className="mt-2 p-3 rounded-lg text-xs font-mono max-h-40 overflow-y-auto"
+              style={{ 
+                background: 'var(--color-garuda-950)',
+                color: '#f87171',
+                border: '1px solid rgba(239, 68, 68, 0.15)'
+              }}
+            >
+              {log.errors.map((err, idx) => (
+                <div key={idx} className="py-0.5 border-b border-red-950/20 last:border-b-0">
+                  {err}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

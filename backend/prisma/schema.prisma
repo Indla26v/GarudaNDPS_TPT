@@ -140,6 +140,7 @@ model offender_drug_profile {
   source_of_procurement  source_of_procurement?
   mode_of_purchase       purchase_mode?
   usual_consumption_spot String?                @db.VarChar(200)
+  section_of_law         String?                @db.VarChar(300)
   created_at             DateTime               @default(now()) @db.Timestamp(6)
   updated_at             DateTime               @default(now()) @db.Timestamp(6)
   offenders              offenders              @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -302,6 +303,7 @@ model police_stations {
   state               String                @default("Andhra Pradesh") @db.VarChar(100)
   ps_code             String                @unique @db.VarChar(20)
   station_type        station_type          @default(POLICE)
+  sdpo                String?               @db.VarChar(100)
   created_at          DateTime              @default(now()) @db.Timestamp(6)
   case_accused        case_accused[]
   cases               cases[]
@@ -392,6 +394,7 @@ model users {
   badge_number         String?                @db.VarChar(50)
   police_station_id    BigInt?
   division_id          String?                @db.VarChar(100)
+  district             String?                @db.VarChar(100)
   team_id              BigInt?
   is_active            Boolean                @default(true)
   last_login           DateTime?              @db.Timestamp(6)

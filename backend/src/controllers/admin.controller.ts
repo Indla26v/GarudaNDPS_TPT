@@ -39,6 +39,7 @@ export const getUsers = async (req: Request, res: Response) => {
       department: u.department,
       badgeNumber: u.badge_number,
       divisionId: u.division_id,
+      district: u.district,
       teamId: u.team_id?.toString() || null,
       teamName: (u as any).team?.name || null,
       policeStationId: u.police_station_id?.toString() || null,
@@ -75,6 +76,7 @@ export const getUserById = async (req: Request, res: Response) => {
       department: user.department,
       badgeNumber: user.badge_number,
       divisionId: user.division_id,
+      district: user.district,
       policeStationId: user.police_station_id?.toString() || null,
       policeStationName: user.police_stations?.name || null,
       policeStationDistrict: user.police_stations?.district || null,
@@ -91,7 +93,7 @@ export const getUserById = async (req: Request, res: Response) => {
 // ── Create user ──────────────────────────────────────────────────────
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { username, password, fullName, role, policeStationId, department, badgeNumber, divisionId } = req.body;
+    const { username, password, fullName, role, policeStationId, department, badgeNumber, divisionId, district } = req.body;
 
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ message: 'username, password, fullName, and role are required' });
@@ -113,8 +115,9 @@ export const createUser = async (req: Request, res: Response) => {
         role,
         department: department || 'OPERATIONS',
         badge_number: badgeNumber || null,
-        division_id: divisionId || null,
-        police_station_id: policeStationId ? BigInt(policeStationId) : null,
+        division_id: role === 'SDPO' ? (divisionId || null) : null,
+        district: (role === 'SP' || role === 'ASP') ? (district || null) : null,
+        police_station_id: (role !== 'SP' && role !== 'ASP' && role !== 'SDPO' && policeStationId) ? BigInt(policeStationId) : null,
         is_active: true,
       }
     });
@@ -136,7 +139,7 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { fullName, role, policeStationId, isActive, password, department, badgeNumber, divisionId } = req.body;
+    const { fullName, role, policeStationId, isActive, password, department, badgeNumber, divisionId, district } = req.body;
 
     const existing = await prisma.users.findUnique({ where: { id: BigInt(id) } });
     if (!existing) return res.status(404).json({ message: 'User not found' });
@@ -146,8 +149,24 @@ export const updateUser = async (req: Request, res: Response) => {
     if (role !== undefined) updateData.role = role;
     if (department !== undefined) updateData.department = department;
     if (badgeNumber !== undefined) updateData.badge_number = badgeNumber || null;
-    if (divisionId !== undefined) updateData.division_id = divisionId || null;
-    if (policeStationId !== undefined) updateData.police_station_id = policeStationId ? BigInt(policeStationId) : null;
+    
+    // Clear/set assignments based on the final/target role
+    const targetRole = role !== undefined ? role : existing.role;
+    
+    if (targetRole === 'SP' || targetRole === 'ASP') {
+      updateData.district = district !== undefined ? (district || null) : existing.district;
+      updateData.division_id = null;
+      updateData.police_station_id = null;
+    } else if (targetRole === 'SDPO') {
+      updateData.district = null;
+      updateData.division_id = divisionId !== undefined ? (divisionId || null) : existing.division_id;
+      updateData.police_station_id = null;
+    } else {
+      updateData.district = null;
+      updateData.division_id = null;
+      updateData.police_station_id = policeStationId !== undefined ? (policeStationId ? BigInt(policeStationId) : null) : existing.police_station_id;
+    }
+
     if (isActive !== undefined) updateData.is_active = isActive;
     if (password) updateData.password_hash = await bcrypt.hash(password, 12);
 

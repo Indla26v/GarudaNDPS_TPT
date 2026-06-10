@@ -4,7 +4,8 @@ import { getInterrogations, addInterrogation } from '../controllers/case_lifecyc
 import { exportOffendersCsv, getOffenderHistorySheet } from '../controllers/export.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize, requirePermission } from '../middleware/authorize.middleware';
-import { uploadPhoto } from '../middleware/upload.middleware';
+import { uploadPhoto, uploadExcel } from '../middleware/upload.middleware';
+import { importDprExcel } from '../controllers/import.controller';
 
 const router = Router();
 
@@ -30,6 +31,9 @@ router.post('/upload', uploadPhoto.single('photo'), (req: any, res) => {
     }
   });
 });
+
+// Import endpoint
+router.post('/import', requirePermission('ADD_CASE'), uploadExcel.single('file'), importDprExcel);
 
 // Create: all roles except SP (SP is district-level, doesn't add data directly)
 router.post('/', requirePermission('ADD_CASE'), createOffender);

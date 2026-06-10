@@ -51,7 +51,15 @@ export const login = async (req: Request, res: Response) => {
     });
 
     const accessToken = jwt.sign(
-      { userId: Number(user.id), username: user.username, role: user.role, department: user.department, policeStationId: user.police_station_id ? Number(user.police_station_id) : null },
+      {
+        userId: Number(user.id),
+        username: user.username,
+        role: user.role,
+        department: user.department,
+        policeStationId: user.police_station_id ? Number(user.police_station_id) : null,
+        district: user.district || null,
+        divisionId: user.division_id || null
+      },
       JWT_KEY,
       { expiresIn: '8h' }
     );
@@ -81,7 +89,9 @@ export const login = async (req: Request, res: Response) => {
       fullName: user.full_name,
       role: user.role,
       department: user.department,
-      policeStationId: user.police_station_id ? Number(user.police_station_id) : null
+      policeStationId: user.police_station_id ? Number(user.police_station_id) : null,
+      district: user.district || null,
+      divisionId: user.division_id || null
     }));
   } catch (error) {
     console.error(error);
@@ -111,7 +121,15 @@ export const refresh = async (req: Request, res: Response) => {
     }
 
     const newAccessToken = jwt.sign(
-      { userId: Number(user.id), username: user.username, role: user.role, department: user.department, policeStationId: user.police_station_id ? Number(user.police_station_id) : null },
+      {
+        userId: Number(user.id),
+        username: user.username,
+        role: user.role,
+        department: user.department,
+        policeStationId: user.police_station_id ? Number(user.police_station_id) : null,
+        district: user.district || null,
+        divisionId: user.division_id || null
+      },
       JWT_KEY,
       { expiresIn: '8h' }
     );
@@ -124,7 +142,9 @@ export const refresh = async (req: Request, res: Response) => {
       fullName: user.full_name,
       role: user.role,
       department: user.department,
-      policeStationId: user.police_station_id ? Number(user.police_station_id) : null
+      policeStationId: user.police_station_id ? Number(user.police_station_id) : null,
+      district: user.district || null,
+      divisionId: user.division_id || null
     }));
   } catch(error) {
     console.error(error);

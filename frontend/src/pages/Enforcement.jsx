@@ -131,21 +131,21 @@ function FieldOperationsHub({ perms }) {
 
       {activeTab === 'form' && activeForm === 'village_visit' && (
         <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2"><span>🏠</span> Log Village Visit</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}><span>🏠</span> Log Village Visit</h2>
           <VillageVisitForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
         </div>
       )}
 
       {activeTab === 'form' && activeForm === 'lodge_check' && (
         <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2"><span>🏨</span> Log Lodge Check</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}><span>🏨</span> Log Lodge Check</h2>
           <LodgeCheckForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
         </div>
       )}
 
       {activeTab === 'form' && activeForm === 'ndps_verification' && (
         <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2"><span>🌿</span> NDPS Verification</h2>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}><span>🌿</span> NDPS Verification</h2>
           <NdpsVerificationForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
         </div>
       )}
@@ -275,7 +275,7 @@ function GarudaCommandDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                 <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <RechartsTooltip cursor={{ fill: '#374151', opacity: 0.4 }} contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }} />
+                <RechartsTooltip cursor={{ fill: 'var(--color-garuda-700)', opacity: 0.2 }} contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
                 <Bar dataKey="visits" stackId="a" fill="#3b82f6" name="Village Visits" radius={[0, 0, 4, 4]} />
                 <Bar dataKey="lodges" stackId="a" fill="#8b5cf6" name="Lodge Checks" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -294,7 +294,7 @@ function GarudaCommandDashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }} />
+                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>

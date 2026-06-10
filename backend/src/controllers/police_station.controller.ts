@@ -10,7 +10,8 @@ export const getAllPoliceStations = async (req: Request, res: Response) => {
       name: s.name,
       district: s.district,
       state: s.state,
-      psCode: s.ps_code
+      psCode: s.ps_code,
+      sdpo: s.sdpo
     }));
     res.json(successResponse(formatted));
   } catch (error) {
@@ -32,7 +33,8 @@ export const getPoliceStationById = async (req: Request, res: Response) => {
       name: s.name,
       district: s.district,
       state: s.state,
-      psCode: s.ps_code
+      psCode: s.ps_code,
+      sdpo: s.sdpo
     }));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

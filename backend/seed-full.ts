@@ -11,13 +11,75 @@ async function main() {
 
   // ── Police Stations ──────────────────────────────────────────────────
   const policeStations = [
-    { name: 'Tirupati East PS', ps_code: 'TP-EAST', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Tirupati West PS', ps_code: 'TP-WEST', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Tiruchanoor PS', ps_code: 'TCR', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Renigunta PS', ps_code: 'RGT', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Chandragiri PS', ps_code: 'CGR-PS', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Alipiri PS', ps_code: 'ALP', district: 'Tirupati', station_type: 'POLICE' as const },
-    { name: 'Sri City PS', ps_code: 'SRC', district: 'Tirupati', station_type: 'POLICE' as const },
+    // 1. Naidupet SDPO
+    { name: 'Naidupeta UPS', ps_code: 'TPT-001', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Doravari Satram', ps_code: 'TPT-002', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Ozili', ps_code: 'TPT-003', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Pellakur', ps_code: 'TPT-004', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Sriharikota', ps_code: 'TPT-005', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Sullurpet', ps_code: 'TPT-006', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Tada', ps_code: 'TPT-007', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Balayapalli', ps_code: 'TPT-008', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Venkatagiri', ps_code: 'TPT-009', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Dakkili', ps_code: 'TPT-010', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Chittamuru', ps_code: 'TPT-011', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+    { name: 'Vakadu', ps_code: 'TPT-012', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Naidupet SDPO' },
+
+    // 2. Srikalahasti SDPO
+    { name: 'Srikalahasthi I Town', ps_code: 'TPT-013', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Srikalahasti SDPO' },
+    { name: 'Srikalahasti II Town', ps_code: 'TPT-014', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Srikalahasti SDPO' },
+    { name: 'Srikalahasthi Rural', ps_code: 'TPT-015', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Srikalahasti SDPO' },
+    { name: 'BN Kandriga', ps_code: 'TPT-016', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Srikalahasti SDPO' },
+    { name: 'Thotambedu', ps_code: 'TPT-017', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Srikalahasti SDPO' },
+
+    // 3. Renigunta SDPO
+    { name: 'Renigunta UPS', ps_code: 'RGT', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Yerpedu UPS', ps_code: 'TPT-019', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Chitvel', ps_code: 'TPT-020', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Obulavaripalli', ps_code: 'TPT-021', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Penagalur', ps_code: 'TPT-022', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Pullampeta', ps_code: 'TPT-023', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Airport', ps_code: 'TPT-024', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+    { name: 'Gajulamandyam', ps_code: 'TPT-025', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Renigunta SDPO' },
+
+    // 4. Puttur SDPO
+    { name: 'Puttur UPS', ps_code: 'TPT-026', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Narayanavanam', ps_code: 'TPT-027', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Pitchatoor', ps_code: 'TPT-028', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'K.V.B.Puram', ps_code: 'TPT-029', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Vadamalpet', ps_code: 'TPT-030', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Nagalapuram', ps_code: 'TPT-031', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Satyavedu', ps_code: 'TPT-032', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+    { name: 'Vardaiahpalem', ps_code: 'TPT-033', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Puttur SDPO' },
+
+    // 5. Chandragiri SDPO
+    { name: 'Tirchanur UPS', ps_code: 'TCR', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'Tirupati Rural UPS', ps_code: 'TPT-035', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'Chandragiri UPS', ps_code: 'CGR-PS', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'RC Puram', ps_code: 'TPT-037', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'Pakala UPS', ps_code: 'TPT-038', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'Bhakarapet', ps_code: 'TPT-039', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+    { name: 'Yerravaripalem', ps_code: 'TPT-040', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Chandragiri SDPO' },
+
+    // 6. Tirupati SDPO
+    { name: 'Alipiri', ps_code: 'ALP', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirupati SDPO' },
+    { name: 'Tirupathi East', ps_code: 'TP-EAST', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirupati SDPO' },
+    { name: 'Tirupathi West', ps_code: 'TP-WEST', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirupati SDPO' },
+    { name: 'S.V.U.Campus', ps_code: 'TPT-044', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirupati SDPO' },
+
+    // 7. Tirumala SDPO
+    { name: 'Tirumala I Town', ps_code: 'TPT-045', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirumala SDPO' },
+    { name: 'Tirumala II Town', ps_code: 'TPT-046', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirumala SDPO' },
+
+    // 8. Sri City SDPO
+    { name: 'Sri City UPS', ps_code: 'SRC', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Sri City SDPO' },
+
+    // Others
+    { name: 'Tirupati Traffic', ps_code: 'TPT-048', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirupati Traffic' },
+    { name: 'Tirumala Traffic', ps_code: 'TPT-049', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Tirumala Traffic' },
+    { name: 'CCS , Tirupathi', ps_code: 'TPT-050', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'CCS , Tirupathi' },
+    { name: 'CCS , Tirumala', ps_code: 'TPT-051', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'CCS , Tirumala' },
+    { name: 'Mahila UPS Tirupati', ps_code: 'TPT-052', district: 'Tirupati', station_type: 'POLICE' as const, sdpo: 'Mahila UPS Tirupati' },
   ];
 
   const exciseStations = [
@@ -38,10 +100,11 @@ async function main() {
   for (const s of [...policeStations, ...exciseStations]) {
     await prisma.police_stations.upsert({
       where: { ps_code: s.ps_code },
-      update: { station_type: s.station_type },
+      update: { name: s.name, station_type: s.station_type, sdpo: (s as any).sdpo || null },
       create: s,
     });
   }
+
   console.log('✅ Police & Excise stations seeded');
 
   // ── Teams ────────────────────────────────────────────────────────────
@@ -68,13 +131,13 @@ async function main() {
 
   const users = [
     // SP — District Admin (Police)
-    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'POLICE' as const, team_id: null },
+    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'POLICE' as const, team_id: null, district: 'Tirupati' },
 
     // ASP — District level (Police)
-    { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'] },
+    { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], district: 'Tirupati' },
 
     // SDPO — Multiple PS (Police)
-    { username: 'sdpo', password: 'password123', full_name: 'P. Venkatesh (SDPO East)', role: 'SDPO' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
+    { username: 'sdpo', password: 'password123', full_name: 'P. Venkatesh (SDPO East)', role: 'SDPO' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], division_id: 'Renigunta SDPO' },
 
     // SHO — One PS (Police)
     { username: 'sho', password: 'password123', full_name: 'M. Suresh (SHO)', role: 'SHO' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
@@ -83,7 +146,7 @@ async function main() {
     { username: 'constable', password: 'password123', full_name: 'B. Krishna (Constable)', role: 'CONSTABLE' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], ps_id: ps1?.id },
 
     // ── Cyber Analytics (STF) ──────────────────────────────────────────
-    { username: 'cyber_sdpo', password: 'password123', full_name: 'Vijay Singh (Cyber SDPO)', role: 'SDPO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-001' },
+    { username: 'cyber_sdpo', password: 'password123', full_name: 'Vijay Singh (Cyber SDPO)', role: 'SDPO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-001', division_id: 'Tirupati SDPO' },
     { username: 'cyber_sho', password: 'password123', full_name: 'Ravi Kumar (Cyber SHO)', role: 'SHO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-002', ps_id: ps1?.id },
 
     // ── Excise ─────────────────────────────────────────────────────────
@@ -115,6 +178,8 @@ async function main() {
         badge_number: (u as any).badge || null,
         team_id: u.team_id || null,
         police_station_id: (u as any).ps_id || null,
+        division_id: (u as any).division_id || null,
+        district: (u as any).district || null,
         is_active: true,
       },
       create: {
@@ -126,6 +191,8 @@ async function main() {
         badge_number: (u as any).badge || null,
         team_id: u.team_id || null,
         police_station_id: (u as any).ps_id || null,
+        division_id: (u as any).division_id || null,
+        district: (u as any).district || null,
         is_active: true,
       },
     });
