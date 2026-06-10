@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 
-export default function LodgeCheckForm({ onCancel, onSuccess }) {
+export default function BusStandCheckForm({ onCancel, onSuccess }) {
   const [formData, setFormData] = useState({
-    lodge_name: '',
-    owner_name: '',
-    manager_name: '',
-    location: '',
-    checked_guest_register: false,
-    verified_foreigners: false,
-    verified_strangers: false,
-    verified_suspicious: false,
+    bus_stand_name: '',
+    buses_checked: '',
+    passengers_checked: '',
+    parcels_verified: false,
     no_suspicious_activity: false,
     findings_notes: '',
     geo_lat: null,
@@ -46,15 +42,18 @@ export default function LodgeCheckForm({ onCancel, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.lodge_name) {
-      alert("Lodge/Hotel Name is required");
+    if (!formData.bus_stand_name.trim()) {
+      alert("Bus Stand Name is required");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await api.post('/enforcement/lodge-check', formData);
-      alert('Lodge check logged successfully!');
+      await api.post('/enforcement/bus-stand-check', {
+        ...formData,
+        passengers_checked: formData.passengers_checked ? parseInt(formData.passengers_checked) : null
+      });
+      alert('Bus Stand check logged successfully!');
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
@@ -64,55 +63,49 @@ export default function LodgeCheckForm({ onCancel, onSuccess }) {
     }
   };
 
-  const checks = [
-    { name: 'checked_guest_register', label: 'Checked Guest Register' },
-    { name: 'verified_foreigners', label: 'Verified Foreign Nationals' },
-    { name: 'verified_strangers', label: 'Verified Strangers/Newcomers' },
-    { name: 'verified_suspicious', label: 'Checked for Suspicious Activities' },
-  ];
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Lodge / Hotel Name *</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Bus Stand / Terminal Name *</label>
           <input
             type="text"
-            name="lodge_name"
-            value={formData.lodge_name}
+            name="bus_stand_name"
+            value={formData.bus_stand_name}
             onChange={handleChange}
             className="input"
-            placeholder="e.g. Grand Inn Hotel"
+            placeholder="e.g. Tirupati Central Bus Station (CBS)"
             required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Location / Area</label>
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            className="input"
-            placeholder="e.g. Near Railway Station"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Manager Name</label>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Buses / Routes Checked</label>
           <input
             type="text"
-            name="manager_name"
-            value={formData.manager_name}
+            name="buses_checked"
+            value={formData.buses_checked}
             onChange={handleChange}
             className="input"
-            placeholder="Name of person at desk"
+            placeholder="e.g. APSRTC platforms, Bus AP39Y1002"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Passengers Checked Count</label>
+          <input
+            type="number"
+            name="passengers_checked"
+            value={formData.passengers_checked}
+            onChange={handleChange}
+            className="input"
+            placeholder="e.g. 25"
+            min="0"
           />
         </div>
 
         {formData.geo_lat && formData.geo_lng && (
-          <div className="flex items-center space-x-2 text-xs text-green-400 font-semibold md:col-span-2 pb-2">
+          <div className="flex items-center space-x-2 text-xs text-teal-400 font-semibold self-end pb-3">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -125,18 +118,19 @@ export default function LodgeCheckForm({ onCancel, onSuccess }) {
       <div>
         <label className="block text-sm font-medium mb-3" style={{ color: 'var(--color-garuda-200)' }}>Verification Checklist</label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {checks.map(check => (
-            <label key={check.name} className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)' }}>
-              <input
-                type="checkbox"
-                name={check.name}
-                checked={formData[check.name]}
-                onChange={handleChange}
-                className="w-5 h-5 rounded border-gray-600 text-blue-500 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium" style={{ color: 'var(--color-garuda-300)' }}>{check.label}</span>
-            </label>
-          ))}
+          <label className="flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)' }}>
+            <input
+              type="checkbox"
+              name="parcels_verified"
+              checked={formData.parcels_verified}
+              onChange={handleChange}
+              className="w-5 h-5 rounded border-gray-600 text-blue-500 focus:ring-blue-500"
+            />
+            <div>
+              <span className="text-sm font-medium block" style={{ color: 'var(--color-garuda-300)' }}>Verified Booking Registers / Cargo Parcels</span>
+              <span className="text-[10px]" style={{ color: 'var(--color-garuda-400)' }}>Checked cargo registers and parcels at terminal lockers</span>
+            </div>
+          </label>
         </div>
       </div>
 
@@ -150,8 +144,8 @@ export default function LodgeCheckForm({ onCancel, onSuccess }) {
             className="w-5 h-5 mt-0.5 rounded border-gray-600 text-green-500 focus:ring-green-500"
           />
           <div>
-            <span className="block text-sm font-bold text-green-600">All Clear / No Suspicious Activity Found</span>
-            <span className="block text-xs mt-1" style={{ color: 'var(--color-garuda-400)' }}>Check this if the lodge inspection concluded without any adverse findings or illegal activities.</span>
+            <span className="block text-sm font-bold text-green-600">All Clear / No Suspicious Movement & Consignment Found</span>
+            <span className="block text-xs mt-1" style={{ color: 'var(--color-garuda-400)' }}>Check this if bus stand inspection concluded with zero adverse findings.</span>
           </div>
         </label>
       </div>
@@ -164,7 +158,7 @@ export default function LodgeCheckForm({ onCancel, onSuccess }) {
           onChange={handleChange}
           rows="3"
           className="input"
-          placeholder="Enter any irregularities found or remarks for future checks..."
+          placeholder="Enter findings, parcel checks, or any suspect movements observed..."
         ></textarea>
       </div>
 

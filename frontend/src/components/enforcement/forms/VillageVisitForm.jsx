@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 
 export default function VillageVisitForm({ onCancel, onSuccess }) {
@@ -16,9 +16,28 @@ export default function VillageVisitForm({ onCancel, onSuccess }) {
     palle_nidra: false,
     no_suspicious_activity: false,
     intel_notes: '',
+    geo_lat: null,
+    geo_lng: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFormData(prev => ({
+            ...prev,
+            geo_lat: position.coords.latitude,
+            geo_lng: position.coords.longitude
+          }));
+        },
+        (error) => {
+          console.log('Geolocation not available:', error);
+        }
+      );
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -63,17 +82,29 @@ export default function VillageVisitForm({ onCancel, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Village/Habitation Name *</label>
-        <input
-          type="text"
-          name="village_name"
-          value={formData.village_name}
-          onChange={handleChange}
-          className="input"
-          placeholder="e.g. Chandragiri Rural"
-          required
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        <div>
+          <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-garuda-200)' }}>Village/Habitation Name *</label>
+          <input
+            type="text"
+            name="village_name"
+            value={formData.village_name}
+            onChange={handleChange}
+            className="input"
+            placeholder="e.g. Chandragiri Rural"
+            required
+          />
+        </div>
+
+        {formData.geo_lat && formData.geo_lng && (
+          <div className="flex items-center space-x-2 text-xs text-green-400 font-semibold pb-3">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Geo-tagged: {formData.geo_lat.toFixed(5)}, {formData.geo_lng.toFixed(5)}</span>
+          </div>
+        )}
       </div>
 
       <div>

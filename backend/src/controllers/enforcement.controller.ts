@@ -93,7 +93,9 @@ export const createEnforcementCheck = async (req: Request, res: Response) => {
       usualConsumptionSpot,
       // Enforcement Result
       testResult, // 'POSITIVE' | 'NEGATIVE'
-      noSuspiciousActivity // boolean
+      noSuspiciousActivity, // boolean
+      geo_lat,
+      geo_lng,
     } = req.body;
 
     if (!subjectName || !placeOfEnforcement) {
@@ -201,7 +203,7 @@ export const createEnforcementCheck = async (req: Request, res: Response) => {
              `Consumption Spot: ${usualConsumptionSpot || 'N/A'}`;
     }
 
-    const check = await prisma.enforcement_checks.create({
+    const check = await (prisma as any).enforcement_checks.create({
       data: {
         ps_id: BigInt(psId),
         created_by: BigInt(user.userId),
@@ -211,6 +213,8 @@ export const createEnforcementCheck = async (req: Request, res: Response) => {
         subject_aadhaar: subjectAadhaar || null,
         photo_url: photoUrl || null,
         place_of_enforcement: placeOfEnforcement,
+        geo_lat: geo_lat ? parseFloat(String(geo_lat)) : null,
+        geo_lng: geo_lng ? parseFloat(String(geo_lng)) : null,
         subject_phone: subjectPhone || null,
         subject_pan: subjectPan || null,
         subject_address: subjectAddress || null,
@@ -367,6 +371,10 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       pendingReview,
       villageVisitsCount,
       lodgeChecksCount,
+      drunkDriveChecksCount,
+      courierChecksCount,
+      railwayChecksCount,
+      busStandChecksCount,
     ] = await Promise.all([
       prisma.enforcement_checks.count({ where: monthWhere }),
       prisma.enforcement_checks.count({ where: { ...monthWhere, test_result: 'POSITIVE' } }),
@@ -374,6 +382,10 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       prisma.enforcement_checks.count({ where: { ...where, status: 'PENDING_SHO_REVIEW' } }),
       prisma.village_visits.count({ where: villageMonthWhere }),
       prisma.lodge_checks.count({ where: lodgeMonthWhere }),
+      (prisma as any).drunk_drive_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      (prisma as any).courier_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      (prisma as any).railway_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      (prisma as any).bus_stand_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
     ]);
 
     // Resolve the stations for this user's scope to build psCondition
@@ -418,8 +430,8 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       take: 10,
     });
 
-    // Recent activities (Enforcement Checks, Village Visits, and Lodge Checks)
-    const [recentChecks, recentVisits, recentLodges] = await Promise.all([
+    // Recent activities (Enforcement Checks, Village Visits, Lodge Checks, Drunk & Drive Checks, Courier Checks, Railway Station Checks, and Bus Stand Checks)
+    const [recentChecks, recentVisits, recentLodges, recentDrunkDrive, recentCourier, recentRailway, recentBusStand] = await Promise.all([
       prisma.enforcement_checks.findMany({
         where,
         take: 5,
@@ -442,6 +454,42 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         where,
         take: 5,
         orderBy: { check_date: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      (prisma as any).drunk_drive_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      (prisma as any).courier_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      (prisma as any).railway_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      (prisma as any).bus_stand_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
         include: {
           police_station: { select: { name: true } },
           officer: { select: { full_name: true } },
@@ -477,6 +525,42 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         bg: 'rgba(139,92,246,0.15)',
         color: '#8b5cf6',
       })),
+      ...recentDrunkDrive.map((d: any) => ({
+        type: 'Drunk & Drive',
+        officer: d.officer.full_name,
+        result: `Vehicle: ${d.vehicle_no} (BAC: ${d.bac_level} mg/100ml)`,
+        time: d.created_at,
+        psName: d.police_station.name,
+        bg: 'rgba(239,68,68,0.15)',
+        color: '#ef4444',
+      })),
+      ...recentCourier.map((c: any) => ({
+        type: 'Courier Office',
+        officer: c.officer.full_name,
+        result: `Office: ${c.courier_office_name} (${c.no_suspicious_activity ? 'No susp. activity' : 'Inspected ' + (c.scanned_parcels_count || 0) + ' parcels'})`,
+        time: c.created_at,
+        psName: c.police_station.name,
+        bg: 'rgba(244,63,94,0.15)',
+        color: '#f43f5e',
+      })),
+      ...recentRailway.map((r: any) => ({
+        type: 'Railway Station',
+        officer: r.officer.full_name,
+        result: `Station: ${r.station_name} (${r.no_suspicious_activity ? 'No susp. activity' : 'Inspected ' + (r.luggage_inspected_count || 0) + ' bags'})`,
+        time: r.created_at,
+        psName: r.police_station.name,
+        bg: 'rgba(6,182,212,0.15)', // cyan-500
+        color: '#06b6d4',
+      })),
+      ...recentBusStand.map((b: any) => ({
+        type: 'Bus Stand',
+        officer: b.officer.full_name,
+        result: `Stand: ${b.bus_stand_name} (${b.no_suspicious_activity ? 'No susp. activity' : 'Checked ' + (b.passengers_checked || 0) + ' passengers'})`,
+        time: b.created_at,
+        psName: b.police_station.name,
+        bg: 'rgba(20,184,166,0.15)', // teal-500
+        color: '#20b8a6',
+      })),
     ]
     .sort((a, b) => b.time.getTime() - a.time.getTime())
     .slice(0, 10);
@@ -501,7 +585,7 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
           });
 
       const stationIds = breakdownStations.map(s => s.id);
-      const [vvCounts, lcCounts, ecCounts] = await Promise.all([
+      const [vvCounts, lcCounts, ecCounts, ddCounts, ccCounts, rcCounts, bcCounts] = await Promise.all([
         prisma.village_visits.groupBy({
           by: ['ps_id'],
           where: { ps_id: { in: stationIds }, visit_date: { gte: monthStart } },
@@ -517,9 +601,29 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
           where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
           _count: { id: true },
         }),
+        (prisma as any).drunk_drive_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        (prisma as any).courier_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        (prisma as any).railway_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        (prisma as any).bus_stand_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
       ]);
 
-      const breakdownMap = new Map<string, { ps_id: string; ps_name: string; visits: number; lodges: number; ndps: number; total: number }>();
+      const breakdownMap = new Map<string, { ps_id: string; ps_name: string; visits: number; lodges: number; ndps: number; drunkDrive: number; courier: number; railway: number; bus: number; total: number }>();
       
       breakdownStations.forEach(s => {
         breakdownMap.set(s.id.toString(), {
@@ -528,6 +632,10 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
           visits: 0,
           lodges: 0,
           ndps: 0,
+          drunkDrive: 0,
+          courier: 0,
+          railway: 0,
+          bus: 0,
           total: 0,
         });
       });
@@ -556,6 +664,38 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         }
       });
 
+      ddCounts.forEach((c: any) => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) {
+          item.drunkDrive = c._count.id;
+          item.total += c._count.id;
+        }
+      });
+
+      ccCounts.forEach((c: any) => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) {
+          item.courier = c._count.id;
+          item.total += c._count.id;
+        }
+      });
+
+      rcCounts.forEach((c: any) => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) {
+          item.railway = c._count.id;
+          item.total += c._count.id;
+        }
+      });
+
+      bcCounts.forEach((c: any) => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) {
+          item.bus = c._count.id;
+          item.total += c._count.id;
+        }
+      });
+
       stationBreakdown = Array.from(breakdownMap.values())
         .sort((a, b) => b.total - a.total);
     }
@@ -567,6 +707,10 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         negative: negativeThisMonth,
         villageVisits: villageVisitsCount,
         lodgeChecks: lodgeChecksCount,
+        drunkDrive: drunkDriveChecksCount,
+        courier: courierChecksCount,
+        railway: railwayChecksCount,
+        bus: busStandChecksCount,
       },
       allTime: { total: totalAllTime, positive: positiveAllTime, negative: negativeAllTime },
       pendingReview,
@@ -966,6 +1110,141 @@ export const searchOffenders = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error searching offenders:', error);
     res.status(500).json({ message: 'Failed to search offenders' });
+  }
+};
+
+// ── 9. Submit Drunk & Drive Check ────────────────────────────────────
+export const submitDrunkDrive = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    
+    const check = await (prisma as any).drunk_drive_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        vehicle_no: data.vehicle_no,
+        driver_name: data.driver_name,
+        driver_age: data.driver_age ? parseInt(String(data.driver_age)) : null,
+        driver_gender: data.driver_gender || null,
+        bac_level: data.bac_level ? parseFloat(String(data.bac_level)) : 0,
+        fine_amount: data.fine_amount ? parseFloat(String(data.fine_amount)) : null,
+        vehicle_impounded: data.vehicle_impounded || false,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        remarks: data.remarks || null,
+        geo_lat: data.geo_lat || null,
+        geo_lng: data.geo_lng || null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'DRUNK_DRIVE_CHECK', check.id, req, `Drunk & Drive check logged for vehicle ${data.vehicle_no}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Drunk & Drive check logged successfully'));
+  } catch (error) {
+    console.error('submitDrunkDrive error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 10. Submit Courier Check ──────────────────────────────────────────
+export const submitCourierCheck = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await (prisma as any).courier_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        courier_office_name: data.courier_office_name,
+        location: data.location || null,
+        manager_name: data.manager_name || null,
+        checked_register: data.checked_register || false,
+        checked_suspicious_parcels: data.checked_suspicious_parcels || false,
+        scanned_parcels_count: data.scanned_parcels_count ? parseInt(String(data.scanned_parcels_count)) : null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        findings_notes: data.findings_notes || null,
+        geo_lat: data.geo_lat || null,
+        geo_lng: data.geo_lng || null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'COURIER_CHECK', check.id, req, `Courier office check logged for ${data.courier_office_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Courier check logged successfully'));
+  } catch (error) {
+    console.error('submitCourierCheck error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 11. Submit Railway Check ─────────────────────────────────────────
+export const submitRailwayCheck = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await (prisma as any).railway_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        station_name: data.station_name,
+        trains_checked: data.trains_checked || null,
+        passengers_profiled: data.passengers_profiled ? parseInt(String(data.passengers_profiled)) : null,
+        luggage_inspected_count: data.luggage_inspected_count ? parseInt(String(data.luggage_inspected_count)) : null,
+        suspicious_luggage_found: data.suspicious_luggage_found || false,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        findings_notes: data.findings_notes || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'RAILWAY_CHECK', check.id, req, `Railway station check logged for ${data.station_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Railway check logged successfully'));
+  } catch (error) {
+    console.error('submitRailwayCheck error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 12. Submit Bus Stand Check ────────────────────────────────────────
+export const submitBusStandCheck = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await (prisma as any).bus_stand_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        bus_stand_name: data.bus_stand_name,
+        buses_checked: data.buses_checked || null,
+        passengers_checked: data.passengers_checked ? parseInt(String(data.passengers_checked)) : null,
+        parcels_verified: data.parcels_verified || false,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        findings_notes: data.findings_notes || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'BUS_STAND_CHECK', check.id, req, `Bus stand check logged for ${data.bus_stand_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Bus stand check logged successfully'));
+  } catch (error) {
+    console.error('submitBusStandCheck error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

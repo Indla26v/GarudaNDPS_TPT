@@ -9,6 +9,10 @@ import {
   submitVillageVisit,
   submitLodgeCheck,
   searchOffenders,
+  submitDrunkDrive,
+  submitCourierCheck,
+  submitRailwayCheck,
+  submitBusStandCheck,
 } from '../controllers/enforcement.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorize, requirePermission } from '../middleware/authorize.middleware';
@@ -27,6 +31,11 @@ router.put('/:id/test-result', submitTestResult);
 router.post('/search', searchOffenders);
 router.post('/village-visit', submitVillageVisit);
 router.post('/lodge-check', submitLodgeCheck);
+router.post('/drunk-drive', submitDrunkDrive);
+router.post('/courier-check', submitCourierCheck);
+router.post('/courier-drive', submitCourierCheck);
+router.post('/railway-check', submitRailwayCheck);
+router.post('/bus-stand-check', submitBusStandCheck);
 
 // SHO+ only: review pending enforcement checks
 router.get('/pending-review', requirePermission('ENFORCEMENT_REVIEW'), getPendingReview);
