@@ -1,12 +1,20 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { getOffenderWhere } from '../utils/scope';
-import { maskAadhaar } from '../utils/pii';
+import { maskAadhaar, canRevealAadhaar, canExportOffenders } from '../utils/pii';
 import { logAudit } from '../utils/auditLogger';
 
 function csvEscape(v: unknown): string {
-  const s = v == null ? '' : String(v);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+  let s = v == null ? '' : String(v);
+
+  // ── SECURITY FIX #19 (bonus): Neutralize CSV formula injection
+  // Characters =, +, -, @, tab, CR at the start of a cell can trigger
+  // formula execution in Excel/LibreOffice when the CSV is opened.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`;
+  }
+
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes("'")) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
@@ -47,6 +55,12 @@ function formatAadhaarForCsv(val: string | null | undefined): string {
 
 export const exportOffendersCsv = async (req: Request, res: Response) => {
   try {
+    // ── SECURITY FIX #10: Enforce export role check (was defined but never called)
+    const userRole = (req as any).user?.role || '';
+    if (!canExportOffenders(userRole)) {
+      return res.status(403).json({ message: 'You do not have permission to export offender data' });
+    }
+
     const where = getOffenderWhere((req as any).user);
     const { psId, query, category } = req.query;
     if (psId) {
@@ -131,8 +145,11 @@ export const exportOffendersCsv = async (req: Request, res: Response) => {
         .join('; ');
 
       // Identity docs
+      // ── SECURITY FIX #10: Mask Aadhaar in export based on user role
       const aadhaar = o.offender_identity_docs?.[0]?.aadhaar_no;
-      const formattedAadhaar = formatAadhaarForCsv(aadhaar);
+      const formattedAadhaar = canRevealAadhaar(userRole)
+        ? formatAadhaarForCsv(aadhaar)
+        : (maskAadhaar(aadhaar) || '');
       const voterId = o.offender_identity_docs?.[0]?.voter_id ? `'${o.offender_identity_docs[0].voter_id}` : '';
       const panCard = o.offender_identity_docs?.[0]?.pan_card ? `'${o.offender_identity_docs[0].pan_card}` : '';
 
@@ -225,7 +242,9 @@ export const exportOffendersCsv = async (req: Request, res: Response) => {
       );
     }
 
-    await logAudit('EXPORT', 'OFFENDER', null, req, `Exported ${offenders.length} offenders`);
+    await logAudit('EXPORT', 'OFFENDER', null, req,
+      `Exported ${offenders.length} offenders — PII ${canRevealAadhaar(userRole) ? 'REVEALED' : 'MASKED'}`
+    );
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="offenders-${Date.now()}.csv"`);

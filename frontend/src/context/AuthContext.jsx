@@ -13,7 +13,8 @@ export function AuthProvider({ children }) {
   const [sessionValidated, setSessionValidated] = useState(false);
   const validatingRef = useRef(false);
 
-  const isAuthenticated = !!user && !!localStorage.getItem('garuda_access_token');
+  // ── SECURITY FIX #12: Rely on user state instead of localStorage token
+  const isAuthenticated = !!user;
 
   /**
    * Validate session against the server.
@@ -21,8 +22,7 @@ export function AuthProvider({ children }) {
    * Handles Neon cold-start delays gracefully via axios retry interceptor.
    */
   const validateSession = useCallback(async () => {
-    const token = localStorage.getItem('garuda_access_token');
-    if (!token || validatingRef.current) {
+    if (validatingRef.current) {
       setSessionValidated(true);
       return;
     }
@@ -44,8 +44,6 @@ export function AuthProvider({ children }) {
     } catch (err) {
       // If 401/403 after retries, the token is truly invalid — logout
       if (err.response?.status === 401 || err.response?.status === 403) {
-        localStorage.removeItem('garuda_access_token');
-        localStorage.removeItem('garuda_refresh_token');
         localStorage.removeItem('garuda_user');
         setUser(null);
       }
@@ -79,8 +77,7 @@ export function AuthProvider({ children }) {
     try {
       const res = await api.post('/auth/login', { username, password });
       const data = res.data.data;
-      localStorage.setItem('garuda_access_token', data.accessToken);
-      localStorage.setItem('garuda_refresh_token', data.refreshToken);
+      // Note: HttpOnly cookies are automatically set by the browser from the response
       const userData = {
         username: data.username,
         fullName: data.fullName,
@@ -106,8 +103,7 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore
     }
-    localStorage.removeItem('garuda_access_token');
-    localStorage.removeItem('garuda_refresh_token');
+    // Note: HttpOnly cookies are cleared by the backend response
     localStorage.removeItem('garuda_user');
     setUser(null);
     if (reason === 'idle') {

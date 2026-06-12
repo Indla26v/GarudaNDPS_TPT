@@ -6,9 +6,18 @@ const prisma = new PrismaClient();
 const ROLES = ['SP', 'ASP', 'SDPO', 'SHO', 'CONSTABLE'];
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seed scripts cannot be run in production');
+  }
+
+  const password = process.env.SEED_PASSWORD;
+  if (!password) {
+    throw new Error('SEED_PASSWORD environment variable required');
+  }
+
   console.log('Seeding test credentials...');
 
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const passwordHash = await bcrypt.hash(password, 10);
 
   // We need at least one police station for users that require it
   let ps = await prisma.police_stations.findFirst();
@@ -55,7 +64,7 @@ async function main() {
 
   console.log('\nSeed successful!');
   console.log('You can log in using any of the usernames (e.g., admin1, sp1, constable1)');
-  console.log('Password for all users: password123');
+  console.log('Password for all users is set to the provided SEED_PASSWORD');
 }
 
 main()

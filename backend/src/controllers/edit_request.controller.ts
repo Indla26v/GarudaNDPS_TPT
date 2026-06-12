@@ -38,29 +38,47 @@ function formatEditRequest(r: any) {
 }
 
 async function applyEntityChanges(entityType: string, entityId: bigint, changesJson: string) {
-  const changes = JSON.parse(changesJson);
+  // ── SECURITY FIX #11: Mitigate insecure deserialization
+  // Ensure we only parse JSON, and strictly allowlist fields to prevent prototype pollution or arbitrary field injection.
+  let changes: any;
+  try {
+    changes = JSON.parse(changesJson);
+  } catch (err) {
+    throw new Error('Invalid changes JSON');
+  }
+
+  if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
+    throw new Error('Changes must be an object');
+  }
 
   if (entityType === 'CASE') {
     const data: Record<string, unknown> = {};
-    if (changes.firNo !== undefined) data.fir_no = changes.firNo;
-    if (changes.fir_no !== undefined) data.fir_no = changes.fir_no;
-    if (changes.psId !== undefined) data.ps_id = BigInt(changes.psId);
-    if (changes.ps_id !== undefined) data.ps_id = BigInt(changes.ps_id);
-    if (changes.sectionOfLaw !== undefined) data.section_of_law = changes.sectionOfLaw;
-    if (changes.section_of_law !== undefined) data.section_of_law = changes.section_of_law;
-    if (changes.caseDate !== undefined) data.case_date = new Date(changes.caseDate);
-    if (changes.case_date !== undefined) data.case_date = new Date(changes.case_date);
-    if (changes.stage !== undefined) data.stage = changes.stage;
+    if (typeof changes.firNo === 'string') data.fir_no = changes.firNo;
+    else if (typeof changes.fir_no === 'string') data.fir_no = changes.fir_no;
+    
+    if (changes.psId) data.ps_id = BigInt(changes.psId);
+    else if (changes.ps_id) data.ps_id = BigInt(changes.ps_id);
+    
+    if (typeof changes.sectionOfLaw === 'string') data.section_of_law = changes.sectionOfLaw;
+    else if (typeof changes.section_of_law === 'string') data.section_of_law = changes.section_of_law;
+    
+    if (typeof changes.caseDate === 'string' || typeof changes.caseDate === 'number') data.case_date = new Date(changes.caseDate);
+    else if (typeof changes.case_date === 'string' || typeof changes.case_date === 'number') data.case_date = new Date(changes.case_date);
+    
+    if (typeof changes.stage === 'string') data.stage = changes.stage;
+
     if (Object.keys(data).length > 0) {
       await prisma.cases.update({ where: { id: entityId }, data: data as any });
     }
   } else if (entityType === 'OFFENDER') {
     const data: Record<string, unknown> = {};
-    if (changes.fullName !== undefined) data.full_name = changes.fullName;
-    if (changes.full_name !== undefined) data.full_name = changes.full_name;
-    if (changes.alias !== undefined) data.alias = changes.alias;
-    if (changes.category !== undefined) data.category = changes.category;
-    if (changes.status !== undefined) data.status = changes.status;
+    if (typeof changes.fullName === 'string') data.full_name = changes.fullName;
+    else if (typeof changes.full_name === 'string') data.full_name = changes.full_name;
+    
+    if (typeof changes.alias === 'string') data.alias = changes.alias;
+    if (typeof changes.category === 'string') data.category = changes.category;
+    if (typeof changes.status === 'string') data.status = changes.status;
+
     if (Object.keys(data).length > 0) {
       await prisma.offenders.update({ where: { id: entityId }, data: data as any });
     }
@@ -212,8 +230,9 @@ export const approveEditRequest = async (req: Request, res: Response) => {
 
     res.json(successResponse({ id }, 'Edit request approved and applied'));
   } catch (error: any) {
-    console.error(error);
-    res.status(500).json({ message: error.message || 'Server error' });
+    // ── SECURITY FIX #20: Do not leak internal error messages
+    console.error('approveEditRequest error:', error);
+    res.status(500).json({ message: 'Failed to process edit request' });
   }
 };
 

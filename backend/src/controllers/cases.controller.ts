@@ -210,6 +210,11 @@ export const updateAccused = async (req: Request, res: Response) => {
     const id = paramId(req);
     const accusedData = Array.isArray(req.body) ? req.body : [req.body];
 
+    // ── SECURITY FIX #15: Verify user has jurisdiction over this case
+    const scope = getCaseWhere((req as any).user);
+    const caseRecord = await prisma.cases.findFirst({ where: { id, ...scope } });
+    if (!caseRecord) return res.status(404).json({ message: 'Case not found or access denied' });
+
     await prisma.case_accused.deleteMany({ where: { case_id: id } });
 
     const creates = accusedData.map((a: any) => ({
@@ -237,6 +242,12 @@ export const updateSeizure = async (req: Request, res: Response) => {
   try {
     const id = paramId(req);
     const seizureData = req.body;
+
+    // ── SECURITY FIX #15: Verify user has jurisdiction over this case
+    const scope = getCaseWhere((req as any).user);
+    const caseRecord = await prisma.cases.findFirst({ where: { id, ...scope } });
+    if (!caseRecord) return res.status(404).json({ message: 'Case not found or access denied' });
+
     await prisma.seizures.deleteMany({ where: { case_id: id } });
 
     const dataArr = Array.isArray(seizureData) ? seizureData : [seizureData];
@@ -265,8 +276,12 @@ export const updateSeizure = async (req: Request, res: Response) => {
 export const getCasesByOffender = async (req: Request, res: Response) => {
   try {
     const offenderId = paramId(req, 'offenderId');
+
+    // ── SECURITY FIX #15: Scope cases to user's jurisdiction
+    const scope = getCaseWhere((req as any).user);
     const cases = await prisma.cases.findMany({
       where: {
+        ...scope,
         case_accused: { some: { offender_id: offenderId } },
       },
       include: caseInclude,

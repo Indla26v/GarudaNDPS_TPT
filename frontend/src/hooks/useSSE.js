@@ -37,19 +37,16 @@ export function useSSE() {
   }, []);
 
   const connect = useCallback(() => {
-    const token = localStorage.getItem('garuda_access_token');
-    if (!token) return;
-
     // Don't reconnect if paused (tab hidden for too long)
     if (pausedRef.current) return;
 
     // Close existing connection
     disconnect();
 
-    // EventSource doesn't support custom headers natively,
-    // so we pass the token as a query parameter
-    const url = `${SSE_URL}?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(url);
+    // ── SECURITY FIX #4 & #12: Use HttpOnly Cookie for SSE Authentication
+    // EventSource with `withCredentials: true` automatically sends the HttpOnly cookie,
+    // avoiding the need to expose the JWT in the URL query string.
+    const es = new EventSource(SSE_URL, { withCredentials: true });
 
     es.onopen = () => {
       setIsConnected(true);

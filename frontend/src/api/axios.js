@@ -3,6 +3,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // ── SECURITY FIX #12: Send HttpOnly cookies automatically
 });
 
 // ── Retry config for cold-start / Neon wake-up resilience ─────────────
@@ -22,14 +23,7 @@ function getRetryDelay(retryCount) {
   return RETRY_BASE_DELAY * Math.pow(2, retryCount);
 }
 
-// Request interceptor — attach JWT
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('garuda_access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Request interceptor removed: Tokens are now sent automatically via HttpOnly cookies
 
 // Response interceptor — handle retries + 401 (token expired)
 api.interceptors.response.use(
@@ -56,31 +50,21 @@ api.interceptors.response.use(
       return api(originalRequest);
     }
 
-    // ── 401 handling — token refresh ─────────────────────────────
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // ── 401 handling — token refresh via HttpOnly Cookie ────────────────
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('garuda_refresh_token');
-      if (refreshToken) {
-        try {
-          const res = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`,
-            { refreshToken }
-          );
-          const { accessToken } = res.data.data;
-          localStorage.setItem('garuda_access_token', accessToken);
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return api(originalRequest);
-        } catch {
-          // Refresh failed — force logout
-          localStorage.removeItem('garuda_access_token');
-          localStorage.removeItem('garuda_refresh_token');
-          localStorage.removeItem('garuda_user');
-          window.location.href = '/login';
-        }
-      } else {
-        localStorage.removeItem('garuda_access_token');
-        localStorage.removeItem('garuda_refresh_token');
+      try {
+        // Backend now reads the garuda_refresh_token cookie automatically
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+        // Refresh succeeded, retry original request (which will now send the new garuda_access_token cookie)
+        return api(originalRequest);
+      } catch {
+        // Refresh failed (or no refresh token cookie) — force logout
         localStorage.removeItem('garuda_user');
         window.location.href = '/login';
       }

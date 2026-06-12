@@ -1,1 +1,10 @@
+# ── SECURITY FIX #1: Ensure secrets are never committed at any level
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Vercel
 .vercel

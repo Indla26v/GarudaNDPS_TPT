@@ -14,6 +14,7 @@
  */
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
+import { Prisma } from '@prisma/client';
 import { successResponse } from '../utils/transformers';
 import { getDashboardScope, ScopeUser } from '../utils/scope';
 import { logAudit } from '../utils/auditLogger';
@@ -437,22 +438,26 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
 
     // Monthly trend (last 6 months)
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const psCondition = where.ps_id
-      ? `AND ps_id = ${where.ps_id}`
-      : (stationsToQuery && stationsToQuery.length > 0
-          ? `AND ps_id IN (${stationsToQuery.map(s => s.id).join(',')})`
-          : 'AND 1=0');
 
-    const monthlyTrend = await prisma.$queryRawUnsafe<{ month: string; positive: bigint; negative: bigint; total: bigint }[]>(
-      `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
-              COUNT(*) FILTER (WHERE test_result = 'POSITIVE')::bigint AS positive,
-              COUNT(*) FILTER (WHERE test_result = 'NEGATIVE')::bigint AS negative,
-              COUNT(*)::bigint AS total
-       FROM enforcement_checks
-       WHERE created_at >= $1 ${psCondition}
-       GROUP BY 1 ORDER BY 1`,
-      sixMonthsAgo
-    );
+    // ── SECURITY FIX #2: Replace $queryRawUnsafe (SQL injection) with
+    // parameterized Prisma.sql tagged template. Station IDs are passed as
+    // a PostgreSQL array parameter instead of being string-interpolated.
+    const stationIds = stationsToQuery && stationsToQuery.length > 0
+      ? stationsToQuery.map(s => s.id)
+      : [];
+
+    const monthlyTrend = stationIds.length > 0
+      ? await prisma.$queryRaw<{ month: string; positive: bigint; negative: bigint; total: bigint }[]>(
+          Prisma.sql`SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
+                  COUNT(*) FILTER (WHERE test_result = 'POSITIVE')::bigint AS positive,
+                  COUNT(*) FILTER (WHERE test_result = 'NEGATIVE')::bigint AS negative,
+                  COUNT(*)::bigint AS total
+           FROM enforcement_checks
+           WHERE created_at >= ${sixMonthsAgo}
+             AND ps_id = ANY(${stationIds}::bigint[])
+           GROUP BY 1 ORDER BY 1`
+        )
+      : [];
 
     // Place-of-enforcement frequency
     const placeFrequency = await prisma.enforcement_checks.groupBy({
@@ -862,8 +867,7 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
       });
     }
 
-    // Auto-generate the unique sl_no for consumer DB entry
-    let slNo: string | null = null;
+    // ── SECURITY FIX #9: Race Condition in SL No Generation
     let offenderDistrict = updatedCheck.district || '';
     let offenderState = 'Andhra Pradesh';
 
@@ -875,36 +879,17 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
       if (ps.state) offenderState = ps.state;
     }
 
+    let prefix = 'SL-';
     const stateCode = STATE_CODES[offenderState.toLowerCase().trim()];
     const districtNum = DISTRICT_NUMBERS[offenderDistrict.toLowerCase().trim()];
-
     if (stateCode && districtNum) {
-      const prefix = `${stateCode}${districtNum}-`;
-      const count = await prisma.offenders.count({
-        where: {
-          sl_no: {
-            startsWith: prefix
-          }
-        }
-      });
-      const nextNum = count + 1;
-      slNo = `${prefix}${String(nextNum).padStart(4, '0')}`;
-    } else {
-      const prefix = 'SL-';
-      const count = await prisma.offenders.count({
-        where: {
-          sl_no: {
-            startsWith: prefix
-          }
-        }
-      });
-      slNo = `${prefix}${(100 + count).toString()}`;
+      prefix = `${stateCode}${districtNum}-`;
     }
 
-    // Approve: create consumer entry in offenders table
+    // Approve: create consumer entry in offenders table (omit sl_no first)
     const newOffender = await prisma.offenders.create({
       data: {
-        sl_no: slNo,
+        // sl_no: slNo, omitted for now
         full_name: updatedCheck.subject_name,
         age: updatedCheck.subject_age,
         gender: updatedCheck.subject_gender,
@@ -920,6 +905,17 @@ export const reviewEnforcementCheck = async (req: Request, res: Response) => {
         landmark_area: updatedCheck.subject_landmark,
         occupation: updatedCheck.subject_occupation,
       },
+    });
+
+    // ── SECURITY FIX #9: Update SL No atomically
+    let finalSlNo = `SL-${100 + Number(newOffender.id)}`;
+    if (stateCode && districtNum) {
+      finalSlNo = `${stateCode}${districtNum}-${String(newOffender.id).padStart(4, '0')}`;
+    }
+
+    await prisma.offenders.update({
+      where: { id: newOffender.id },
+      data: { sl_no: finalSlNo }
     });
 
     // If Aadhaar, PAN, or Voter ID was captured, store it

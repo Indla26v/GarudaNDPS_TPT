@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import os from 'os';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes';
 import offendersRoutes from './routes/offenders.routes';
 import dashboardRoutes from './routes/dashboard.routes';
@@ -18,16 +19,56 @@ import { warmUpConnection } from './config/prisma';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Required for secure cookies behind reverse proxies (e.g., Vercel, AWS)
 
-app.use(cors());
-app.use(express.json());
+// ── SECURITY FIX #3: Restrict CORS to known frontend origins only
+// Wildcard cors() allows any website to make authenticated API requests.
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,                // Production frontend (e.g., https://garuda-ndps.vercel.app)
+  'http://localhost:5173',                  // Vite dev server
+  'http://localhost:3000',                  // Alternate dev server
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, mobile apps)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: Origin ${origin} is not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// ── SECURITY FIX #16 (bonus): Security headers
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0'); // Disabled in favor of CSP; legacy header
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// ── SECURITY FIX #13 (partial): Explicit JSON body size limit
+app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 // Serve static uploads
 const isVercel = process.env.VERCEL === '1';
 const uploadsDir = isVercel 
   ? path.join(os.tmpdir(), 'uploads')
   : path.join(process.cwd(), 'uploads');
-app.use('/api/uploads', express.static(uploadsDir));
+// ── SECURITY FIX #18: Serve uploads with strict security headers
+app.use('/api/uploads', (req, res, next) => {
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "script-src 'none'; object-src 'none'; base-uri 'none';");
+  next();
+}, express.static(uploadsDir));
 
 // ── Public routes ─────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);

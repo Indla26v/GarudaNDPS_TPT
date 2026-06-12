@@ -102,8 +102,13 @@ export const getOffenders = async (req: Request, res: Response) => {
 export const getOffenderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const o = await prisma.offenders.findUnique({
-      where: { id: BigInt(id as string) },
+
+    // ── SECURITY FIX #5: Apply row-level scope to prevent IDOR
+    // Without this, any authenticated user could enumerate all offenders
+    // by ID regardless of their police station or district assignment.
+    const scope = getOffenderWhere((req as any).user);
+    const o = await prisma.offenders.findFirst({
+      where: { id: BigInt(id as string), ...scope },
       include: {
         police_stations: true,
         users: true,
@@ -294,33 +299,19 @@ export const createOffender = async (req: Request, res: Response) => {
       const stateCode = STATE_CODES[offenderState.toLowerCase().trim()];
       const districtNum = DISTRICT_NUMBERS[offenderDistrict.toLowerCase().trim()];
 
+      // ── SECURITY FIX #9: Race Condition in SL No Generation
+      // Instead of count() + 1, we save the prefix and update after creation
+      let prefix = 'SL-';
       if (stateCode && districtNum) {
-        const prefix = `${stateCode}${districtNum}-`;
-        const count = await prisma.offenders.count({
-          where: {
-            sl_no: {
-              startsWith: prefix
-            }
-          }
-        });
-        const nextNum = count + 1;
-        slNo = `${prefix}${String(nextNum).padStart(4, '0')}`;
-      } else {
-        // Fallback to generic SL- prefix
-        const prefix = 'SL-';
-        const count = await prisma.offenders.count({
-          where: {
-            sl_no: {
-              startsWith: prefix
-            }
-          }
-        });
-        slNo = `${prefix}${(100 + count).toString()}`;
+        prefix = `${stateCode}${districtNum}-`;
       }
+      
+      // Temporary sl_no if needed, but it's optional in schema. We omit it here.
+      slNo = null as any; // Will be set after creation
     }
 
     const dataObj: any = {
-      sl_no: slNo,
+      // sl_no: slNo, (omitted to set atomically)
       full_name: data.fullName || data.full_name,
       alias: data.alias || null,
       father_husband_name: data.fatherHusbandName || data.father_husband_name || null,
@@ -341,6 +332,10 @@ export const createOffender = async (req: Request, res: Response) => {
       created_by: userId,
     };
 
+    if (slNo && data.slNo) {
+       dataObj.sl_no = slNo; // if it was explicitly provided
+    }
+
     if (contactsCreate.length > 0) dataObj.offender_contacts = { create: contactsCreate };
     if (identityDocsCreate) dataObj.offender_identity_docs = { create: identityDocsCreate };
     if (financialsCreate.length > 0) dataObj.offender_financials = { create: financialsCreate };
@@ -349,6 +344,22 @@ export const createOffender = async (req: Request, res: Response) => {
     const newOffender = await prisma.offenders.create({
       data: dataObj
     });
+
+    // ── SECURITY FIX #9: Set SL No using atomic ID
+    if (!data.sl_no && !data.slNo) {
+      const stateCode = STATE_CODES[(data.state || 'Andhra Pradesh').toLowerCase().trim()];
+      const districtNum = DISTRICT_NUMBERS[(data.district || '').toLowerCase().trim()];
+      
+      let finalSlNo = `SL-${100 + Number(newOffender.id)}`;
+      if (stateCode && districtNum) {
+        finalSlNo = `${stateCode}${districtNum}-${String(newOffender.id).padStart(4, '0')}`;
+      }
+
+      await prisma.offenders.update({
+        where: { id: newOffender.id },
+        data: { sl_no: finalSlNo }
+      });
+    }
     
     if (data.supplyChainLinks && data.supplyChainLinks.length > 0) {
        await prisma.supply_chain_links.createMany({
@@ -393,9 +404,10 @@ export const updateOffender = async (req: Request, res: Response) => {
       }
     }
     
-    // Find first
-    const existing = await prisma.offenders.findUnique({ where: { id: BigInt(id as string) } });
-    if (!existing) return res.status(404).json({ message: 'Offender not found' });
+    // ── SECURITY FIX #8: Apply row-level scope to prevent cross-PS record tampering
+    const scope = getOffenderWhere((req as any).user);
+    const existing = await prisma.offenders.findFirst({ where: { id: BigInt(id as string), ...scope } });
+    if (!existing) return res.status(404).json({ message: 'Offender not found or access denied' });
 
     // Transaction for safe nested updates (delete then recreate)
     await prisma.$transaction(async (tx) => {

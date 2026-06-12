@@ -48,11 +48,8 @@ let cachedToken = null;
 const CACHE_TTL = 30000; // 30 seconds cache
 
 export default function Dashboard() {
-  const currentToken = localStorage.getItem('garuda_access_token');
-  
   // If cache is valid, initialize with cached data and skip loading screen
   const isCacheValid = cachedSummary && 
-                       cachedToken === currentToken && 
                        (Date.now() - lastFetchTime < CACHE_TTL);
 
   const [summary, setSummary] = useState(isCacheValid ? cachedSummary : null);
@@ -74,21 +71,19 @@ export default function Dashboard() {
 
   const fetchSummary = async (force = false) => {
     const now = Date.now();
-    const currentToken = localStorage.getItem('garuda_access_token');
     
-    if (!force && cachedSummary && cachedToken === currentToken && (now - lastFetchTime < CACHE_TTL)) {
+    if (!force && cachedSummary && (now - lastFetchTime < CACHE_TTL)) {
       setSummary(cachedSummary);
       setLoading(false);
       return;
     }
 
     try {
-      if (!cachedSummary || cachedToken !== currentToken) {
+      if (!cachedSummary) {
         setLoading(true);
       }
       const res = await api.get(`/dashboard/summary${force ? '?force=true' : ''}`);
       cachedSummary = res.data.data;
-      cachedToken = currentToken;
       lastFetchTime = Date.now();
       setSummary(res.data.data);
       setError('');

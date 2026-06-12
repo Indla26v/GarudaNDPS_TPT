@@ -6,11 +6,14 @@ import prisma from '../config/prisma';
 import { convertBigIntsToNumbers, successResponse } from '../utils/transformers';
 import { logAudit } from '../utils/auditLogger';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn('JWT_SECRET not set — using development fallback. Set JWT_SECRET in production.');
+// ── SECURITY FIX #1: No hardcoded fallback — fail-fast if JWT_SECRET is missing
+const JWT_KEY = process.env.JWT_SECRET;
+if (!JWT_KEY) {
+  throw new Error(
+    'FATAL: JWT_SECRET environment variable is not set. ' +
+    'Refusing to start. Set JWT_SECRET in your .env or hosting environment.'
+  );
 }
-const JWT_KEY = JWT_SECRET || 'G4rud4-Ant1Drug-Pl4tf0rm-S3cur3-K3y-2026-M1n1mum-256-B1t-L3ngth!!';
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES = 15;
 
@@ -26,6 +29,11 @@ export const login = async (req: Request, res: Response) => {
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // ── SECURITY FIX #7: Reject deactivated users at login
+    if (!user.is_active) {
+      return res.status(401).json({ message: 'Account has been deactivated. Contact your administrator.' });
     }
 
     if (user.locked_until && new Date() < user.locked_until) {
@@ -81,6 +89,23 @@ export const login = async (req: Request, res: Response) => {
     (req as any).user = { userId: user.id };
     await logAudit('LOGIN', 'USER', user.id, req);
 
+    // ── SECURITY FIX #12: Store JWTs in HttpOnly cookies to prevent XSS theft
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true, // Requires HTTPS (or localhost)
+      sameSite: 'none' as const, // Allows cross-origin requests
+    };
+
+    res.cookie('garuda_access_token', accessToken, {
+      ...cookieOptions,
+      maxAge: 8 * 60 * 60 * 1000 // 8 hours
+    });
+
+    res.cookie('garuda_refresh_token', refreshTokenString, {
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.json(successResponse({
       accessToken,
       refreshToken: refreshTokenString,
@@ -101,13 +126,15 @@ export const login = async (req: Request, res: Response) => {
 
 export const refresh = async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
-  if (!refreshToken) {
+  const token = refreshToken || req.cookies?.garuda_refresh_token;
+
+  if (!token) {
     return res.status(400).json({ message: 'Refresh token is required' });
   }
 
   try {
     const stored = await prisma.refresh_tokens.findUnique({
-      where: { token: refreshToken },
+      where: { token: token },
       include: { users: true }
     });
 
@@ -118,6 +145,15 @@ export const refresh = async (req: Request, res: Response) => {
     const user = stored.users;
     if (!user) {
       return res.status(401).json({ message: 'Invalid refresh token user' });
+    }
+
+    // ── SECURITY FIX #7: Reject deactivated users at token refresh
+    if (!user.is_active) {
+      await prisma.refresh_tokens.update({
+        where: { id: stored.id },
+        data: { revoked: true },
+      });
+      return res.status(401).json({ message: 'Account has been deactivated' });
     }
 
     const newAccessToken = jwt.sign(
@@ -133,6 +169,18 @@ export const refresh = async (req: Request, res: Response) => {
       JWT_KEY,
       { expiresIn: '8h' }
     );
+    
+    // ── SECURITY FIX #12: Store JWTs in HttpOnly cookies
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+    };
+
+    res.cookie('garuda_access_token', newAccessToken, {
+      ...cookieOptions,
+      maxAge: 8 * 60 * 60 * 1000 // 8 hours
+    });
 
     res.json(successResponse({
       accessToken: newAccessToken,
@@ -153,19 +201,31 @@ export const refresh = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.userId;
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
   try {
-    // Revoke all
-    await prisma.refresh_tokens.updateMany({
-      where: { user_id: BigInt(userId), revoked: false },
-      data: { revoked: true }
-    });
+    const { refreshToken } = req.body;
+    
+    // Also check cookie for refresh token if not in body
+    const tokenToRevoke = refreshToken || req.cookies?.garuda_refresh_token;
 
-    await logAudit('LOGOUT', 'USER', BigInt(userId), req);
+    if (tokenToRevoke) {
+      await prisma.refresh_tokens.updateMany({
+        where: { token: tokenToRevoke },
+        data: { revoked: true }
+      });
+    }
+
+    if ((req as any).user) {
+      await logAudit('LOGOUT', 'USER', (req as any).user.userId, req);
+    }
+
+    // ── SECURITY FIX #12: Clear HttpOnly cookies on logout
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+    };
+    res.clearCookie('garuda_access_token', cookieOptions);
+    res.clearCookie('garuda_refresh_token', cookieOptions);
 
     res.json(successResponse(null, 'Logged out successfully'));
   } catch (error) {
