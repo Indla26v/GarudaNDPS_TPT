@@ -52,15 +52,7 @@ export default function CaseDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading case details...</div>
-      </div>
-    );
-  }
-
-  if (error || !caseData) {
+  if (error || (!caseData && !loading)) {
     return (
       <div className="text-center py-16">
         <p style={{ color: 'var(--color-danger-400)' }}>{error || 'Case not found'}</p>
@@ -69,8 +61,8 @@ export default function CaseDetail() {
     );
   }
 
-  const currentStageIdx = STAGES.indexOf(caseData.stage);
-  const canEdit = perms.hasPermission?.('CASE_CREATE') || perms.hasMinRole?.('SI');
+  const currentStageIdx = caseData ? STAGES.indexOf(caseData.stage) : -1;
+  const canEdit = caseData && (perms.hasPermission?.('CASE_CREATE') || perms.hasMinRole?.('SI'));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -78,10 +70,14 @@ export default function CaseDetail() {
         <div>
           <Link to="/cases" className="text-xs mb-2 inline-block" style={{ color: 'var(--color-garuda-400)' }}>← Back to Cases</Link>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
-            Case: {caseData.firNo}
+            Case: {loading ? <span className="inline-block w-40 h-7 bg-slate-700 animate-pulse rounded align-middle"></span> : caseData?.firNo}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
-            {caseData.psName} • {caseData.caseDate ? new Date(caseData.caseDate).toLocaleDateString('en-IN') : '—'}
+            {loading ? (
+              <span className="inline-block w-56 h-4 bg-slate-700/80 animate-pulse rounded mt-1"></span>
+            ) : (
+              `${caseData?.psName || ''} • ${caseData?.caseDate ? new Date(caseData.caseDate).toLocaleDateString('en-IN') : '—'}`
+            )}
           </p>
         </div>
         {canEdit && (
@@ -116,33 +112,39 @@ export default function CaseDetail() {
         <>
           <div className="rounded-xl p-6 overflow-x-auto" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-300)' }}>Case Progress</h3>
-            <div className="flex items-center gap-0 min-w-[600px]">
-              {STAGES.map((stage, i) => {
-                const isActive = i <= currentStageIdx;
-                const isCurrent = i === currentStageIdx;
-                return (
-                  <div key={stage} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-1">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                        style={{
-                          background: isCurrent || isActive ? 'var(--color-accent-500)' : 'var(--color-garuda-700)',
-                          color: isActive ? '#fff' : 'var(--color-garuda-400)',
-                        }}
-                      >
-                        {isActive ? '✓' : i + 1}
+            {loading ? (
+              <div className="flex items-center gap-4 min-w-[600px] py-2">
+                <div className="h-6 bg-slate-700/60 rounded flex-1 animate-pulse"></div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0 min-w-[600px]">
+                {STAGES.map((stage, i) => {
+                  const isActive = i <= currentStageIdx;
+                  const isCurrent = i === currentStageIdx;
+                  return (
+                    <div key={stage} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{
+                            background: isCurrent || isActive ? 'var(--color-accent-500)' : 'var(--color-garuda-700)',
+                            color: isActive ? '#fff' : 'var(--color-garuda-400)',
+                          }}
+                        >
+                          {isActive ? '✓' : i + 1}
+                        </div>
+                        <span className="text-[10px] mt-2 text-center" style={{ color: isActive ? 'var(--color-garuda-100)' : 'var(--color-garuda-500)' }}>
+                          {STAGE_LABELS[stage]}
+                        </span>
                       </div>
-                      <span className="text-[10px] mt-2 text-center" style={{ color: isActive ? 'var(--color-garuda-100)' : 'var(--color-garuda-500)' }}>
-                        {STAGE_LABELS[stage]}
-                      </span>
+                      {i < STAGES.length - 1 && (
+                        <div className="h-0.5 flex-1 -mt-5" style={{ background: i < currentStageIdx ? 'var(--color-accent-500)' : 'var(--color-garuda-700)' }} />
+                      )}
                     </div>
-                    {i < STAGES.length - 1 && (
-                      <div className="h-0.5 flex-1 -mt-5" style={{ background: i < currentStageIdx ? 'var(--color-accent-500)' : 'var(--color-garuda-700)' }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -151,35 +153,49 @@ export default function CaseDetail() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>FIR Number</p>
-                  <p style={{ color: 'var(--color-garuda-100)' }}>{caseData.firNo}</p>
+                  <p style={{ color: 'var(--color-garuda-100)' }}>
+                    {loading ? <span className="inline-block w-20 h-4 bg-slate-700/60 animate-pulse rounded"></span> : caseData?.firNo}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Section of Law</p>
-                  <p style={{ color: 'var(--color-garuda-100)' }}>{caseData.sectionOfLaw || '—'}</p>
+                  <p style={{ color: 'var(--color-garuda-100)' }}>
+                    {loading ? <span className="inline-block w-24 h-4 bg-slate-700/60 animate-pulse rounded"></span> : caseData?.sectionOfLaw || '—'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Station</p>
-                  <p style={{ color: 'var(--color-garuda-100)' }}>{caseData.psName || '—'}</p>
+                  <p style={{ color: 'var(--color-garuda-100)' }}>
+                    {loading ? <span className="inline-block w-28 h-4 bg-slate-700/60 animate-pulse rounded"></span> : caseData?.psName || '—'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Contraband</p>
                   <p style={{ color: 'var(--color-garuda-100)' }}>
-                    {caseData.contrabandType ? CONTRABAND_LABELS[caseData.contrabandType] || caseData.contrabandType : '—'}
-                    {caseData.quantity ? ` (${caseData.quantity} ${caseData.quantityUnit || ''})` : ''}
+                    {loading ? <span className="inline-block w-32 h-4 bg-slate-700/60 animate-pulse rounded"></span> : (
+                      <>
+                        {caseData?.contrabandType ? CONTRABAND_LABELS[caseData.contrabandType] || caseData.contrabandType : '—'}
+                        {caseData?.quantity ? ` (${caseData.quantity} ${caseData.quantityUnit || ''})` : ''}
+                      </>
+                    )}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Source → Destination</p>
                   <p style={{ color: 'var(--color-garuda-100)' }}>
-                    {[caseData.sourceLocation, caseData.destinationLocation].filter(Boolean).join(' → ') || '—'}
+                    {loading ? <span className="inline-block w-36 h-4 bg-slate-700/60 animate-pulse rounded"></span> : [caseData?.sourceLocation, caseData?.destinationLocation].filter(Boolean).join(' → ') || '—'}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Date</p>
-                  <p style={{ color: 'var(--color-garuda-100)' }}>{caseData.caseDate ? new Date(caseData.caseDate).toLocaleDateString('en-IN') : '—'}</p>
+                  <p style={{ color: 'var(--color-garuda-100)' }}>
+                    {loading ? <span className="inline-block w-24 h-4 bg-slate-700/60 animate-pulse rounded"></span> : caseData?.caseDate ? new Date(caseData.caseDate).toLocaleDateString('en-IN') : '—'}
+                  </p>
                 </div>
               </div>
-              {caseData.intelligenceNotes && (
+              {loading ? (
+                <div className="h-4 bg-slate-700/50 rounded w-full animate-pulse mt-2"></div>
+              ) : caseData?.intelligenceNotes && (
                 <p className="text-sm pt-2" style={{ color: 'var(--color-garuda-300)' }}>
                   <span className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Intelligence: </span>
                   {caseData.intelligenceNotes}
@@ -189,9 +205,14 @@ export default function CaseDetail() {
 
             <div className="rounded-xl p-6 space-y-3" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
               <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>
-                Accused ({caseData.accused?.length || 0})
+                Accused ({loading ? '...' : caseData?.accused?.length || 0})
               </h3>
-              {caseData.accused?.length > 0 ? (
+              {loading ? (
+                <div className="space-y-2">
+                  <div className="h-10 bg-slate-700/60 rounded animate-pulse"></div>
+                  <div className="h-10 bg-slate-700/60 rounded animate-pulse"></div>
+                </div>
+              ) : caseData?.accused?.length > 0 ? (
                 <ul className="space-y-2">
                   {caseData.accused.map((ca) => (
                     <li key={ca.id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--color-garuda-900)' }}>
@@ -220,7 +241,15 @@ export default function CaseDetail() {
             </div>
           </div>
 
-          {caseData.seizures?.length > 0 && (
+          {loading ? (
+            <div className="rounded-xl p-6 border" style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)' }}>
+              <div className="h-5 bg-slate-700/60 rounded w-24 mb-3 animate-pulse"></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="h-10 bg-slate-700/50 rounded animate-pulse"></div>
+                <div className="h-10 bg-slate-700/50 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ) : caseData?.seizures?.length > 0 && (
             <div className="rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
               <h3 className="font-semibold mb-3" style={{ color: 'var(--color-garuda-200)' }}>Seizures</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

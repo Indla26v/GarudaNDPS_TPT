@@ -24,9 +24,28 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const user: ScopeUser = (req as any).user || {};
     const { psFilter, isStationLevel } = getDashboardScope(user);
 
-    // Generate cache key based on the user's role and police station id
+    const timeRange = req.query.timeRange as string || 'all';
+    let dateFilter: { gte?: Date } | undefined = undefined;
+
+    if (timeRange !== 'all') {
+      if (timeRange === 'weekly') {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        dateFilter = { gte: d };
+      } else if (timeRange === 'monthly') {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        dateFilter = { gte: d };
+      } else if (timeRange === 'yearly') {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        dateFilter = { gte: d };
+      }
+    }
+
+    // Generate cache key based on the user's role, police station id, and time range
     const psIdStr = psFilter.ps_id ? psFilter.ps_id.toString() : 'all';
-    const cacheKey = `summary_${isStationLevel ? 'station' : 'district'}_${psIdStr}`;
+    const cacheKey = `summary_${isStationLevel ? 'station' : 'district'}_${psIdStr}_${timeRange}`;
 
     const forceBypass = req.query.force === 'true';
 
@@ -37,7 +56,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       }
     }
 
-    // Build case/offender/seizure where clauses based on scope
+    // Build case/offender/seizure where clauses based on scope and time range
     const caseWhere: any = { ...psFilter };
     const offenderWhere: any = { ...psFilter };
     const caseAccusedWhere: any = psFilter.ps_id
@@ -50,6 +69,13 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       : (psFilter.police_stations
           ? { cases: { police_stations: psFilter.police_stations } }
           : {});
+
+    if (dateFilter) {
+      caseWhere.created_at = dateFilter;
+      offenderWhere.created_at = dateFilter;
+      caseAccusedWhere.created_at = dateFilter;
+      seizureWhere.created_at = dateFilter;
+    }
 
     // ── Core KPIs ──────────────────────────────────────────────────────
     const totalCases = await prisma.cases.count({ where: caseWhere });
@@ -224,24 +250,27 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const psWiseData = await Promise.all(stationsToQuery.map(async (ps) => {
       const psId = ps.id;
 
-      const psCases = await prisma.cases.count({ where: { ps_id: psId } });
-      const psOffenders = await prisma.offenders.count({ where: { ps_id: psId } });
+      const stationCaseWhere: any = { ps_id: psId };
+      const stationOffenderWhere: any = { ps_id: psId };
+      const stationArrestsWhere: any = { cases: { ps_id: psId }, arrest_status: 'ARRESTED' };
+      const stationAbscondingWhere: any = { cases: { ps_id: psId }, arrest_status: 'ABSCONDING' };
+      const stationSeizureWhere: any = { cases: { ps_id: psId } };
 
-      const psArrests = await prisma.case_accused.count({
-        where: {
-          cases: { ps_id: psId },
-          arrest_status: 'ARRESTED',
-        },
-      });
-      const psAbsconding = await prisma.case_accused.count({
-        where: {
-          cases: { ps_id: psId },
-          arrest_status: 'ABSCONDING',
-        },
-      });
+      if (dateFilter) {
+        stationCaseWhere.created_at = dateFilter;
+        stationOffenderWhere.created_at = dateFilter;
+        stationArrestsWhere.created_at = dateFilter;
+        stationAbscondingWhere.created_at = dateFilter;
+        stationSeizureWhere.created_at = dateFilter;
+      }
+
+      const psCases = await prisma.cases.count({ where: stationCaseWhere });
+      const psOffenders = await prisma.offenders.count({ where: stationOffenderWhere });
+      const psArrests = await prisma.case_accused.count({ where: stationArrestsWhere });
+      const psAbsconding = await prisma.case_accused.count({ where: stationAbscondingWhere });
 
       const psSeizureAgg = await prisma.seizures.aggregate({
-        where: { cases: { ps_id: psId } },
+        where: stationSeizureWhere,
         _sum: { contraband_kg: true, cash_amount: true },
       });
 

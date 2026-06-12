@@ -53,6 +53,9 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // ── Note: Multi-device login restriction is currently disabled per request. ──
+    // const activeSession = await prisma.refresh_tokens.findFirst({ ... });
+
     await prisma.users.update({
       where: { id: user.id },
       data: { last_login: new Date(), failed_login_count: 0, locked_until: null }
@@ -94,6 +97,7 @@ export const login = async (req: Request, res: Response) => {
       httpOnly: true,
       secure: true, // Requires HTTPS (or localhost)
       sameSite: 'none' as const, // Allows cross-origin requests
+      path: '/', // EXPLICITLY set path to root so it applies to all routes
     };
 
     res.cookie('garuda_access_token', accessToken, {

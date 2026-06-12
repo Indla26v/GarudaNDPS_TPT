@@ -438,14 +438,6 @@ function GarudaCommandDashboard() {
   const recentActivities = summary?.recentActivities || [];
   const leaderboard = summary?.stationBreakdown || [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-300)' }}>Loading Dashboard Data...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Station Filter for Command Level */}
@@ -482,8 +474,14 @@ function GarudaCommandDashboard() {
           <div key={kpi.label} className="card p-5 animate-fade-in" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>{kpi.label}</h3>
             <div className="flex items-end gap-3 mt-2">
-              <span className="text-2xl font-bold" style={{ color: 'var(--color-garuda-100)' }}>{kpi.value}</span>
-              <span className={`text-[10px] font-bold pb-1 ${kpi.color}`}>{kpi.trend}</span>
+              {isLoading ? (
+                <div className="h-6 bg-slate-700/60 rounded w-12 animate-pulse mt-1"></div>
+              ) : (
+                <>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--color-garuda-100)' }}>{kpi.value}</span>
+                  <span className={`text-[10px] font-bold pb-1 ${kpi.color}`}>{kpi.trend}</span>
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -493,36 +491,48 @@ function GarudaCommandDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 card p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="text-base font-bold mb-4" style={{ color: 'var(--color-garuda-100)' }}>Weekly Field Activities</h3>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                <RechartsTooltip cursor={{ fill: 'var(--color-garuda-700)', opacity: 0.2 }} contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
-                <Bar dataKey="visits" stackId="a" fill="#3b82f6" name="Village Visits" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="lodges" stackId="a" fill="#8b5cf6" name="Lodge Checks" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {isLoading ? (
+            <div className="h-72 w-full flex items-center justify-center bg-slate-800/40 rounded-xl border border-slate-700 animate-pulse">
+              <div className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Loading weekly chart...</div>
+            </div>
+          ) : (
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                  <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                  <RechartsTooltip cursor={{ fill: 'var(--color-garuda-700)', opacity: 0.2 }} contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
+                  <Bar dataKey="visits" stackId="a" fill="#3b82f6" name="Village Visits" radius={[0, 0, 4, 4]} />
+                  <Bar dataKey="lodges" stackId="a" fill="#8b5cf6" name="Lodge Checks" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Activity Distribution Pie Chart */}
         <div className="card p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="text-base font-bold mb-4" style={{ color: 'var(--color-garuda-100)' }}>Activity Distribution</h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={displayPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {displayPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {isLoading ? (
+            <div className="h-64 w-full flex items-center justify-center bg-slate-800/40 rounded-xl border border-slate-700/50 animate-pulse">
+              <div className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Loading distribution...</div>
+            </div>
+          ) : (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={displayPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {displayPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
@@ -532,7 +542,14 @@ function GarudaCommandDashboard() {
           <h3 className="text-base font-bold mb-4" style={{ color: 'var(--color-garuda-100)' }}>Recent Field Activities</h3>
           <p className="text-xs mb-3" style={{ color: 'var(--color-garuda-400)' }}>Latest logs of preventive work completed by officers.</p>
           <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-            {recentActivities.length === 0 ? (
+            {isLoading ? (
+              [1, 2, 3].map((idx) => (
+                <div key={idx} className="p-3 rounded-lg border animate-pulse" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                  <div className="h-4 bg-slate-700 rounded w-1/4 mb-2"></div>
+                  <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+                </div>
+              ))
+            ) : recentActivities.length === 0 ? (
               <div className="p-4 rounded-lg text-center" style={{ background: 'var(--color-garuda-900)' }}>
                 <p className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>No recent activity logs found.</p>
               </div>
@@ -541,7 +558,7 @@ function GarudaCommandDashboard() {
                 <div key={i} className="p-3 rounded-lg border animate-fade-in" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: log.bg, color: log.color }}>{log.type}</span>
-                    <span className="text-[10px]" style={{ color: 'var(--color-garuda-500)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--color-garuda-50)' }}>
                       {new Date(log.time).toLocaleDateString()} at {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -572,7 +589,20 @@ function GarudaCommandDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {leaderboard.length === 0 ? (
+                {isLoading ? (
+                  [1, 2, 3, 4, 5].map((idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--color-garuda-800)' }} className="animate-pulse">
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-20"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                      <td className="py-3"><div className="h-4 bg-slate-700 rounded w-8 ml-auto"></div></td>
+                    </tr>
+                  ))
+                ) : leaderboard.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-4 text-center text-sm" style={{ color: 'var(--color-garuda-400)' }}>
                       No station data logged this month.

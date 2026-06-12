@@ -305,7 +305,24 @@ export default function OffenderList({ isConsumerOnly = false }) {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>Loading...</td></tr>
+                [1, 2, 3, 4, 5].map((idx) => (
+                  <tr key={idx} className="table-row animate-pulse">
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-6"></div></td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-16"></div></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-700"></div>
+                        <div className="h-4 bg-slate-700 rounded w-24"></div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-16"></div></td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-20"></div></td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-16"></div></td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-24"></div></td>
+                    <td className="px-4 py-3 text-center"><div className="h-4 bg-slate-700 rounded w-8 mx-auto"></div></td>
+                    <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-12"></div></td>
+                  </tr>
+                ))
               ) : offenders.length === 0 ? (
                 <tr><td colSpan={9} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>No offenders found</td></tr>
               ) : (
@@ -374,7 +391,19 @@ export default function OffenderList({ isConsumerOnly = false }) {
         {/* Mobile View */}
         <div className="block sm:hidden p-4 space-y-3">
           {loading ? (
-            <div className="py-8 text-center text-sm" style={{ color: 'var(--color-garuda-500)' }}>Loading...</div>
+            [1, 2, 3].map((idx) => (
+              <div key={idx} className="rounded-xl border p-4 space-y-3 animate-pulse" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-700"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-700 rounded w-1/3"></div>
+                    <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="h-3 bg-slate-700 rounded w-1/4 mt-2"></div>
+                <div className="h-8 bg-slate-700/60 rounded mt-2"></div>
+              </div>
+            ))
           ) : offenders.length === 0 ? (
             <div className="py-8 text-center text-sm" style={{ color: 'var(--color-garuda-500)' }}>No profiles found</div>
           ) : (

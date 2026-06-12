@@ -3,7 +3,7 @@
  * 
  * Full audit trail viewer with filtering by action, entity type, and user.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import api from '../../api/axios';
 
 const ACTION_COLORS = {
@@ -29,6 +29,53 @@ export default function AuditLogs() {
   const [filters, setFilters] = useState({ action: '', entityType: '' });
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [sessions, setSessions] = useState([]);
+  const [expandedSessions, setExpandedSessions] = useState({});
+
+  const toggleSession = (sessionId) => {
+    setExpandedSessions(prev => ({ ...prev, [sessionId]: !prev[sessionId] }));
+  };
+
+  const groupLogsIntoSessions = (rawLogs) => {
+    const grouped = [];
+    const active = {};
+
+    for (let i = 0; i < rawLogs.length; i++) {
+      const log = rawLogs[i];
+      const userId = log.user?.id || 'SYSTEM';
+
+      if (!active[userId]) {
+        active[userId] = {
+          id: `sess_${userId}_${log.id}`,
+          user: log.user,
+          endTime: log.timestamp,
+          startTime: log.timestamp,
+          actions: [],
+          loginLog: null,
+          logoutLog: null,
+          ipAddress: log.ipAddress,
+        };
+      }
+
+      const session = active[userId];
+      session.actions.push(log);
+      session.startTime = log.timestamp;
+
+      if (log.action === 'LOGOUT') {
+        session.logoutLog = log;
+      } else if (log.action === 'LOGIN') {
+        session.loginLog = log;
+        grouped.push({ ...session, actions: session.actions.reverse() });
+        delete active[userId];
+      }
+    }
+
+    Object.values(active).forEach(session => {
+      grouped.push({ ...session, actions: session.actions.reverse() });
+    });
+
+    return grouped;
+  };
 
   useEffect(() => {
     fetchLogs();
@@ -42,7 +89,9 @@ export default function AuditLogs() {
       if (filters.entityType) params.append('entityType', filters.entityType);
 
       const res = await api.get(`/admin/audit-logs?${params.toString()}`);
-      setLogs(res.data.data.content || []);
+      const rawLogs = res.data.data.content || [];
+      setLogs(rawLogs);
+      setSessions(groupLogsIntoSessions(rawLogs));
       setTotalPages(res.data.data.totalPages || 0);
     } catch (err) {
       console.error(err);
@@ -108,48 +157,95 @@ export default function AuditLogs() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log, i) => (
-                  <tr
-                    key={log.id}
-                    className="transition-colors duration-150"
-                    style={{
-                      borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
-                    }}
-                  >
-                    <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--color-garuda-400)' }}>
-                      {new Date(log.timestamp).toLocaleString('en-IN')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded"
-                        style={{ color: ACTION_COLORS[log.action] || '#9ca3af' }}
-                      >
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
-                      {log.entityType}
-                      {log.entityId && <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>#{log.entityId}</span>}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
-                      {log.user?.name || '—'}
-                      {log.user?.role && (
-                        <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>({log.user.role})</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 max-w-64 truncate text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      {log.details || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-mono" style={{ color: 'var(--color-garuda-500)' }}>
-                      {log.ipAddress || '—'}
-                    </td>
-                  </tr>
+                {sessions.map((session, i) => (
+                  <Fragment key={session.id}>
+                    {/* Session Summary Row */}
+                    <tr
+                      onClick={() => toggleSession(session.id)}
+                      className="transition-colors duration-150 cursor-pointer hover:bg-slate-700"
+                      style={{
+                        borderBottom: '1px solid var(--color-garuda-700)',
+                        background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)',
+                      }}
+                    >
+                      <td className="px-4 py-4 text-xs font-mono" style={{ color: 'var(--color-garuda-300)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>
+                            {expandedSessions[session.id] ? '▼' : '▶'}
+                          </span>
+                          <div>
+                            <div>{new Date(session.startTime).toLocaleString('en-IN')}</div>
+                            {session.loginLog && session.logoutLog && (
+                              <div style={{ color: 'var(--color-garuda-500)', fontSize: '10px' }}>
+                                to {new Date(session.endTime).toLocaleTimeString('en-IN')}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className="text-xs font-semibold px-2 py-0.5 rounded"
+                          style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.2)' }}
+                        >
+                          USER SESSION
+                        </span>
+                      </td>
+                      <td className="px-4 py-4" style={{ color: 'var(--color-garuda-400)' }}>
+                        <span className="font-semibold text-garuda-200">{session.actions.length}</span> actions logged
+                      </td>
+                      <td className="px-4 py-4" style={{ color: 'var(--color-garuda-200)' }}>
+                        {session.user?.name || '—'}
+                        {session.user?.role && (
+                          <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>({session.user.role})</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 max-w-64 truncate text-xs" style={{ color: 'var(--color-garuda-400)' }}>
+                        {session.loginLog?.details || 'Session started'}
+                      </td>
+                      <td className="px-4 py-4 text-xs font-mono" style={{ color: 'var(--color-garuda-500)' }}>
+                        {session.ipAddress || '—'}
+                      </td>
+                    </tr>
+
+                    {/* Nested Actions Rows */}
+                    {expandedSessions[session.id] && (
+                      <tr style={{ background: 'var(--color-garuda-900)' }}>
+                        <td colSpan={6} className="p-0">
+                          <div className="px-8 py-3 border-l-2 border-garuda-600 ml-4 mb-2 mt-2">
+                            <table className="w-full text-xs">
+                              <tbody>
+                                {session.actions.map((log) => (
+                                  <tr key={log.id} className="border-b border-slate-700/50 last:border-0 hover:bg-slate-800/50 transition-colors">
+                                    <td className="py-2 px-3 font-mono text-garuda-400 w-40">
+                                      {new Date(log.timestamp).toLocaleTimeString('en-IN')}
+                                    </td>
+                                    <td className="py-2 px-3 w-32">
+                                      <span className="font-semibold px-2 py-0.5 rounded" style={{ color: ACTION_COLORS[log.action] || '#9ca3af' }}>
+                                        {log.action}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3 text-garuda-300 w-48">
+                                      {log.entityType}
+                                      {log.entityId && <span className="text-garuda-500 ml-1">#{log.entityId}</span>}
+                                    </td>
+                                    <td className="py-2 px-3 text-garuda-400">
+                                      {log.details || '—'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
-                {logs.length === 0 && (
+                {sessions.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
-                      No audit logs found
+                      No audit sessions found
                     </td>
                   </tr>
                 )}

@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell, LabelList,
 } from 'recharts';
 import api from '../api/axios';
 import { usePermissions } from '../hooks/usePermissions';
@@ -48,8 +48,13 @@ let cachedToken = null;
 const CACHE_TTL = 30000; // 30 seconds cache
 
 export default function Dashboard() {
+  const [timeRange, setTimeRange] = useState('all');
+  const [sortColumn, setSortColumn] = useState('totalCases');
+  const [sortOrder, setSortOrder] = useState('desc');
+
   // If cache is valid, initialize with cached data and skip loading screen
   const isCacheValid = cachedSummary && 
+                       cachedToken === `summary_${timeRange}` &&
                        (Date.now() - lastFetchTime < CACHE_TTL);
 
   const [summary, setSummary] = useState(isCacheValid ? cachedSummary : null);
@@ -59,31 +64,34 @@ export default function Dashboard() {
   const { lastEvent, isConnected } = useSSE();
 
   useEffect(() => {
-    fetchSummary(false);
+    fetchSummary(false, timeRange);
   }, []);
 
   // Refresh data on SSE events (bypasses cache)
   useEffect(() => {
     if (lastEvent && ['case_created', 'offender_created', 'data_updated'].includes(lastEvent.type)) {
-      fetchSummary(true);
+      fetchSummary(true, timeRange);
     }
   }, [lastEvent]);
 
-  const fetchSummary = async (force = false) => {
+  const fetchSummary = async (force = false, range = timeRange) => {
     const now = Date.now();
+    const cacheKey = `summary_${range}`;
+    const cacheIsValid = cachedSummary && 
+                         cachedToken === cacheKey &&
+                         (now - lastFetchTime < CACHE_TTL);
     
-    if (!force && cachedSummary && (now - lastFetchTime < CACHE_TTL)) {
+    if (!force && cacheIsValid) {
       setSummary(cachedSummary);
       setLoading(false);
       return;
     }
 
     try {
-      if (!cachedSummary) {
-        setLoading(true);
-      }
-      const res = await api.get(`/dashboard/summary${force ? '?force=true' : ''}`);
+      setLoading(true);
+      const res = await api.get(`/dashboard/summary?timeRange=${range}${force ? '&force=true' : ''}`);
       cachedSummary = res.data.data;
+      cachedToken = cacheKey;
       lastFetchTime = Date.now();
       setSummary(res.data.data);
       setError('');
@@ -94,18 +102,29 @@ export default function Dashboard() {
     }
   };
 
+  const handleTimeRangeChange = (newRange) => {
+    setTimeRange(newRange);
+    fetchSummary(true, newRange);
+  };
+
   const fmt = (val) => {
     if (val === null || val === undefined) return '0';
     return Number(val).toLocaleString('en-IN');
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading dashboard...</div>
-      </div>
-    );
-  }
+  const renderStatValue = (val) => {
+    if (loading && !summary) {
+      return <span className="w-16 h-8 bg-white/20 rounded animate-pulse inline-block" />;
+    }
+    return fmt(val);
+  };
+
+  const renderSeizureValue = (val, prefix = '', suffix = '') => {
+    if (loading && !summary) {
+      return <span className="w-24 h-6 bg-black/10 rounded animate-pulse inline-block" />;
+    }
+    return `${prefix}${fmt(val)}${suffix}`;
+  };
 
   if (error) {
     return (
@@ -133,6 +152,12 @@ export default function Dashboard() {
                 {isConnected ? 'Live' : 'Offline'}
               </span>
             </div>
+            {loading && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-accent-400)] animate-pulse ml-2">
+                <span className="w-2.5 h-2.5 rounded-full border border-current border-t-transparent animate-spin inline-block" />
+                Updating...
+              </div>
+            )}
           </div>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
             NDPS Operations{summary?.isStationLevel
@@ -160,16 +185,16 @@ export default function Dashboard() {
         {KPI_CARDS.map((card, i) => (
           <div
             key={card.key}
-            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-xl overflow-hidden hover:translate-y-[-2px] transition-all duration-200"
+            className="flex flex-col border-0 rounded-xl overflow-hidden hover:translate-y-[-2px] transition-all duration-200"
             style={{
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+              background: card.color,
+              boxShadow: `0 4px 12px ${card.color}40`,
               animationDelay: `${i * 60}ms`
             }}
           >
             {/* Header Zone */}
             <div 
-              className="px-4 py-2.5 flex items-center justify-start"
-              style={{ background: '#E27319' }}
+              className="px-4 py-2.5 flex items-center justify-start bg-black/10"
             >
               <span className="text-[12px] font-bold text-white tracking-wider uppercase select-none">
                 {card.label}
@@ -177,21 +202,21 @@ export default function Dashboard() {
             </div>
             
             {/* Body Zone */}
-            <div className="p-4 flex items-center justify-between gap-3 bg-white dark:bg-slate-900/60">
+            <div className="p-4 flex items-center justify-between gap-3">
               {/* Left Side: Icon in subtle container */}
               <div 
-                className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-800 border border-slate-100/80 dark:border-slate-700/40"
+                className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/20 border border-white/20"
               >
-                <card.Icon size={20} color={card.color} />
+                <card.Icon size={20} color="#ffffff" />
               </div>
               
               {/* Right Side: Large bold stat number */}
               <div className="text-right flex-1 min-w-0">
                 <p 
-                  className="font-extrabold truncate"
-                  style={{ fontSize: '28px', lineHeight: '1.2', color: card.color }}
+                  className="font-extrabold truncate text-white"
+                  style={{ fontSize: '28px', lineHeight: '1.2' }}
                 >
-                  {fmt(summary?.[card.key])}
+                  {renderStatValue(summary?.[card.key])}
                 </p>
               </div>
             </div>
@@ -202,9 +227,9 @@ export default function Dashboard() {
       {/* ── Seizure Stats Row ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {[
-          { label: 'Contraband Seized', val: `${fmt(summary?.totalContrabandKg)} Kg`, color: '#f59e0b', Icon: IconPackage },
-          { label: 'Cash Seized', val: `₹${fmt(summary?.totalCashSeized)}`, color: '#22c55e', Icon: IconDollar },
-          { label: 'Vehicles Seized', val: fmt(summary?.totalVehiclesSeized), color: '#ec4899', Icon: IconCar },
+          { label: 'Contraband Seized', val: summary?.totalContrabandKg, suffix: ' Kg', color: '#f59e0b', Icon: IconPackage },
+          { label: 'Cash Seized', val: summary?.totalCashSeized, prefix: '₹', color: '#22c55e', Icon: IconDollar },
+          { label: 'Vehicles Seized', val: summary?.totalVehiclesSeized, color: '#ec4899', Icon: IconCar },
         ].map(s => (
           <div key={s.label} className="card rounded-xl p-4 flex items-center gap-4">
             <div
@@ -214,7 +239,9 @@ export default function Dashboard() {
               <s.Icon size={22} color={s.color} />
             </div>
             <div>
-              <p className="text-lg font-bold" style={{ color: s.color }}>{s.val}</p>
+              <p className="text-lg font-bold" style={{ color: s.color }}>
+                {renderSeizureValue(s.val, s.prefix || '', s.suffix || '')}
+              </p>
               <p className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>{s.label}</p>
             </div>
           </div>
@@ -228,21 +255,27 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Year-wise NDPS Cases (2016–2026)
           </h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={summary?.yearWiseTrend || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} />
-              <YAxis stroke="#94a3b8" fontSize={11} />
-              <Tooltip
-                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: 'var(--color-garuda-100)' }}
-                itemStyle={{ color: 'var(--color-garuda-200)' }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="cases" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} name="Cases" />
-              <Line type="monotone" dataKey="arrests" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 4 }} name="Arrests" />
-            </LineChart>
-          </ResponsiveContainer>
+          {loading && !summary ? (
+            <div className="h-[260px] bg-black/5 rounded-lg flex items-center justify-center animate-pulse text-xs text-[var(--color-garuda-500)]">
+              Loading trend data...
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={summary?.yearWiseTrend || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="year" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} />
+                <Tooltip
+                  contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: 'var(--color-garuda-100)' }}
+                  itemStyle={{ color: 'var(--color-garuda-200)' }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line type="monotone" dataKey="cases" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} name="Cases" />
+                <Line type="monotone" dataKey="arrests" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 4 }} name="Arrests" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Drug Type Donut */}
@@ -250,68 +283,154 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
             Drug Type Breakdown
           </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={summary?.drugTypeBreakdown || []}
-                cx="50%" cy="50%"
-                innerRadius={50} outerRadius={80}
-                paddingAngle={3}
-                dataKey="value"
-                nameKey="type"
-              >
-                {(summary?.drugTypeBreakdown || []).map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: 'var(--color-garuda-100)' }}
-                itemStyle={{ color: 'var(--color-garuda-200)' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-2 mt-2 justify-center">
-            {(() => {
-              const total = (summary?.drugTypeBreakdown || []).reduce((acc, cur) => acc + cur.value, 0);
-              return (summary?.drugTypeBreakdown || []).map(d => {
-                const percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
-                return (
-                  <span key={d.type} className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--color-garuda-300)' }}>
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
-                    {d.type} ({d.value} cases - {percentage}%)
-                  </span>
-                );
-              });
-            })()}
-          </div>
+          {loading && !summary ? (
+            <div className="h-[200px] bg-black/5 rounded-lg flex items-center justify-center animate-pulse text-xs text-[var(--color-garuda-500)]">
+              Loading drug breakdown...
+            </div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={summary?.drugTypeBreakdown || []}
+                    cx="50%" cy="50%"
+                    innerRadius={50} outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    nameKey="type"
+                  >
+                    {(summary?.drugTypeBreakdown || []).map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: 'var(--color-garuda-100)' }}
+                    itemStyle={{ color: 'var(--color-garuda-200)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap gap-2 mt-2 justify-center">
+                {(() => {
+                  const total = (summary?.drugTypeBreakdown || []).reduce((acc, cur) => acc + cur.value, 0);
+                  return (summary?.drugTypeBreakdown || []).map(d => {
+                    const percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                    return (
+                      <span key={d.type} className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--color-garuda-300)' }}>
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
+                        {d.type} ({d.value} cases - {percentage}%)
+                      </span>
+                    );
+                  });
+                })()}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* ── Station-wise Bar Chart ───────────────────────────────────── */}
-      {summary?.psWiseData?.length > 1 && (
-        <div className="card rounded-xl p-5">
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-garuda-200)' }}>
-            Station-wise Cases & Arrests
-          </h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={summary.psWiseData.filter(ps => ps.totalCases > 0).sort((a, b) => b.totalCases - a.totalCases)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="psName" stroke="#94a3b8" fontSize={10} angle={-30} textAnchor="end" height={60} />
-              <YAxis stroke="#94a3b8" fontSize={11} />
-              <Tooltip
-                contentStyle={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: 'var(--color-garuda-100)' }}
-                itemStyle={{ color: 'var(--color-garuda-200)' }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="totalCases" fill="#3b82f6" name="Cases" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="totalArrests" fill="#22c55e" name="Arrests" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="totalAbsconders" fill="#ef4444" name="Absconders" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {/* ── Station-wise Metrics (Cases, Arrests, Absconders) Vertical Scrollable Charts ───────────────────────────────────── */}
+      {(summary?.psWiseData?.length > 1 || (loading && !summary)) && (() => {
+        // 1. Prepare Cases Data (Filtered and sorted descending)
+        const casesData = (summary?.psWiseData || [])
+          .filter(ps => ps.totalCases > 0)
+          .map(ps => ({ psName: ps.psName, value: ps.totalCases }))
+          .sort((a, b) => b.value - a.value);
+
+        // 2. Prepare Arrests Data (Filtered and sorted descending)
+        const arrestsData = (summary?.psWiseData || [])
+          .filter(ps => ps.totalArrests > 0)
+          .map(ps => ({ psName: ps.psName, value: ps.totalArrests }))
+          .sort((a, b) => b.value - a.value);
+
+        // 3. Prepare Absconders Data (Filtered and sorted descending)
+        const abscondersData = (summary?.psWiseData || [])
+          .filter(ps => ps.totalAbsconders > 0)
+          .map(ps => ({ psName: ps.psName, value: ps.totalAbsconders }))
+          .sort((a, b) => b.value - a.value);
+
+        const renderVerticalChart = (title, data, color, metricName, yAxisWidth = 130) => {
+          if (loading && !summary) {
+            return (
+              <div className="card rounded-xl p-5 flex flex-col h-[420px]">
+                <h3 className="text-sm font-semibold mb-4 text-[var(--color-garuda-200)]">{title}</h3>
+                <div className="flex-1 bg-black/5 rounded-lg flex items-center justify-center animate-pulse text-xs text-[var(--color-garuda-500)]">
+                  Loading station metrics...
+                </div>
+              </div>
+            );
+          }
+
+          if (data.length === 0) {
+            return (
+              <div className="card rounded-xl p-5 flex flex-col justify-between h-[420px]">
+                <h3 className="text-sm font-semibold mb-4 text-[var(--color-garuda-200)]">{title}</h3>
+                <div className="flex-1 flex items-center justify-center text-sm text-[var(--color-garuda-400)]">
+                  No data available
+                </div>
+              </div>
+            );
+          }
+
+          // Each station gets about 34px of vertical height.
+          // Displaying ~10 PS in a frame. 10 * 34 = 340px is the scrollable height.
+          const chartHeight = Math.max(340, data.length * 34);
+
+          return (
+            <div className="card rounded-xl p-5 flex flex-col h-[420px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-[var(--color-garuda-200)]">{title}</h3>
+                <span className="text-xs px-2 py-0.5 rounded bg-black/10 text-[var(--color-garuda-400)] font-medium">
+                  {data.length} PS
+                </span>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-1">
+                <div style={{ height: `${chartHeight}px` }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={data}
+                      margin={{ left: 5, right: 25, top: 25, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                      <XAxis type="number" stroke="#94a3b8" fontSize={10} orientation="top" />
+                      <YAxis
+                        dataKey="psName"
+                        type="category"
+                        stroke="#94a3b8"
+                        fontSize={10}
+                        width={yAxisWidth}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'var(--color-garuda-800)',
+                          border: '1px solid var(--color-garuda-700)',
+                          borderRadius: 8,
+                          fontSize: 11
+                        }}
+                        labelStyle={{ color: 'var(--color-garuda-100)' }}
+                        itemStyle={{ color: 'var(--color-garuda-200)' }}
+                      />
+                      <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={14} name={metricName}>
+                        <LabelList dataKey="value" position="right" style={{ fill: 'var(--color-garuda-400)', fontSize: 10, fontWeight: 600 }} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {renderVerticalChart('Station-wise Cases', casesData, '#3b82f6', 'Cases')}
+            {renderVerticalChart('Station-wise Arrests', arrestsData, '#22c55e', 'Arrests')}
+            {renderVerticalChart('Station-wise Absconders', abscondersData, '#ef4444', 'Absconders')}
+          </div>
+        );
+      })()}
 
       {/* ── Bottom Row: Alerts + Absconder Ticker ───────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -321,21 +440,27 @@ export default function Dashboard() {
             <IconBell size={16} color="#d97706" /> Live Alert Feed
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {summary?.recentAlerts?.length > 0 ? summary.recentAlerts.map(alert => {
-              const AlertIcon = ALERT_ICON_MAP[alert.type] || IconMegaphone;
-              return (
-                <div key={alert.id + alert.type} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
-                  <AlertIcon size={16} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs" style={{ color: 'var(--color-garuda-100)' }}>{alert.message}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-garuda-500)' }}>
-                      {new Date(alert.date).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
-                    </p>
+            {loading && !summary ? (
+              <div className="h-32 flex items-center justify-center text-xs text-[var(--color-garuda-500)] animate-pulse">
+                Loading alerts...
+              </div>
+            ) : (
+              summary?.recentAlerts?.length > 0 ? summary.recentAlerts.map(alert => {
+                const AlertIcon = ALERT_ICON_MAP[alert.type] || IconMegaphone;
+                return (
+                  <div key={alert.id + alert.type} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
+                    <AlertIcon size={16} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs" style={{ color: 'var(--color-garuda-100)' }}>{alert.message}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-garuda-500)' }}>
+                        {new Date(alert.date).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            }) : (
-              <p className="text-sm" style={{ color: 'var(--color-garuda-500)' }}>No recent alerts</p>
+                );
+              }) : (
+                <p className="text-sm" style={{ color: 'var(--color-garuda-500)' }}>No recent alerts</p>
+              )
             )}
           </div>
         </div>
@@ -346,64 +471,173 @@ export default function Dashboard() {
             <IconRunning size={16} color="#ef4444" /> Pending Absconders
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {summary?.absconderTicker?.length > 0 ? summary.absconderTicker.map(a => (
-              <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
-                <div>
-                  <p className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>{a.name}</p>
-                  <p className="text-[10px]" style={{ color: 'var(--color-garuda-400)' }}>FIR: {a.firNo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold" style={{ color: a.daysOutstanding > 30 ? '#ef4444' : '#f59e0b' }}>
-                    {a.daysOutstanding}d
-                  </p>
-                  <p className="text-[10px]" style={{ color: 'var(--color-garuda-500)' }}>outstanding</p>
-                </div>
+            {loading && !summary ? (
+              <div className="h-32 flex items-center justify-center text-xs text-[var(--color-garuda-500)] animate-pulse">
+                Loading absconders...
               </div>
-            )) : (
-              <p className="text-sm" style={{ color: 'var(--color-garuda-500)' }}>No absconders on record</p>
+            ) : (
+              summary?.absconderTicker?.length > 0 ? summary.absconderTicker.map(a => (
+                <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>{a.name}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-garuda-400)' }}>FIR: {a.firNo}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold" style={{ color: a.daysOutstanding > 30 ? '#ef4444' : '#f59e0b' }}>
+                      {a.daysOutstanding}d
+                    </p>
+                    <p className="text-[10px]" style={{ color: 'var(--color-garuda-500)' }}>outstanding</p>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-sm" style={{ color: 'var(--color-garuda-500)' }}>No absconders on record</p>
+              )
             )}
           </div>
         </div>
       </div>
 
       {/* ── PS-wise Data Table (for SP/Admin) ────────────────────────── */}
-      {summary?.psWiseData?.length > 1 && (
-        <div className="card rounded-xl overflow-hidden">
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-garuda-200)' }}>
-              Police Station-wise Breakdown
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="table-header">
-                  <th>PS Name</th>
-                  <th className="text-right">Cases</th>
-                  <th className="text-right">Offenders</th>
-                  <th className="text-right">Arrests</th>
-                  <th className="text-right">Absconders</th>
-                  <th className="text-right">Contraband (Kg)</th>
-                  <th className="text-right">Cash</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.psWiseData.map((ps, i) => (
-                  <tr key={ps.psId} className="table-row">
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>{ps.psName}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-info-400)' }}>{fmt(ps.totalCases)}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-garuda-200)' }}>{fmt(ps.totalOffenders)}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-success-400)' }}>{fmt(ps.totalArrests)}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-danger-400)' }}>{fmt(ps.totalAbsconders)}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-warning-400)' }}>{fmt(ps.totalContrabandKg)}</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--color-garuda-200)' }}>₹{fmt(ps.totalCashSeized)}</td>
+      {(summary?.psWiseData?.length > 1 || (loading && !summary)) && (() => {
+        if (loading && !summary) {
+          return (
+            <div className="card rounded-xl p-5 h-64 flex items-center justify-center animate-pulse text-xs text-[var(--color-garuda-500)]">
+              Loading station breakdown table...
+            </div>
+          );
+        }
+
+        const sortedData = [...(summary?.psWiseData || [])].sort((a, b) => {
+          let valA = a[sortColumn];
+          let valB = b[sortColumn];
+
+          if (sortColumn === 'psName') {
+            return sortOrder === 'asc'
+              ? valA.localeCompare(valB)
+              : valB.localeCompare(valA);
+          }
+
+          valA = Number(valA || 0);
+          valB = Number(valB || 0);
+
+          return sortOrder === 'asc' ? valA - valB : valB - valA;
+        });
+
+        const handleHeaderClick = (col) => {
+          if (sortColumn === col) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+          } else {
+            setSortColumn(col);
+            setSortOrder('desc');
+          }
+        };
+
+        const renderSortIndicator = (col) => {
+          if (sortColumn !== col) return null;
+          return sortOrder === 'asc' ? ' ▲' : ' ▼';
+        };
+
+        return (
+          <div className="card rounded-xl overflow-hidden">
+            <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--color-garuda-200)' }}>
+                Police Station-wise Breakdown
+              </h2>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Period Filter */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold tracking-wide uppercase select-none text-[var(--color-garuda-400)]">Period:</span>
+                  <select 
+                    className="select py-1 px-2.5 text-xs rounded-md" 
+                    value={timeRange} 
+                    onChange={(e) => handleTimeRangeChange(e.target.value)}
+                  >
+                    <option value="all">All Time</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+
+                {/* Sort Column Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold tracking-wide uppercase select-none text-[var(--color-garuda-400)]">Sort:</span>
+                  <select 
+                    className="select py-1 px-2.5 text-xs rounded-md" 
+                    value={sortColumn} 
+                    onChange={(e) => setSortColumn(e.target.value)}
+                  >
+                    <option value="psName">PS Name</option>
+                    <option value="totalCases">Cases</option>
+                    <option value="totalOffenders">Offenders</option>
+                    <option value="totalArrests">Arrests</option>
+                    <option value="totalAbsconders">Absconders</option>
+                    <option value="totalContrabandKg">Contraband</option>
+                    <option value="totalCashSeized">Cash</option>
+                  </select>
+                </div>
+
+                {/* Sort Order Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold tracking-wide uppercase select-none text-[var(--color-garuda-400)]">Order:</span>
+                  <select 
+                    className="select py-1 px-2.5 text-xs rounded-md" 
+                    value={sortOrder} 
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="table-header">
+                    <th className="cursor-pointer select-none" onClick={() => handleHeaderClick('psName')}>
+                      PS Name{renderSortIndicator('psName')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalCases')}>
+                      Cases{renderSortIndicator('totalCases')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalOffenders')}>
+                      Offenders{renderSortIndicator('totalOffenders')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalArrests')}>
+                      Arrests{renderSortIndicator('totalArrests')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalAbsconders')}>
+                      Absconders{renderSortIndicator('totalAbsconders')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalContrabandKg')}>
+                      Contraband (Kg){renderSortIndicator('totalContrabandKg')}
+                    </th>
+                    <th className="text-center cursor-pointer select-none" onClick={() => handleHeaderClick('totalCashSeized')}>
+                      Cash{renderSortIndicator('totalCashSeized')}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sortedData.map((ps) => (
+                    <tr key={ps.psId} className="table-row">
+                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>{ps.psName}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-info-400)' }}>{fmt(ps.totalCases)}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-garuda-200)' }}>{fmt(ps.totalOffenders)}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-success-400)' }}>{fmt(ps.totalArrests)}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-danger-400)' }}>{fmt(ps.totalAbsconders)}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-warning-400)' }}>{fmt(ps.totalContrabandKg)}</td>
+                      <td className="px-4 py-3 text-center" style={{ color: 'var(--color-garuda-200)' }}>₹{fmt(ps.totalCashSeized)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -92,10 +92,10 @@ export default function DeletionRequests() {
     return <span className="text-gray-500 text-xs italic">No actions</span>;
   };
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading deletion workflows...</div>
+        <div className="text-lg" style={{ color: 'var(--color-danger-400)' }}>{error}</div>
       </div>
     );
   }
@@ -133,51 +133,61 @@ export default function DeletionRequests() {
               </tr>
             </thead>
             <tbody>
-              {requests.map((req, i) => {
-                const statusColor = STATUS_COLORS[req.status] || STATUS_COLORS.FLAGGED;
-                return (
-                  <tr
-                    key={req.id}
-                    className="transition-colors duration-150"
-                    style={{
-                      borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
-                    }}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
-                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
-                      {req.entityType} {req.entityId}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
-                        style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}
-                      >
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
-                      {req.flaggedBy} 
-                      {req.station && <span className="block text-xs mt-0.5 opacity-60">{req.station}</span>}
-                    </td>
-                    <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }} title={req.reason}>
-                      {req.reason || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      {req.requestDate ? new Date(req.requestDate).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                       {renderActionContainer(req)}
-                    </td>
-                  </tr>
-                );
-              })}
-              {requests.length === 0 && (
+              {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
-                    No pending deletion workflows found for your role queue.
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-[var(--color-garuda-400)] animate-pulse">
+                    Loading deletion requests...
                   </td>
                 </tr>
+              ) : (
+                <>
+                  {requests.map((req, i) => {
+                    const statusColor = STATUS_COLORS[req.status] || STATUS_COLORS.FLAGGED;
+                    return (
+                      <tr
+                        key={req.id}
+                        className="transition-colors duration-150"
+                        style={{
+                          borderBottom: '1px solid var(--color-garuda-700)',
+                          background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
+                        }}
+                      >
+                        <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
+                          {req.entityType} {req.entityId}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded uppercase"
+                            style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}
+                          >
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
+                          {req.flaggedBy} 
+                          {req.station && <span className="block text-xs mt-0.5 opacity-60">{req.station}</span>}
+                        </td>
+                        <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }} title={req.reason}>
+                          {req.reason || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
+                          {req.requestDate ? new Date(req.requestDate).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                           {renderActionContainer(req)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {requests.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
+                        No pending deletion workflows found for your role queue.
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>

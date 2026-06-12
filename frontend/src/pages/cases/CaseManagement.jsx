@@ -4,7 +4,7 @@
  * Full lifecycle management of NDPS cases from FIR registration to conviction.
  */
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 
@@ -24,6 +24,7 @@ export default function CaseManagement() {
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const perms = usePermissions();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCases();
@@ -116,19 +117,8 @@ export default function CaseManagement() {
       </div>
 
       {/* Cases Table */}
-      {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="text-sm animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading cases...</div>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="text-center py-8" style={{ color: 'var(--color-danger-400)' }}>{error}</div>
-      ) : cases.length === 0 ? (
-        <div className="card text-center py-16 rounded-xl">
-          <p className="text-lg font-medium" style={{ color: 'var(--color-garuda-300)' }}>No cases found</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-500)' }}>
-            {search ? 'Try adjusting your search criteria' : 'Register a new case to get started'}
-          </p>
-        </div>
       ) : (
         <div className="card rounded-xl overflow-hidden border border-slate-100/50 dark:border-slate-800">
           {/* Desktop View */}
@@ -146,82 +136,120 @@ export default function CaseManagement() {
                 </tr>
               </thead>
               <tbody>
-                {cases.map((c) => {
-                  const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
-                  return (
-                    <tr key={c.id} className="table-row">
-                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{c.firNo}</td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{c.psName || '—'}</td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        <span className="max-w-[200px] truncate block">{c.sectionOfLaw || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full"
-                          style={{ background: stage.bg + '14', color: stage.bg }}
-                        >
-                          {stage.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
-                        {c.accused?.length || 0} accused
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link to={`/cases/${c.id}`} className="btn btn-ghost btn-sm">
-                          View
-                        </Link>
-                      </td>
+                {loading ? (
+                  [1, 2, 3, 4, 5].map((idx) => (
+                    <tr key={idx} className="table-row animate-pulse">
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-16"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-24"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-32"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-20"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-16"></div></td>
+                      <td className="px-4 py-3"><div className="h-4 bg-slate-700 rounded w-12"></div></td>
+                      <td className="px-4 py-3 text-right"><div className="h-4 bg-slate-700 rounded w-10 ml-auto"></div></td>
                     </tr>
-                  );
-                })}
+                  ))
+                ) : cases.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center" style={{ color: 'var(--color-garuda-500)' }}>
+                      No cases found
+                    </td>
+                  </tr>
+                ) : (
+                  cases.map((c) => {
+                    const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
+                    return (
+                      <tr key={c.id} className="table-row">
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>{c.firNo}</td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>{c.psName || '—'}</td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                          <span className="max-w-[200px] truncate block">{c.sectionOfLaw || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                          {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{ background: stage.bg + '14', color: stage.bg }}
+                          >
+                            {stage.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                          {c.accused?.length || 0} accused
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Link to={`/cases/${c.id}`} className="btn btn-ghost btn-sm">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Mobile View */}
           <div className="block sm:hidden p-4 space-y-3">
-            {cases.map((c) => {
-              const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
-              return (
-                <div
-                  key={c.id}
-                  onClick={() => navigate(`/cases/${c.id}`)}
-                  className="rounded-xl border p-4 space-y-3 transition-colors active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
-                  style={{
-                    background: 'var(--color-garuda-900)',
-                    borderColor: 'var(--color-garuda-700)',
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-bold text-sm" style={{ color: 'var(--color-garuda-100)' }}>FIR: {c.firNo}</h4>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>
-                        {c.psName || '—'} • {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
-                      </p>
-                    </div>
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
-                      style={{ background: stage.bg + '14', color: stage.bg }}
-                    >
-                      {stage.label}
-                    </span>
+            {loading ? (
+              [1, 2, 3].map((idx) => (
+                <div key={idx} className="rounded-xl border p-4 space-y-3 animate-pulse" style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-700)' }}>
+                  <div className="flex justify-between">
+                    <div className="w-1/3 h-4 bg-slate-700 rounded"></div>
+                    <div className="w-1/4 h-4 bg-slate-700 rounded"></div>
                   </div>
-
-                  <div className="text-xs py-1.5 px-2.5 rounded" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-250)' }}>
-                    <span className="font-semibold text-slate-500 mr-1">Section:</span>
-                    <span style={{ color: 'var(--color-garuda-100)' }}>{c.sectionOfLaw || '—'}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span style={{ color: 'var(--color-garuda-400)' }}>Linked Accused</span>
-                    <span className="font-bold" style={{ color: 'var(--color-accent-400)' }}>{c.accused?.length || 0} accused</span>
+                  <div className="w-1/2 h-4 bg-slate-700 rounded"></div>
+                  <div className="flex justify-between">
+                    <div className="w-1/4 h-3 bg-slate-700 rounded"></div>
+                    <div className="w-1/5 h-3 bg-slate-700 rounded"></div>
                   </div>
                 </div>
-              );
-            })}
+              ))
+            ) : cases.length === 0 ? (
+              <div className="py-8 text-center text-sm" style={{ color: 'var(--color-garuda-500)' }}>No cases found</div>
+            ) : (
+              cases.map((c) => {
+                const stage = STAGE_COLORS[c.stage] || STAGE_COLORS.FIR;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate(`/cases/${c.id}`)}
+                    className="rounded-xl border p-4 space-y-3 transition-colors active:bg-slate-100 dark:active:bg-slate-800 cursor-pointer"
+                    style={{
+                      background: 'var(--color-garuda-900)',
+                      borderColor: 'var(--color-garuda-700)',
+                    }}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-sm" style={{ color: 'var(--color-garuda-100)' }}>FIR: {c.firNo}</h4>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-garuda-400)' }}>
+                          {c.psName || '—'} • {c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : '—'}
+                        </p>
+                      </div>
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                        style={{ background: stage.bg + '14', color: stage.bg }}
+                      >
+                        {stage.label}
+                      </span>
+                    </div>
+
+                    <div className="text-xs py-1.5 px-2.5 rounded" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-250)' }}>
+                      <span className="font-semibold text-slate-500 mr-1">Section:</span>
+                      <span style={{ color: 'var(--color-garuda-100)' }}>{c.sectionOfLaw || '—'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span style={{ color: 'var(--color-garuda-400)' }}>Linked Accused</span>
+                      <span className="font-bold" style={{ color: 'var(--color-accent-400)' }}>{c.accused?.length || 0} accused</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

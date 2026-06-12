@@ -110,13 +110,7 @@ export default function TeamManagement() {
     return allUsers.filter(u => u.role !== 'SP' && !teamMemberIds.includes(u.id));
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading teams...</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -223,7 +217,24 @@ export default function TeamManagement() {
 
       {/* Teams Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {teams.length === 0 ? (
+        {loading ? (
+          [1, 2, 3, 4].map(idx => (
+            <div key={idx} className="rounded-xl overflow-hidden animate-pulse"
+              style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+              <div className="p-4 border-b flex justify-between" style={{ borderColor: 'var(--color-garuda-700)' }}>
+                <div className="w-1/2 space-y-2">
+                  <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                  <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+                </div>
+                <div className="w-1/4 h-8 bg-slate-700 rounded"></div>
+              </div>
+              <div className="p-3 space-y-2">
+                <div className="h-10 bg-slate-700/60 rounded animate-pulse"></div>
+                <div className="h-10 bg-slate-700/60 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ))
+        ) : teams.length === 0 ? (
           <div className="lg:col-span-2 p-12 text-center rounded-xl" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <p className="text-lg" style={{ color: 'var(--color-garuda-400)' }}>No teams created yet</p>
             <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-500)' }}>Click "New Team" to get started</p>

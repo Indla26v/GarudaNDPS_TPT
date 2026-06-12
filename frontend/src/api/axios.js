@@ -66,7 +66,9 @@ api.interceptors.response.use(
       } catch {
         // Refresh failed (or no refresh token cookie) — force logout
         localStorage.removeItem('garuda_user');
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
 

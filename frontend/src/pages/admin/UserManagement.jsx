@@ -218,13 +218,7 @@ export default function UserManagement() {
   }, [users, stations, searchQuery, selectedState, selectedDistrict]);
 
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading users...</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -461,7 +455,27 @@ export default function UserManagement() {
       </div>
 
       {/* Main Content Area */}
-      {!searchQuery.trim() && (!selectedState || !selectedDistrict) ? (
+      {loading ? (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(idx => (
+            <div 
+              key={idx} 
+              className="rounded-xl overflow-hidden flex flex-col h-full animate-pulse"
+              style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
+            >
+              <div className="px-5 py-4 flex justify-between items-center border-b" style={{ background: 'var(--color-garuda-600)', borderColor: 'var(--color-garuda-700)' }}>
+                <div className="w-1/3 h-5 bg-slate-700 rounded"></div>
+                <div className="w-1/6 h-5 bg-slate-700 rounded"></div>
+              </div>
+              <div className="flex-1 p-5 space-y-3">
+                <div className="h-4 bg-slate-700/60 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-700/60 rounded w-1/2"></div>
+                <div className="h-4 bg-slate-700/60 rounded w-5/6"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : !searchQuery.trim() && (!selectedState || !selectedDistrict) ? (
         // Empty State (No selection)
         <div 
           className="flex flex-col items-center justify-center p-12 rounded-xl text-center"

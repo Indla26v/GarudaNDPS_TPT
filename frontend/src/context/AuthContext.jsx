@@ -57,7 +57,12 @@ export function AuthProvider({ children }) {
 
   // Validate session on initial mount
   useEffect(() => {
-    validateSession();
+    const stored = localStorage.getItem('garuda_user');
+    if (stored) {
+      validateSession();
+    } else {
+      setSessionValidated(true);
+    }
   }, [validateSession]);
 
   // Re-validate when tab regains focus after being hidden

@@ -884,16 +884,30 @@ export default function OffenderForm() {
               )}
               {renderField("Occupation", form.occupation, <input className={inp} style={inputStyle} value={form.occupation} onChange={e => set('occupation', e.target.value)} />)}
               {renderField("Monthly Income (₹)", form.monthlyIncome ? `₹${form.monthlyIncome}` : '', <input type="number" className={inp} style={inputStyle} value={form.monthlyIncome} onChange={e => set('monthlyIncome', e.target.value)} />)}
-              {renderField("Aadhaar No", form.aadhaarNo, 
-                <div className="flex gap-2">
-                  <input maxLength={12} className={`${inp} flex-1`} style={inputStyle} value={form.aadhaarNo} onChange={e => set('aadhaarNo', e.target.value)} readOnly={aadhaarMasked && !aadhaarRevealed} />
-                  {isEdit && aadhaarMasked && perms.hasMinRole('CI') && (
-                    <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded text-xs whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
-                      Reveal
-                    </button>
-                  )}
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--color-garuda-400)' }}>Aadhaar No</label>
+                {isView ? (
+                  <div className="flex gap-2">
+                    <div className="px-3 py-2 rounded-lg text-sm font-semibold flex-1" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)', color: 'var(--color-garuda-100)', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                      {form.aadhaarNo || '—'}
+                    </div>
+                    {aadhaarMasked && perms.hasMinRole('CI') && (
+                      <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
+                        Reveal
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input maxLength={12} className={`${inp} flex-1`} style={inputStyle} value={form.aadhaarNo} onChange={e => set('aadhaarNo', e.target.value)} readOnly={aadhaarMasked && !aadhaarRevealed} />
+                    {aadhaarMasked && perms.hasMinRole('CI') && (
+                      <button type="button" onClick={revealAadhaar} className="px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap" style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>
+                        Reveal
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               {renderField("Voter ID", form.voterId, <input className={inp} style={inputStyle} value={form.voterId} onChange={e => set('voterId', e.target.value)} />)}
               {renderField("PAN Card", form.panCard, <input maxLength={10} className={inp} style={inputStyle} value={form.panCard} onChange={e => set('panCard', e.target.value)} />)}
             </div>

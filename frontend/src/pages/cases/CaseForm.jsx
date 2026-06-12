@@ -232,14 +232,6 @@ export default function CaseForm() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-sm animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading case...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       <div>
@@ -257,256 +249,267 @@ export default function CaseForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Case Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>FIR Number</label>
-              <input name="firNo" value={form.firNo} onChange={handleChange} placeholder="Auto if empty" className={inp} style={fieldStyle} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Station *</label>
-              <select name="psId" value={form.psId} onChange={handleChange} required className={inp} style={fieldStyle}>
-                <option value="">Select Station</option>
-                {stations.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.ps_code})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Department</label>
-              <select name="department" value={form.department} onChange={handleChange} className={inp} style={fieldStyle}>
-                <option value="POLICE">Police</option>
-                <option value="EXCISE">Excise</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Case Date *</label>
-              <input type="date" name="caseDate" value={form.caseDate} onChange={handleChange} required className={inp} style={fieldStyle} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Section of Law</label>
-              <input name="sectionOfLaw" value={form.sectionOfLaw} onChange={handleChange} className={inp} style={fieldStyle} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Nature of Offence</label>
-              <input name="natureOfOffence" value={form.natureOfOffence} onChange={handleChange} className={inp} style={fieldStyle} />
-            </div>
-            {isEdit && (
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Stage</label>
-                <select name="stage" value={form.stage} onChange={handleChange} className={inp} style={fieldStyle}>
-                  <option value="FIR">FIR</option>
-                  <option value="CHARGESHEET">Charge Sheet</option>
-                  <option value="TRIAL">Trial</option>
-                  <option value="CONVICTED">Convicted</option>
-                  <option value="ACQUITTED">Acquitted</option>
-                  <option value="CLOSED">Closed</option>
-                </select>
-              </div>
-            )}
+      {loading ? (
+        <div className="rounded-xl p-6 space-y-4 text-center animate-pulse" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <div className="text-sm font-semibold" style={{ color: 'var(--color-garuda-400)' }}>Loading case data...</div>
+          <div className="space-y-2 mt-4">
+            <div className="h-10 bg-slate-700/40 rounded w-full"></div>
+            <div className="h-10 bg-slate-700/40 rounded w-5/6"></div>
+            <div className="h-10 bg-slate-700/40 rounded w-4/5"></div>
           </div>
         </div>
-
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Contraband & Route</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Type</label>
-              <select name="contrabandType" value={form.contrabandType} onChange={handleChange} className={inp} style={fieldStyle}>
-                <option value="">—</option>
-                {CONTRABAND_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Quantity</label>
-                <input name="quantity" type="number" step="0.001" value={form.quantity} onChange={handleChange} className={inp} style={fieldStyle} />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Case Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>FIR Number</label>
+                <input name="firNo" value={form.firNo} onChange={handleChange} placeholder="Auto if empty" className={inp} style={fieldStyle} />
               </div>
-              <div className="w-28">
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Unit</label>
-                <select name="quantityUnit" value={form.quantityUnit} onChange={handleChange} className={inp} style={fieldStyle}>
-                  {UNIT_OPTIONS.map((o) => (
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Station *</label>
+                <select name="psId" value={form.psId} onChange={handleChange} required className={inp} style={fieldStyle}>
+                  <option value="">Select Station</option>
+                  {stations.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.psCode || s.ps_code})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Department</label>
+                <select name="department" value={form.department} onChange={handleChange} className={inp} style={fieldStyle}>
+                  <option value="POLICE">Police</option>
+                  <option value="EXCISE">Excise</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Case Date *</label>
+                <input type="date" name="caseDate" value={form.caseDate} onChange={handleChange} required className={inp} style={fieldStyle} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Section of Law</label>
+                <input name="sectionOfLaw" value={form.sectionOfLaw} onChange={handleChange} className={inp} style={fieldStyle} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Nature of Offence</label>
+                <input name="natureOfOffence" value={form.natureOfOffence} onChange={handleChange} className={inp} style={fieldStyle} />
+              </div>
+              {isEdit && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Stage</label>
+                  <select name="stage" value={form.stage} onChange={handleChange} className={inp} style={fieldStyle}>
+                    <option value="FIR">FIR</option>
+                    <option value="CHARGESHEET">Charge Sheet</option>
+                    <option value="TRIAL">Trial</option>
+                    <option value="CONVICTED">Convicted</option>
+                    <option value="ACQUITTED">Acquitted</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Contraband & Route</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Type</label>
+                <select name="contrabandType" value={form.contrabandType} onChange={handleChange} className={inp} style={fieldStyle}>
+                  <option value="">—</option>
+                  {CONTRABAND_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Quantity</label>
+                  <input name="quantity" type="number" step="0.001" value={form.quantity} onChange={handleChange} className={inp} style={fieldStyle} />
+                </div>
+                <div className="w-28">
+                  <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Unit</label>
+                  <select name="quantityUnit" value={form.quantityUnit} onChange={handleChange} className={inp} style={fieldStyle}>
+                    {UNIT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Street Value (₹)</label>
+                <input name="streetValue" type="number" value={form.streetValue} onChange={handleChange} className={inp} style={fieldStyle} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Source Location</label>
+                <input name="sourceLocation" value={form.sourceLocation} onChange={handleChange} className={inp} style={fieldStyle} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Destination</label>
+                <input name="destinationLocation" value={form.destinationLocation} onChange={handleChange} className={inp} style={fieldStyle} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Intelligence Notes</label>
+                <textarea name="intelligenceNotes" value={form.intelligenceNotes} onChange={handleChange} rows={3} className={inp} style={fieldStyle} />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Street Value (₹)</label>
-              <input name="streetValue" type="number" value={form.streetValue} onChange={handleChange} className={inp} style={fieldStyle} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Source Location</label>
-              <input name="sourceLocation" value={form.sourceLocation} onChange={handleChange} className={inp} style={fieldStyle} />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Destination</label>
-              <input name="destinationLocation" value={form.destinationLocation} onChange={handleChange} className={inp} style={fieldStyle} />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Intelligence Notes</label>
-              <textarea name="intelligenceNotes" value={form.intelligenceNotes} onChange={handleChange} rows={3} className={inp} style={fieldStyle} />
-            </div>
-          </div>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="isHistorySheet" checked={form.isHistorySheet} onChange={handleChange} />
-              <span className="text-sm" style={{ color: 'var(--color-garuda-300)' }}>History Sheet</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="isRowdySheet" checked={form.isRowdySheet} onChange={handleChange} />
-              <span className="text-sm" style={{ color: 'var(--color-garuda-300)' }}>Rowdy Sheet</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Accused</h3>
-          <div className="flex flex-wrap gap-2">
-            <input
-              value={offenderSearch}
-              onChange={(e) => setOffenderSearch(e.target.value)}
-              placeholder="Search offender by name, Aadhaar, phone, email..."
-              className={`${inp} flex-1 min-w-[200px]`}
-              style={fieldStyle}
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchOffenders())}
-            />
-            <button
-              type="button"
-              onClick={searchOffenders}
-              className="px-4 py-2 rounded-lg text-sm text-white transition-colors"
-              style={{ background: 'var(--color-accent-500)', cursor: 'pointer', border: 'none' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-accent-600)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--color-accent-500)'; }}
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 rounded-lg text-sm whitespace-nowrap border"
-              style={{ borderColor: 'var(--color-accent-400)', background: 'transparent', color: 'var(--color-accent-400)', cursor: 'pointer' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(234, 88, 12, 0.1)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              + Add New Accused
-            </button>
-          </div>
-          {offenderResults.length > 0 && (
-            <ul className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-garuda-600)' }}>
-              {offenderResults.map((o) => (
-                <li key={o.id}>
-                  <button
-                    type="button"
-                    onClick={() => addAccused(o)}
-                    className="w-full text-left px-3 py-2 text-sm transition-colors"
-                    style={{ color: 'var(--color-garuda-200)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-garuda-600)'; }}
-                    onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    {o.fullName || o.full_name} {(o.psName || o.ps_name) ? `(${o.psName || o.ps_name})` : ''}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {accused.length > 0 && (
-            <ul className="space-y-2">
-              {accused.map((a) => (
-                <li key={a.offenderId} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--color-garuda-900)' }}>
-                  <span className="text-sm" style={{ color: 'var(--color-garuda-100)' }}>{a.offenderName}</span>
-                  <button type="button" onClick={() => removeAccused(a.offenderId)} className="text-xs text-red-400">Remove</button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Seizure (optional)</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <input placeholder="Contraband (kg)" value={seizure.contrabandKg} onChange={(e) => setSeizure({ ...seizure, contrabandKg: e.target.value })} className={inp} style={fieldStyle} />
-            <input placeholder="Cash seized (₹)" value={seizure.cashAmount} onChange={(e) => setSeizure({ ...seizure, cashAmount: e.target.value })} className={inp} style={fieldStyle} />
-            <input placeholder="Vehicles" value={seizure.vehiclesCount} onChange={(e) => setSeizure({ ...seizure, vehiclesCount: e.target.value })} className={inp} style={fieldStyle} />
-            <input placeholder="Other items" value={seizure.otherItems} onChange={(e) => setSeizure({ ...seizure, otherItems: e.target.value })} className={inp} style={fieldStyle} />
-          </div>
-        </div>
-
-        <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-          <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Relevant PDF Files</h3>
-
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <label
-                className="btn btn-secondary text-sm flex items-center gap-2 cursor-pointer"
-                style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
-              >
-                <svg className="w-4 h-4 text-accent-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                {fileUploading ? 'Uploading...' : 'Choose Files'}
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  disabled={fileUploading}
-                  className="hidden"
-                />
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="isHistorySheet" checked={form.isHistorySheet} onChange={handleChange} />
+                <span className="text-sm" style={{ color: 'var(--color-garuda-300)' }}>History Sheet</span>
               </label>
-              <span className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                Upload scans, FIR copies, or seizure reports (PDF, Word, Images up to 15MB each).
-              </span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="isRowdySheet" checked={form.isRowdySheet} onChange={handleChange} />
+                <span className="text-sm" style={{ color: 'var(--color-garuda-300)' }}>Rowdy Sheet</span>
+              </label>
             </div>
+          </div>
 
-            {uploadedFiles.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                {uploadedFiles.map((file, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-2.5 rounded-lg border text-xs"
-                    style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)' }}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium truncate hover:text-accent-400 transition-colors"
-                        style={{ color: 'var(--color-garuda-100)' }}
-                      >
-                        {file.name}
-                      </a>
-                    </div>
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Accused</h3>
+            <div className="flex flex-wrap gap-2">
+              <input
+                value={offenderSearch}
+                onChange={(e) => setOffenderSearch(e.target.value)}
+                placeholder="Search offender by name, Aadhaar, phone, email..."
+                className={`${inp} flex-1 min-w-[200px]`}
+                style={fieldStyle}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchOffenders())}
+              />
+              <button
+                type="button"
+                onClick={searchOffenders}
+                className="px-4 py-2 rounded-lg text-sm text-white transition-colors"
+                style={{ background: 'var(--color-accent-500)', cursor: 'pointer', border: 'none' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-accent-600)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'var(--color-accent-500)'; }}
+              >
+                Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 rounded-lg text-sm whitespace-nowrap border"
+                style={{ borderColor: 'var(--color-accent-400)', background: 'transparent', color: 'var(--color-accent-400)', cursor: 'pointer' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(234, 88, 12, 0.1)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                + Add New Accused
+              </button>
+            </div>
+            {offenderResults.length > 0 && (
+              <ul className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-garuda-600)' }}>
+                {offenderResults.map((o) => (
+                  <li key={o.id}>
                     <button
                       type="button"
-                      onClick={() => removeFile(i)}
-                      className="text-red-400 hover:text-red-500 font-bold px-2 py-1 bg-transparent border-none cursor-pointer text-xs"
+                      onClick={() => addAccused(o)}
+                      className="w-full text-left px-3 py-2 text-sm transition-colors"
+                      style={{ color: 'var(--color-garuda-200)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = 'var(--color-garuda-600)'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                      Remove
+                      {o.fullName || o.full_name} {(o.psName || o.ps_name) ? `(${o.psName || o.ps_name})` : ''}
                     </button>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
+            )}
+            {accused.length > 0 && (
+              <ul className="space-y-2">
+                {accused.map((a) => (
+                  <li key={a.offenderId} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--color-garuda-900)' }}>
+                    <span className="text-sm" style={{ color: 'var(--color-garuda-100)' }}>{a.offenderName}</span>
+                    <button type="button" onClick={() => removeAccused(a.offenderId)} className="text-xs text-red-400">Remove</button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        </div>
 
-        <div className="flex gap-3 justify-end">
-          <button type="button" onClick={() => navigate('/cases')} className="px-5 py-2.5 rounded-lg text-sm" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
-            Cancel
-          </button>
-          <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-lg text-sm text-white" style={{ background: 'var(--color-accent-500)', opacity: saving ? 0.6 : 1 }}>
-            {saving ? 'Saving...' : isEdit ? 'Update Case' : 'Register Case'}
-          </button>
-        </div>
-      </form>
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Seizure (optional)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <input placeholder="Contraband (kg)" value={seizure.contrabandKg} onChange={(e) => setSeizure({ ...seizure, contrabandKg: e.target.value })} className={inp} style={fieldStyle} />
+              <input placeholder="Cash seized (₹)" value={seizure.cashAmount} onChange={(e) => setSeizure({ ...seizure, cashAmount: e.target.value })} className={inp} style={fieldStyle} />
+              <input placeholder="Vehicles" value={seizure.vehiclesCount} onChange={(e) => setSeizure({ ...seizure, vehiclesCount: e.target.value })} className={inp} style={fieldStyle} />
+              <input placeholder="Other items" value={seizure.otherItems} onChange={(e) => setSeizure({ ...seizure, otherItems: e.target.value })} className={inp} style={fieldStyle} />
+            </div>
+          </div>
+
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Relevant PDF Files</h3>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <label
+                  className="btn btn-secondary text-sm flex items-center gap-2 cursor-pointer"
+                  style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}
+                >
+                  <svg className="w-4 h-4 text-accent-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  {fileUploading ? 'Uploading...' : 'Choose Files'}
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    disabled={fileUploading}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>
+                  Upload scans, FIR copies, or seizure reports (PDF, Word, Images up to 15MB each).
+                </span>
+              </div>
+
+              {uploadedFiles.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {uploadedFiles.map((file, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-2.5 rounded-lg border text-xs"
+                      style={{ background: 'var(--color-garuda-900)', borderColor: 'var(--color-garuda-600)' }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium truncate hover:text-accent-400 transition-colors"
+                          style={{ color: 'var(--color-garuda-100)' }}
+                        >
+                          {file.name}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        className="text-red-400 hover:text-red-500 font-bold px-2 py-1 bg-transparent border-none cursor-pointer text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <button type="button" onClick={() => navigate('/cases')} className="px-5 py-2.5 rounded-lg text-sm" style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-lg text-sm text-white" style={{ background: 'var(--color-accent-500)', opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Saving...' : isEdit ? 'Update Case' : 'Register Case'}
+            </button>
+          </div>
+        </form>
+      )}
       <AddAccusedModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}

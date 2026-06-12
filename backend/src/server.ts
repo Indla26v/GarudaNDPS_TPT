@@ -24,7 +24,8 @@ app.set('trust proxy', 1); // Required for secure cookies behind reverse proxies
 // ── SECURITY FIX #3: Restrict CORS to known frontend origins only
 // Wildcard cors() allows any website to make authenticated API requests.
 const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL,                // Production frontend (e.g., https://garuda-ndps.vercel.app)
+  process.env.FRONTEND_URL,                // Production frontend (from env)
+  'https://garudandps-tpt.vercel.app',      // Default Vercel production deployment
   'http://localhost:5173',                  // Vite dev server
   'http://localhost:3000',                  // Alternate dev server
 ].filter(Boolean) as string[];

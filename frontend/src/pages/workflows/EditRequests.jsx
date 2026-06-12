@@ -49,10 +49,10 @@ export default function EditRequests() {
     }
   };
 
-  if (loading) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg animate-pulse" style={{ color: 'var(--color-garuda-400)' }}>Loading edit requests...</div>
+        <div className="text-lg" style={{ color: 'var(--color-danger-400)' }}>{error}</div>
       </div>
     );
   }
@@ -94,72 +94,82 @@ export default function EditRequests() {
               </tr>
             </thead>
             <tbody>
-              {requests.map((req, i) => {
-                const statusColor = STATUS_COLORS[req.status] || STATUS_COLORS.PENDING;
-                return (
-                  <tr
-                    key={req.id}
-                    className="transition-colors duration-150"
-                    style={{
-                      borderBottom: '1px solid var(--color-garuda-700)',
-                      background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
-                    }}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>
-                      {req.entityType} #{req.entityId}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}
-                      >
-                        {req.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
-                      {req.requestedBy?.name || '—'}
-                      <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>
-                        ({req.requestedBy?.role})
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }}>
-                      {req.reason || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                      {new Date(req.createdAt).toLocaleDateString('en-IN')}
-                    </td>
-                    {perms.canApproveEdit && (
-                      <td className="px-4 py-3 text-right">
-                        {req.status === 'PENDING' && (
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => handleAction(req.id, 'approve')}
-                              disabled={actionLoading === req.id}
-                              className="btn btn-success btn-sm"
-                            >
-                              {actionLoading === req.id ? '...' : 'Approve Edit'}
-                            </button>
-                            <button
-                              onClick={() => handleAction(req.id, 'reject')}
-                              disabled={actionLoading === req.id}
-                              className="btn btn-danger btn-sm"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-              {requests.length === 0 && (
+              {loading ? (
                 <tr>
-                  <td colSpan={perms.canApproveEdit ? 7 : 6} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
-                    No edit requests found
+                  <td colSpan={perms.canApproveEdit ? 7 : 6} className="px-4 py-12 text-center text-sm text-[var(--color-garuda-400)] animate-pulse">
+                    Loading edit requests...
                   </td>
                 </tr>
+              ) : (
+                <>
+                  {requests.map((req, i) => {
+                    const statusColor = STATUS_COLORS[req.status] || STATUS_COLORS.PENDING;
+                    return (
+                      <tr
+                        key={req.id}
+                        className="transition-colors duration-150"
+                        style={{
+                          borderBottom: '1px solid var(--color-garuda-700)',
+                          background: i % 2 === 0 ? 'transparent' : 'var(--color-garuda-600)',
+                        }}
+                      >
+                        <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--color-garuda-400)' }}>#{req.id}</td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-100)' }}>
+                          {req.entityType} #{req.entityId}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                            style={{ background: statusColor.bg, color: statusColor.text, border: `1px solid ${statusColor.border}` }}
+                          >
+                            {req.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-garuda-200)' }}>
+                          {req.requestedBy?.name || '—'}
+                          <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>
+                            ({req.requestedBy?.role})
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 max-w-48 truncate" style={{ color: 'var(--color-garuda-300)' }}>
+                          {req.reason || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-garuda-400)' }}>
+                          {new Date(req.createdAt).toLocaleDateString('en-IN')}
+                        </td>
+                        {perms.canApproveEdit && (
+                          <td className="px-4 py-3 text-right">
+                            {req.status === 'PENDING' && (
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  onClick={() => handleAction(req.id, 'approve')}
+                                  disabled={actionLoading === req.id}
+                                  className="btn btn-success btn-sm"
+                                >
+                                  {actionLoading === req.id ? '...' : 'Approve Edit'}
+                                </button>
+                                <button
+                                  onClick={() => handleAction(req.id, 'reject')}
+                                  disabled={actionLoading === req.id}
+                                  className="btn btn-danger btn-sm"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  {requests.length === 0 && (
+                    <tr>
+                      <td colSpan={perms.canApproveEdit ? 7 : 6} className="px-4 py-12 text-center" style={{ color: 'var(--color-garuda-500)' }}>
+                        No edit requests found
+                      </td>
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
