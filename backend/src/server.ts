@@ -14,6 +14,7 @@ import editRequestRoutes from './routes/edit_request.routes';
 import adminRoutes from './routes/admin.routes';
 import sseRoutes from './routes/sse.routes';
 import enforcementRoutes from './routes/enforcement.routes';
+import vehiclesRoutes from './routes/vehicles.routes';
 import { warmUpConnection } from './config/prisma';
 
 dotenv.config();
@@ -92,6 +93,9 @@ app.use('/api/sse', sseRoutes);
 
 // ── Enforcement routes ────────────────────────────────────────────────
 app.use('/api/enforcement', enforcementRoutes);
+
+// ── Vehicles (seized) routes ──────────────────────────────────────────
+app.use('/api/vehicles', vehiclesRoutes);
 
 // ── Wake-up endpoint (warms Neon DB from sleep) ───────────────────────
 app.get('/api/wake', async (req, res) => {

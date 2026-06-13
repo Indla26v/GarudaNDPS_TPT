@@ -9,7 +9,7 @@ import {
   IconDashboard, IconOffender, IconConsumer, IconCases, IconFieldStaff,
   IconSurveillance, IconFinance, IconNetwork, IconReports, IconMap,
   IconTrash, IconEdit, IconUsers, IconBuilding, IconAuditLog, IconImport,
-  IconShield,
+  IconShield, IconVehicle,
 } from './Icons';
 
 /**
@@ -30,10 +30,11 @@ function useNavItems() {
       title: 'Operations',
       items: [
         { path: '/dashboard', label: 'Dashboard', icon: IconDashboard, show: true },
-        { path: '/offenders', label: 'Offenders', icon: IconOffender, show: true },
-        { path: '/consumers', label: 'Consumers', icon: IconConsumer, show: true },
-        { path: '/enforcement', label: 'Enforcement', icon: IconShield, show: true },
         { path: '/cases', label: 'Cases', icon: IconCases, show: true },
+        { path: '/consumers', label: 'Consumers', icon: IconConsumer, show: true },
+        { path: '/offenders', label: 'Offenders', icon: IconOffender, show: true },
+        { path: '/vehicles-seized', label: 'Vehicles Seized', icon: IconVehicle, show: true },
+        { path: '/enforcement', label: 'Enforcement', icon: IconShield, show: true },
         { path: '/mobile', label: 'Field Staff', icon: IconFieldStaff,
           show: perms.canFieldEntry || perms.canSurveillanceReport || perms.canVerifyAccused },
       ],

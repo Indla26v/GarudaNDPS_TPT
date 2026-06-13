@@ -122,6 +122,17 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     const totalCash = seizureAgg._sum.cash_amount || 0;
     const totalVehicles = seizureAgg._sum.vehicles_count || 0;
 
+    // ── Seized vehicles (individual records) count ──────────────────────
+    const seizedVehicleWhere: any = psFilter.ps_id
+      ? { cases: { ps_id: psFilter.ps_id } }
+      : (psFilter.police_stations
+          ? { cases: { police_stations: psFilter.police_stations } }
+          : {});
+    if (dateFilter) {
+      seizedVehicleWhere.created_at = dateFilter;
+    }
+    const totalSeizedVehicleRecords = await prisma.seized_vehicles.count({ where: seizedVehicleWhere });
+
     // Resolve the stations for this user's scope
     let stationsToQuery: any[];
     if (isStationLevel && psFilter.ps_id) {
@@ -364,6 +375,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       totalContrabandKg: totalContraband,
       totalCashSeized: totalCash,
       totalVehiclesSeized: totalVehicles,
+      totalSeizedVehicleRecords,
 
       // Charts
       yearWiseTrend,

@@ -27,6 +27,7 @@ import AuditLogs from './pages/admin/AuditLogs';
 import DataImport from './pages/admin/DataImport';
 import DistrictAnalytics from './pages/DistrictAnalytics';
 import Enforcement from './pages/Enforcement';
+import VehiclesSeized from './pages/vehicles/VehiclesSeized';
 import './index.css';
 
 function IndexRedirect() {
@@ -57,6 +58,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="offenders" element={<OffenderList />} />
             <Route path="consumers" element={<OffenderList isConsumerOnly={true} />} />
             <Route path="enforcement" element={<Enforcement />} />
+            <Route path="vehicles-seized" element={<VehiclesSeized />} />
             <Route path="offenders/new" element={<OffenderForm />} />
             <Route path="offenders/:id" element={<OffenderForm />} />
             <Route path="offenders/:id/edit" element={<OffenderForm />} />

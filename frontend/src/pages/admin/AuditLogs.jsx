@@ -201,7 +201,7 @@ export default function AuditLogs() {
                         )}
                       </td>
                       <td className="px-4 py-4 max-w-64 truncate text-xs" style={{ color: 'var(--color-garuda-400)' }}>
-                        {session.loginLog?.details || 'Session started'}
+                        {session.logoutLog ? 'Session ended' : (session.loginLog?.details || 'Session active')}
                       </td>
                       <td className="px-4 py-4 text-xs font-mono" style={{ color: 'var(--color-garuda-500)' }}>
                         {session.ipAddress || '—'}

@@ -57,6 +57,7 @@ const caseInclude = {
   users: true,
   case_accused: { include: { offenders: true, police_stations: true } },
   seizures: true,
+  seized_vehicles: true,
   charge_sheets: true,
   court_hearings: { orderBy: { hearing_date: 'desc' as const } },
   bail_records: { orderBy: { created_at: 'desc' as const } },
@@ -119,6 +120,28 @@ export const createCase = async (req: Request, res: Response) => {
         });
       }
 
+      // Create seized vehicles if provided
+      const vehicleList = Array.isArray(data.seizedVehicles) ? data.seizedVehicles : [];
+      if (vehicleList.length) {
+        await tx.seized_vehicles.createMany({
+          data: vehicleList.map((v: any) => ({
+            case_id: created.id,
+            vehicle_type: v.vehicleType || v.vehicle_type || 'OTHER',
+            registration_no: v.registrationNo || v.registration_no || 'UNKNOWN',
+            make_model: v.makeModel || v.make_model || null,
+            color: v.color || null,
+            chassis_no: v.chassisNo || v.chassis_no || null,
+            engine_no: v.engineNo || v.engine_no || null,
+            owner_name: v.ownerName || v.owner_name || null,
+            owner_address: v.ownerAddress || v.owner_address || null,
+            seizure_location: v.seizureLocation || v.seizure_location || null,
+            seizure_date: v.seizureDate || v.seizure_date ? new Date(v.seizureDate || v.seizure_date) : null,
+            current_status: 'SEIZED',
+            remarks: v.remarks || null,
+          })),
+        });
+      }
+
       return created;
     });
 
@@ -138,11 +161,66 @@ export const updateCase = async (req: Request, res: Response) => {
     const existing = await prisma.cases.findFirst({ where: { id, ...scope } });
     if (!existing) return res.status(404).json({ message: 'Case not found or access denied' });
 
-    const updated = await prisma.cases.update({
-      where: { id },
-      data: { ...mapCaseData(req.body), updated_at: new Date() } as any,
-      include: caseInclude,
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedCase = await tx.cases.update({
+        where: { id },
+        data: { ...mapCaseData(req.body), updated_at: new Date() } as any,
+        include: caseInclude,
+      });
+
+      // Handle seized vehicles sync if provided
+      if (req.body.seizedVehicles && Array.isArray(req.body.seizedVehicles)) {
+        const incoming = req.body.seizedVehicles;
+        const incomingIds = incoming.filter((v: any) => v.id).map((v: any) => BigInt(v.id));
+
+        // Delete vehicles that are not in the incoming array anymore
+        await tx.seized_vehicles.deleteMany({
+          where: {
+            case_id: id,
+            id: { notIn: incomingIds }
+          }
+        });
+
+        // Upsert incoming vehicles
+        for (const v of incoming) {
+          const vData = {
+            vehicle_type: v.vehicleType || v.vehicle_type || 'OTHER',
+            registration_no: v.registrationNo || v.registration_no || 'UNKNOWN',
+            make_model: v.makeModel || v.make_model || null,
+            color: v.color || null,
+            chassis_no: v.chassisNo || v.chassis_no || null,
+            engine_no: v.engineNo || v.engine_no || null,
+            owner_name: v.ownerName || v.owner_name || null,
+            owner_address: v.ownerAddress || v.owner_address || null,
+            seizure_location: v.seizureLocation || v.seizure_location || null,
+            seizure_date: v.seizureDate || v.seizure_date ? new Date(v.seizureDate || v.seizure_date) : null,
+            remarks: v.remarks || null,
+          };
+
+          if (v.id) {
+            await tx.seized_vehicles.update({
+              where: { id: BigInt(v.id) },
+              data: vData
+            });
+          } else {
+            await tx.seized_vehicles.create({
+              data: {
+                ...vData,
+                case_id: id,
+                current_status: 'SEIZED',
+              }
+            });
+          }
+        }
+      }
+
+      return tx.cases.findUnique({
+        where: { id },
+        include: caseInclude,
+      });
     });
+
+    if (!updated) throw new Error('Failed to fetch updated case');
 
     await logAudit('UPDATE', 'CASE', updated.id, req);
     broadcastEvent('data_updated', { entity: 'case', id: updated.id.toString() });
@@ -367,6 +445,24 @@ function toCaseResponse(c: any) {
       suretyDetails: b.surety_details,
       conditions: b.conditions,
       notes: b.notes,
+    })) ?? [],
+    seizedVehicles: c.seized_vehicles?.map((v: any) => ({
+      id: v.id.toString(),
+      caseId: v.case_id.toString(),
+      vehicleType: v.vehicle_type,
+      registrationNo: v.registration_no,
+      makeModel: v.make_model,
+      color: v.color,
+      chassisNo: v.chassis_no,
+      engineNo: v.engine_no,
+      ownerName: v.owner_name,
+      ownerAddress: v.owner_address,
+      seizureLocation: v.seizure_location,
+      seizureDate: v.seizure_date,
+      currentStatus: v.current_status,
+      courtOrderNo: v.court_order_no,
+      remarks: v.remarks,
+      createdAt: v.created_at,
     })) ?? [],
   };
 }

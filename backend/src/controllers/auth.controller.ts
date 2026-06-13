@@ -206,7 +206,7 @@ export const refresh = async (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.body?.refreshToken;
     
     // Also check cookie for refresh token if not in body
     const tokenToRevoke = refreshToken || req.cookies?.garuda_refresh_token;

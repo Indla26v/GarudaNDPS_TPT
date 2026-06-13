@@ -57,12 +57,16 @@ export default function CaseForm() {
   const [offenderSearch, setOffenderSearch] = useState('');
   const [offenderResults, setOffenderResults] = useState([]);
   const [seizure, setSeizure] = useState({ contrabandKg: '', cashAmount: '', vehiclesCount: '0', otherItems: '' });
+  const [seizedVehicles, setSeizedVehicles] = useState([]);
+  const [hasVehicles, setHasVehicles] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [fileUploading, setFileUploading] = useState(false);
+
+  const emptyVehicle = { vehicleType: 'TWO_WHEELER', registrationNo: '', makeModel: '', color: '', ownerName: '', ownerAddress: '', seizureLocation: '', remarks: '' };
 
   useEffect(() => {
     fetchStations();
@@ -112,6 +116,19 @@ export default function CaseForm() {
           vehiclesCount: s.vehiclesCount?.toString() || '0',
           otherItems: s.otherItems || '',
         });
+      }
+      if (c.seizedVehicles?.length > 0) {
+        setHasVehicles(true);
+        setSeizedVehicles(c.seizedVehicles.map(v => ({
+          vehicleType: v.vehicleType || 'OTHER',
+          registrationNo: v.registrationNo || '',
+          makeModel: v.makeModel || '',
+          color: v.color || '',
+          ownerName: v.ownerName || '',
+          ownerAddress: v.ownerAddress || '',
+          seizureLocation: v.seizureLocation || '',
+          remarks: v.remarks || '',
+        })));
       }
       if (c.relevantFiles) {
         try {
@@ -214,6 +231,7 @@ export default function CaseForm() {
             otherItems: seizure.otherItems || null,
           }]
           : [],
+        seizedVehicles: hasVehicles ? seizedVehicles.filter(v => v.registrationNo.trim()) : [],
       };
       if (isEdit) {
         await api.put(`/cases/${id}`, payload);
@@ -436,6 +454,162 @@ export default function CaseForm() {
               <input placeholder="Vehicles" value={seizure.vehiclesCount} onChange={(e) => setSeizure({ ...seizure, vehiclesCount: e.target.value })} className={inp} style={fieldStyle} />
               <input placeholder="Other items" value={seizure.otherItems} onChange={(e) => setSeizure({ ...seizure, otherItems: e.target.value })} className={inp} style={fieldStyle} />
             </div>
+          </div>
+
+          <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Seized Vehicles</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hasVehicles}
+                  onChange={(e) => {
+                    setHasVehicles(e.target.checked);
+                    if (e.target.checked && seizedVehicles.length === 0) {
+                      setSeizedVehicles([{ ...emptyVehicle }]);
+                    }
+                  }}
+                />
+                <span className="text-sm" style={{ color: 'var(--color-garuda-300)' }}>Vehicle(s) seized in this case</span>
+              </label>
+            </div>
+
+            {hasVehicles && (
+              <div className="space-y-4">
+                {seizedVehicles.map((v, idx) => (
+                  <div key={idx} className="rounded-lg p-4 space-y-3" style={{ background: 'var(--color-garuda-900)', border: '1px solid var(--color-garuda-700)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Vehicle #{idx + 1}</span>
+                      {seizedVehicles.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setSeizedVehicles(seizedVehicles.filter((_, i) => i !== idx))}
+                          className="text-xs text-red-400 hover:text-red-300 bg-transparent border-none cursor-pointer font-medium"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Vehicle Type *</label>
+                        <select
+                          value={v.vehicleType}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], vehicleType: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          className={inp}
+                          style={fieldStyle}
+                        >
+                          <option value="TWO_WHEELER">Two Wheeler</option>
+                          <option value="FOUR_WHEELER">Four Wheeler</option>
+                          <option value="AUTO">Auto Rickshaw</option>
+                          <option value="TRUCK">Truck / Lorry</option>
+                          <option value="BUS">Bus</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Registration No *</label>
+                        <input
+                          value={v.registrationNo}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], registrationNo: e.target.value.toUpperCase() };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="AP 09 AB 1234"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Make / Model</label>
+                        <input
+                          value={v.makeModel}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], makeModel: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="e.g. Honda Activa, Maruti Swift"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Color</label>
+                        <input
+                          value={v.color}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], color: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="e.g. Red, White"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Owner Name</label>
+                        <input
+                          value={v.ownerName}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], ownerName: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="Vehicle owner"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Seizure Location</label>
+                        <input
+                          value={v.seizureLocation}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], seizureLocation: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="Where was it seized?"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                      <div className="sm:col-span-2 md:col-span-3">
+                        <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-garuda-400)' }}>Remarks</label>
+                        <input
+                          value={v.remarks}
+                          onChange={(e) => {
+                            const updated = [...seizedVehicles];
+                            updated[idx] = { ...updated[idx], remarks: e.target.value };
+                            setSeizedVehicles(updated);
+                          }}
+                          placeholder="Any additional notes"
+                          className={inp}
+                          style={fieldStyle}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSeizedVehicles([...seizedVehicles, { ...emptyVehicle }])}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                  style={{ borderColor: 'var(--color-accent-400)', background: 'transparent', color: 'var(--color-accent-400)', cursor: 'pointer' }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(234, 88, 12, 0.1)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  + Add Another Vehicle
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl p-6 space-y-4" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>

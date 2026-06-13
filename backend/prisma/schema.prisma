@@ -72,6 +72,7 @@ model cases {
   users                  users?                   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   police_stations        police_stations          @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   seizures               seizures[]
+  seized_vehicles        seized_vehicles[]
   charge_sheets          charge_sheets?
   court_hearings         court_hearings[]
   bail_records           bail_records[]
@@ -335,18 +336,45 @@ model refresh_tokens {
 }
 
 model seizures {
-  id             BigInt    @id @default(autoincrement())
-  case_id        BigInt
-  contraband_kg  Decimal?  @db.Decimal(10, 3)
-  vehicles_count Int       @default(0)
-  cash_amount    Decimal   @default(0) @db.Decimal(15, 2)
-  parcels_count  Int       @default(0)
-  other_items    String?
-  seizure_date   DateTime? @db.Date
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
-  cases          cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id              BigInt            @id @default(autoincrement())
+  case_id         BigInt
+  contraband_kg   Decimal?          @db.Decimal(10, 3)
+  vehicles_count  Int               @default(0)
+  cash_amount     Decimal           @default(0) @db.Decimal(15, 2)
+  parcels_count   Int               @default(0)
+  other_items     String?
+  seizure_date    DateTime?         @db.Date
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  cases           cases             @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  seized_vehicles seized_vehicles[]
 
   @@index([case_id], map: "idx_seizures_case")
+}
+
+model seized_vehicles {
+  id                BigInt    @id @default(autoincrement())
+  case_id           BigInt
+  seizure_id        BigInt?
+  vehicle_type      String    @db.VarChar(50)
+  registration_no   String    @db.VarChar(30)
+  make_model        String?   @db.VarChar(200)
+  color             String?   @db.VarChar(50)
+  chassis_no        String?   @db.VarChar(100)
+  engine_no         String?   @db.VarChar(100)
+  owner_name        String?   @db.VarChar(200)
+  owner_address     String?
+  seizure_location  String?   @db.VarChar(300)
+  seizure_date      DateTime? @db.Date
+  current_status    String    @default("SEIZED") @db.VarChar(30)
+  court_order_no    String?   @db.VarChar(100)
+  remarks           String?
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  cases             cases     @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  seizures          seizures? @relation(fields: [seizure_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([case_id], map: "idx_sv_case")
+  @@index([registration_no], map: "idx_sv_reg")
+  @@index([current_status], map: "idx_sv_status")
 }
 
 model supply_chain_links {

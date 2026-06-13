@@ -227,25 +227,39 @@ export default function Dashboard() {
       {/* ── Seizure Stats Row ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {[
-          { label: 'Contraband Seized', val: summary?.totalContrabandKg, suffix: ' Kg', color: '#f59e0b', Icon: IconPackage },
-          { label: 'Cash Seized', val: summary?.totalCashSeized, prefix: '₹', color: '#22c55e', Icon: IconDollar },
-          { label: 'Vehicles Seized', val: summary?.totalVehiclesSeized, color: '#ec4899', Icon: IconCar },
-        ].map(s => (
-          <div key={s.label} className="card rounded-xl p-4 flex items-center gap-4">
-            <div
-              className="w-11 h-11 rounded-lg flex items-center justify-center"
-              style={{ background: s.color + '14' }}
-            >
-              <s.Icon size={22} color={s.color} />
+          { label: 'Contraband Seized', val: summary?.totalContrabandKg, suffix: ' Kg', color: '#f59e0b', Icon: IconPackage, link: null },
+          { label: 'Cash Seized', val: summary?.totalCashSeized, prefix: '₹', color: '#22c55e', Icon: IconDollar, link: null },
+          { label: 'Vehicles Seized', val: summary?.totalSeizedVehicleRecords, color: '#ec4899', Icon: IconCar, link: '/vehicles-seized' },
+        ].map(s => {
+          const content = (
+            <div key={s.label} className={`card rounded-xl p-4 flex items-center gap-4 ${s.link ? 'hover:translate-y-[-2px] transition-all duration-200' : ''}`} style={s.link ? { cursor: 'pointer' } : {}}>
+              <div
+                className="w-11 h-11 rounded-lg flex items-center justify-center"
+                style={{ background: s.color + '14' }}
+              >
+                <s.Icon size={22} color={s.color} />
+              </div>
+              <div>
+                <p className="text-lg font-bold" style={{ color: s.color }}>
+                  {renderSeizureValue(s.val, s.prefix || '', s.suffix || '')}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>{s.label}</p>
+              </div>
+              {s.link && (
+                <div className="ml-auto">
+                  <svg className="w-4 h-4" fill="none" stroke={s.color} strokeWidth="2" viewBox="0 0 24 24" style={{ opacity: 0.6 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-lg font-bold" style={{ color: s.color }}>
-                {renderSeizureValue(s.val, s.prefix || '', s.suffix || '')}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>{s.label}</p>
-            </div>
-          </div>
-        ))}
+          );
+          return s.link ? (
+            <Link key={s.label} to={s.link} style={{ textDecoration: 'none' }}>
+              {content}
+            </Link>
+          ) : content;
+        })}
       </div>
 
       {/* ── Charts Row ───────────────────────────────────────────────── */}

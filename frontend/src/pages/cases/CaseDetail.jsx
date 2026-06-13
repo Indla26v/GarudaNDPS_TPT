@@ -6,6 +6,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 import CaseLifecyclePanel from '../../components/CaseLifecyclePanel';
+import VehicleStatusModal from '../../components/VehicleStatusModal';
 
 const STAGES = ['FIR', 'CHARGESHEET', 'TRIAL', 'CONVICTED', 'ACQUITTED', 'CLOSED'];
 const STAGE_LABELS = {
@@ -36,6 +37,10 @@ export default function CaseDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('overview');
+  
+  // Modal state
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCase();
@@ -262,12 +267,95 @@ export default function CaseDetail() {
               </div>
             </div>
           )}
+
+          {!loading && caseData?.seizedVehicles?.length > 0 && (
+            <div className="rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+              <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" />
+                  <circle cx="6.5" cy="16.5" r="2.5" />
+                  <circle cx="16.5" cy="16.5" r="2.5" />
+                </svg>
+                Seized Vehicles ({caseData.seizedVehicles.length})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+                      <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Reg No</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Type</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Make / Model</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Owner</th>
+                      <th className="text-center px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Status</th>
+                      {canEdit && <th className="text-right px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {caseData.seizedVehicles.map((v) => {
+                      const statusColors = {
+                        SEIZED: '#ef4444',
+                        RELEASED: '#22c55e',
+                        COURT_CUSTODY: '#f59e0b',
+                        DISPOSED: '#6b7280',
+                      };
+                      const statusColor = statusColors[v.currentStatus] || '#ef4444';
+                      return (
+                        <tr key={v.id} style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+                          <td className="px-3 py-2.5 font-mono font-semibold" style={{ color: 'var(--color-garuda-50)' }}>{v.registrationNo}</td>
+                          <td className="px-3 py-2.5" style={{ color: 'var(--color-garuda-300)' }}>
+                            {({ TWO_WHEELER: 'Two Wheeler', FOUR_WHEELER: 'Four Wheeler', AUTO: 'Auto', TRUCK: 'Truck', BUS: 'Bus', OTHER: 'Other' })[v.vehicleType] || v.vehicleType}
+                          </td>
+                          <td className="px-3 py-2.5" style={{ color: 'var(--color-garuda-200)' }}>
+                            {v.makeModel || '—'}
+                            {v.color && <span className="text-xs ml-1" style={{ color: 'var(--color-garuda-500)' }}>({v.color})</span>}
+                          </td>
+                          <td className="px-3 py-2.5" style={{ color: 'var(--color-garuda-200)' }}>{v.ownerName || '—'}</td>
+                          <td className="px-3 py-2.5 text-center">
+                            <span
+                              className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                              style={{ background: statusColor + '18', color: statusColor, border: `1px solid ${statusColor}40` }}
+                            >
+                              {v.currentStatus?.replace('_', ' ')}
+                            </span>
+                          </td>
+                          {canEdit && (
+                            <td className="px-3 py-2.5 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedVehicle(v);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-transparent hover:bg-white/10 transition-colors"
+                                style={{ color: 'var(--color-accent-400)', border: '1px solid var(--color-accent-500)40' }}
+                              >
+                                Update
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
 
       {tab === 'lifecycle' && (
         <CaseLifecyclePanel caseId={id} canEdit={canEdit} />
       )}
+
+      <VehicleStatusModal
+        vehicle={selectedVehicle}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedVehicle(null);
+        }}
+        onSuccess={fetchCase}
+      />
     </div>
   );
 }
