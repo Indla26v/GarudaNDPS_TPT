@@ -162,6 +162,7 @@ export default function UserManagement() {
       
       const psList = stations
         .filter(s => s.state === selectedState && s.district === selectedDistrict)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         .map(station => ({
           ...station,
           users: users.filter(u => u.policeStationId === station.id),
@@ -205,7 +206,9 @@ export default function UserManagement() {
       }
     });
 
-    const psList = Array.from(matchedStationsMap.values());
+    const psList = Array.from(matchedStationsMap.values())
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
     if (matchingUnassigned.length > 0) {
       psList.unshift({
         id: 'hq',
@@ -456,11 +459,11 @@ export default function UserManagement() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="columns-1 lg:columns-2 xl:columns-3 gap-6">
           {[1, 2, 3, 4].map(idx => (
             <div 
               key={idx} 
-              className="rounded-xl overflow-hidden flex flex-col h-full animate-pulse"
+              className="rounded-xl overflow-hidden flex flex-col break-inside-avoid mb-6 animate-pulse"
               style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
             >
               <div className="px-5 py-4 flex justify-between items-center border-b" style={{ background: 'var(--color-garuda-600)', borderColor: 'var(--color-garuda-700)' }}>
@@ -502,11 +505,11 @@ export default function UserManagement() {
         </div>
       ) : (
         // Grid of Police Stations
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="columns-1 lg:columns-2 xl:columns-3 gap-6">
           {filteredStationsWithUsers.map(station => (
             <div 
               key={station.id} 
-              className="rounded-xl overflow-hidden flex flex-col h-full"
+              className="rounded-xl overflow-hidden flex flex-col break-inside-avoid mb-6"
               style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}
             >
               {/* Card Header */}
