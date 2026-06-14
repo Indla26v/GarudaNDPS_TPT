@@ -318,6 +318,13 @@ model police_stations {
   courier_checks      courier_checks[]
   railway_checks      railway_checks[]
   bus_stand_checks    bus_stand_checks[]
+  rowdy_sheeter_checks      rowdy_sheeter_checks[]
+  bound_over_checks         bound_over_checks[]
+  vehicle_checks            vehicle_checks[]
+  mv_act_checks             mv_act_checks[]
+  petty_cases_checks        petty_cases_checks[]
+  palle_nidra_checks        palle_nidra_checks[]
+  drone_surveillance_checks drone_surveillance_checks[]
 
   @@index([district], map: "idx_ps_district")
 }
@@ -464,6 +471,13 @@ model users {
   courier_checks_created      courier_checks[]     @relation("courier_check_officer")
   railway_checks_created      railway_checks[]     @relation("railway_check_officer")
   bus_stand_checks_created    bus_stand_checks[]   @relation("bus_stand_check_officer")
+  rowdy_sheeter_checks_created      rowdy_sheeter_checks[]      @relation("rowdy_sheeter_officer")
+  bound_over_checks_created         bound_over_checks[]         @relation("bound_over_officer")
+  vehicle_checks_created            vehicle_checks[]            @relation("vehicle_check_officer")
+  mv_act_checks_created             mv_act_checks[]             @relation("mv_act_officer")
+  petty_cases_checks_created        petty_cases_checks[]        @relation("petty_case_officer")
+  palle_nidra_checks_created        palle_nidra_checks[]        @relation("palle_nidra_officer")
+  drone_surveillance_checks_created drone_surveillance_checks[] @relation("drone_surveillance_officer")
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
@@ -1025,4 +1039,171 @@ model bus_stand_checks {
   @@index([ps_id], map: "idx_bc_ps")
   @@index([officer_id], map: "idx_bc_officer")
   @@index([created_at], map: "idx_bc_date")
+}
+
+model rowdy_sheeter_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  rowdy_sheeter_name     String   @db.VarChar(200)
+  rowdy_sheet_no         String?  @db.VarChar(50)
+  activity_status        String?  @db.VarChar(100)
+  verification_notes     String?
+  associates_noted       String?
+  current_employment     String?  @db.VarChar(200)
+  no_suspicious_activity Boolean  @default(false)
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("rowdy_sheeter_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_rs_ps")
+  @@index([officer_id], map: "idx_rs_officer")
+  @@index([created_at], map: "idx_rs_date")
+}
+
+model bound_over_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  subject_name           String   @db.VarChar(200)
+  bound_over_date        DateTime? @db.Date
+  expiry_date            DateTime? @db.Date
+  court_order_no         String?  @db.VarChar(100)
+  compliance_status      String?  @db.VarChar(50)
+  violation_details      String?
+  no_suspicious_activity Boolean  @default(false)
+  findings_notes         String?
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("bound_over_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_bo_ps")
+  @@index([officer_id], map: "idx_bo_officer")
+  @@index([created_at], map: "idx_bo_date")
+}
+
+model vehicle_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  vehicle_no             String   @db.VarChar(50)
+  owner_name             String?  @db.VarChar(200)
+  driver_name            String?  @db.VarChar(200)
+  driver_phone           String?  @db.VarChar(50)
+  checked_boot           Boolean  @default(false)
+  suspicious_items_found Boolean  @default(false)
+  watchlist_match        Boolean  @default(false)
+  no_suspicious_activity Boolean  @default(false)
+  findings_notes         String?
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("vehicle_check_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_vc_ps")
+  @@index([officer_id], map: "idx_vc_officer")
+  @@index([created_at], map: "idx_vc_date")
+}
+
+model mv_act_checks {
+  id             BigInt   @id @default(autoincrement())
+  ps_id          BigInt
+  officer_id     BigInt
+  vehicle_no     String   @db.VarChar(50)
+  driver_name    String   @db.VarChar(200)
+  violation_type String   @db.VarChar(200)
+  fine_amount    Decimal  @db.Decimal(10, 2)
+  challan_no     String?  @db.VarChar(100)
+  remarks        String?
+  geo_lat        Decimal? @db.Decimal(10, 7)
+  geo_lng        Decimal? @db.Decimal(10, 7)
+  photo_url      String?  @db.VarChar(500)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("mv_act_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_mv_ps")
+  @@index([officer_id], map: "idx_mv_officer")
+  @@index([created_at], map: "idx_mv_date")
+}
+
+model petty_cases_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  accused_name           String   @db.VarChar(200)
+  petty_case_no          String?  @db.VarChar(100)
+  act_section            String   @db.VarChar(200)
+  fine_amount            Decimal? @db.Decimal(10, 2)
+  location               String?  @db.VarChar(300)
+  no_suspicious_activity Boolean  @default(false)
+  remarks                String?
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("petty_case_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_pc_ps")
+  @@index([officer_id], map: "idx_pc_officer")
+  @@index([created_at], map: "idx_pc_date")
+}
+
+model palle_nidra_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  village_name           String   @db.VarChar(200)
+  interaction_details    String?
+  grievances_collected   String?
+  intel_notes            String?
+  no_suspicious_activity Boolean  @default(false)
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("palle_nidra_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_pn_ps")
+  @@index([officer_id], map: "idx_pn_officer")
+  @@index([created_at], map: "idx_pn_date")
+}
+
+model drone_surveillance_checks {
+  id                     BigInt   @id @default(autoincrement())
+  ps_id                  BigInt
+  officer_id             BigInt
+  area_name              String   @db.VarChar(200)
+  drone_operator         String?  @db.VarChar(200)
+  area_scanned_sqm       Decimal? @db.Decimal(10, 2)
+  ganja_detected         Boolean  @default(false)
+  findings_notes         String?
+  no_suspicious_activity Boolean  @default(false)
+  geo_lat                Decimal? @db.Decimal(10, 7)
+  geo_lng                Decimal? @db.Decimal(10, 7)
+  photo_url              String?  @db.VarChar(500)
+  created_at             DateTime @default(now()) @db.Timestamp(6)
+
+  police_station police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  officer        users           @relation("drone_surveillance_officer", fields: [officer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ps_id], map: "idx_ds_ps")
+  @@index([officer_id], map: "idx_ds_officer")
+  @@index([created_at], map: "idx_ds_date")
 }

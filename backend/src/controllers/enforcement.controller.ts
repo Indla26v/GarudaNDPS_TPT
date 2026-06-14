@@ -376,6 +376,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       courierChecksCount,
       railwayChecksCount,
       busStandChecksCount,
+      rowdySheeterChecksCount,
+      boundOverChecksCount,
+      vehicleChecksCount,
+      mvActChecksCount,
+      pettyCasesChecksCount,
+      palleNidraChecksCount,
+      droneSurveillanceChecksCount,
     ] = await Promise.all([
       prisma.enforcement_checks.count({ where: monthWhere }),
       prisma.enforcement_checks.count({ where: { ...monthWhere, test_result: 'POSITIVE' } }),
@@ -387,6 +394,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       (prisma as any).courier_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
       (prisma as any).railway_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
       (prisma as any).bus_stand_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.rowdy_sheeter_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.bound_over_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.vehicle_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.mv_act_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.petty_cases_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.palle_nidra_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
+      prisma.drone_surveillance_checks.count({ where: { ...where, created_at: { gte: monthStart } } }),
     ]);
 
     // Fetch counts for last month to determine trends dynamically
@@ -404,6 +418,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       courierLastMonth,
       railwayLastMonth,
       busStandLastMonth,
+      rowdySheeterLastMonth,
+      boundOverLastMonth,
+      vehicleChecksLastMonth,
+      mvActLastMonth,
+      pettyCasesLastMonth,
+      palleNidraLastMonth,
+      droneSurveillanceLastMonth,
     ] = await Promise.all([
       prisma.enforcement_checks.count({ where: lastMonthWhere }),
       prisma.village_visits.count({ where: lastVillageMonthWhere }),
@@ -412,6 +433,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
       (prisma as any).courier_checks.count({ where: lastMonthWhere }),
       (prisma as any).railway_checks.count({ where: lastMonthWhere }),
       (prisma as any).bus_stand_checks.count({ where: lastMonthWhere }),
+      prisma.rowdy_sheeter_checks.count({ where: lastMonthWhere }),
+      prisma.bound_over_checks.count({ where: lastMonthWhere }),
+      prisma.vehicle_checks.count({ where: lastMonthWhere }),
+      prisma.mv_act_checks.count({ where: lastMonthWhere }),
+      prisma.petty_cases_checks.count({ where: lastMonthWhere }),
+      prisma.palle_nidra_checks.count({ where: lastMonthWhere }),
+      prisma.drone_surveillance_checks.count({ where: lastMonthWhere }),
     ]);
 
     const calculateTrend = (curr: number, prev: number) => {
@@ -469,7 +497,23 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
     });
 
     // Recent activities (Enforcement Checks, Village Visits, Lodge Checks, Drunk & Drive Checks, Courier Checks, Railway Station Checks, and Bus Stand Checks)
-    const [recentChecks, recentVisits, recentLodges, recentDrunkDrive, recentCourier, recentRailway, recentBusStand] = await Promise.all([
+    // Recent activities (Enforcement Checks, Village Visits, Lodge Checks, Drunk & Drive Checks, Courier Checks, Railway Station Checks, Bus Stand Checks, and the 7 new modules)
+    const [
+      recentChecks,
+      recentVisits,
+      recentLodges,
+      recentDrunkDrive,
+      recentCourier,
+      recentRailway,
+      recentBusStand,
+      recentRowdy,
+      recentBoundOver,
+      recentVehicleCheck,
+      recentMvAct,
+      recentPetty,
+      recentPalleNidra,
+      recentDrone
+    ] = await Promise.all([
       prisma.enforcement_checks.findMany({
         where,
         take: 5,
@@ -525,6 +569,69 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         },
       }),
       (prisma as any).bus_stand_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.rowdy_sheeter_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.bound_over_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.vehicle_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.mv_act_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.petty_cases_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.palle_nidra_checks.findMany({
+        where,
+        take: 5,
+        orderBy: { created_at: 'desc' },
+        include: {
+          police_station: { select: { name: true } },
+          officer: { select: { full_name: true } },
+        },
+      }),
+      prisma.drone_surveillance_checks.findMany({
         where,
         take: 5,
         orderBy: { created_at: 'desc' },
@@ -599,6 +706,69 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         bg: 'rgba(20,184,166,0.15)', // teal-500
         color: '#20b8a6',
       })),
+      ...recentRowdy.map(r => ({
+        type: 'Rowdy Sheeter',
+        officer: r.officer.full_name,
+        result: `Rowdy: ${r.rowdy_sheeter_name} (${r.activity_status || 'Checked'})`,
+        time: r.created_at,
+        psName: r.police_station.name,
+        bg: 'rgba(99,102,241,0.15)',
+        color: '#6366f1',
+      })),
+      ...recentBoundOver.map(b => ({
+        type: 'Bound Over',
+        officer: b.officer.full_name,
+        result: `Bound Over: ${b.subject_name} (${b.compliance_status || 'Checked'})`,
+        time: b.created_at,
+        psName: b.police_station.name,
+        bg: 'rgba(16,185,129,0.15)',
+        color: '#10b981',
+      })),
+      ...recentVehicleCheck.map(v => ({
+        type: 'Vehicle Check',
+        officer: v.officer.full_name,
+        result: `Vehicle Check: ${v.vehicle_no} (${v.watchlist_match ? 'Watchlist Match' : 'Clear'})`,
+        time: v.created_at,
+        psName: v.police_station.name,
+        bg: 'rgba(14,165,233,0.15)',
+        color: '#0ea5e9',
+      })),
+      ...recentMvAct.map(m => ({
+        type: 'MV Act',
+        officer: m.officer.full_name,
+        result: `MV Act Violation: ${m.vehicle_no} (${m.violation_type})`,
+        time: m.created_at,
+        psName: m.police_station.name,
+        bg: 'rgba(107,114,128,0.15)',
+        color: '#6b7280',
+      })),
+      ...recentPetty.map(p => ({
+        type: 'Petty Case',
+        officer: p.officer.full_name,
+        result: `Petty Case: ${p.accused_name} (${p.act_section})`,
+        time: p.created_at,
+        psName: p.police_station.name,
+        bg: 'rgba(249,115,22,0.15)',
+        color: '#f97316',
+      })),
+      ...recentPalleNidra.map(pn => ({
+        type: 'Palle Nidra',
+        officer: pn.officer.full_name,
+        result: `Palle Nidra: ${pn.village_name}`,
+        time: pn.created_at,
+        psName: pn.police_station.name,
+        bg: 'rgba(167,139,250,0.15)',
+        color: '#a78bfa',
+      })),
+      ...recentDrone.map(d => ({
+        type: 'Drone Surveillance',
+        officer: d.officer.full_name,
+        result: `Drone Scan: ${d.area_name} (${d.ganja_detected ? 'Ganja detected' : 'No findings'})`,
+        time: d.created_at,
+        psName: d.police_station.name,
+        bg: 'rgba(217,70,239,0.15)',
+        color: '#d946ef',
+      })),
     ]
     .sort((a, b) => b.time.getTime() - a.time.getTime())
     .slice(0, 10);
@@ -623,7 +793,7 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
           });
 
       const stationIds = breakdownStations.map(s => s.id);
-      const [vvCounts, lcCounts, ecCounts, ddCounts, ccCounts, rcCounts, bcCounts] = await Promise.all([
+      const [vvCounts, lcCounts, ecCounts, ddCounts, ccCounts, rcCounts, bcCounts, rsCounts, boCounts, vcCounts, mvCounts, pcCounts, pnCounts, dsCounts] = await Promise.all([
         prisma.village_visits.groupBy({
           by: ['ps_id'],
           where: { ps_id: { in: stationIds }, visit_date: { gte: monthStart } },
@@ -655,6 +825,41 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
           _count: { id: true },
         }),
         (prisma as any).bus_stand_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.rowdy_sheeter_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.bound_over_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.vehicle_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.mv_act_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.petty_cases_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.palle_nidra_checks.groupBy({
+          by: ['ps_id'],
+          where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
+          _count: { id: true },
+        }),
+        prisma.drone_surveillance_checks.groupBy({
           by: ['ps_id'],
           where: { ps_id: { in: stationIds }, created_at: { gte: monthStart } },
           _count: { id: true },
@@ -734,6 +939,41 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         }
       });
 
+      rsCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      boCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      vcCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      mvCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      pcCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      pnCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
+      dsCounts.forEach(c => {
+        const item = breakdownMap.get(c.ps_id.toString());
+        if (item) item.total += c._count.id;
+      });
+
       stationBreakdown = Array.from(breakdownMap.values())
         .sort((a, b) => b.total - a.total);
     }
@@ -749,6 +989,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         courier: courierChecksCount,
         railway: railwayChecksCount,
         bus: busStandChecksCount,
+        rowdySheeter: rowdySheeterChecksCount,
+        boundOver: boundOverChecksCount,
+        vehicleCheck: vehicleChecksCount,
+        mvAct: mvActChecksCount,
+        pettyCases: pettyCasesChecksCount,
+        palleNidra: palleNidraChecksCount,
+        droneSurveillance: droneSurveillanceChecksCount,
       },
       trends: {
         villageVisits: calculateTrend(villageVisitsCount, villageVisitsLastMonth),
@@ -758,6 +1005,13 @@ export const getEnforcementSummary = async (req: Request, res: Response) => {
         courier: calculateTrend(courierChecksCount, courierLastMonth),
         railway: calculateTrend(railwayChecksCount, railwayLastMonth),
         bus: calculateTrend(busStandChecksCount, busStandLastMonth),
+        rowdySheeter: calculateTrend(rowdySheeterChecksCount, rowdySheeterLastMonth),
+        boundOver: calculateTrend(boundOverChecksCount, boundOverLastMonth),
+        vehicleCheck: calculateTrend(vehicleChecksCount, vehicleChecksLastMonth),
+        mvAct: calculateTrend(mvActChecksCount, mvActLastMonth),
+        pettyCases: calculateTrend(pettyCasesChecksCount, pettyCasesLastMonth),
+        palleNidra: calculateTrend(palleNidraChecksCount, palleNidraLastMonth),
+        droneSurveillance: calculateTrend(droneSurveillanceChecksCount, droneSurveillanceLastMonth),
       },
       allTime: { total: totalAllTime, positive: positiveAllTime, negative: negativeAllTime },
       pendingReview,
@@ -1282,6 +1536,236 @@ export const submitBusStandCheck = async (req: Request, res: Response) => {
     res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Bus stand check logged successfully'));
   } catch (error) {
     console.error('submitBusStandCheck error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 13. Submit Rowdy Sheeter Check ────────────────────────────────────
+export const submitRowdySheeter = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.rowdy_sheeter_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        rowdy_sheeter_name: data.rowdy_sheeter_name,
+        rowdy_sheet_no: data.rowdy_sheet_no || null,
+        activity_status: data.activity_status || null,
+        verification_notes: data.verification_notes || null,
+        associates_noted: data.associates_noted || null,
+        current_employment: data.current_employment || null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'ROWDY_SHEETER_CHECK', check.id, req, `Rowdy sheeter check logged for ${data.rowdy_sheeter_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Rowdy sheeter check logged successfully'));
+  } catch (error) {
+    console.error('submitRowdySheeter error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 14. Submit Bound Over Check ───────────────────────────────────────
+export const submitBoundOver = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.bound_over_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        subject_name: data.subject_name,
+        bound_over_date: data.bound_over_date ? new Date(data.bound_over_date) : null,
+        expiry_date: data.expiry_date ? new Date(data.expiry_date) : null,
+        court_order_no: data.court_order_no || null,
+        compliance_status: data.compliance_status || null,
+        violation_details: data.violation_details || null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        findings_notes: data.findings_notes || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'BOUND_OVER_CHECK', check.id, req, `Bound over check logged for ${data.subject_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Bound over check logged successfully'));
+  } catch (error) {
+    console.error('submitBoundOver error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 15. Submit Vehicle Check ──────────────────────────────────────────
+export const submitVehicleCheck = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.vehicle_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        vehicle_no: data.vehicle_no,
+        owner_name: data.owner_name || null,
+        driver_name: data.driver_name || null,
+        driver_phone: data.driver_phone || null,
+        checked_boot: data.checked_boot || false,
+        suspicious_items_found: data.suspicious_items_found || false,
+        watchlist_match: data.watchlist_match || false,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        findings_notes: data.findings_notes || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'VEHICLE_CHECK', check.id, req, `Vehicle check logged for ${data.vehicle_no}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Vehicle check logged successfully'));
+  } catch (error) {
+    console.error('submitVehicleCheck error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 16. Submit MV Act Check ───────────────────────────────────────────
+export const submitMvAct = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.mv_act_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        vehicle_no: data.vehicle_no,
+        driver_name: data.driver_name,
+        violation_type: data.violation_type,
+        fine_amount: data.fine_amount ? parseFloat(String(data.fine_amount)) : 0,
+        challan_no: data.challan_no || null,
+        remarks: data.remarks || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'MV_ACT_CHECK', check.id, req, `MV Act check logged for vehicle ${data.vehicle_no}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'MV Act check logged successfully'));
+  } catch (error) {
+    console.error('submitMvAct error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 17. Submit Petty Cases Check ──────────────────────────────────────
+export const submitPettyCases = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.petty_cases_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        accused_name: data.accused_name,
+        petty_case_no: data.petty_case_no || null,
+        act_section: data.act_section,
+        fine_amount: data.fine_amount ? parseFloat(String(data.fine_amount)) : null,
+        location: data.location || null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        remarks: data.remarks || null,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'PETTY_CASES_CHECK', check.id, req, `Petty case logged for ${data.accused_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Petty case check logged successfully'));
+  } catch (error) {
+    console.error('submitPettyCases error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 18. Submit Palle Nidra Check ──────────────────────────────────────
+export const submitPalleNidra = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.palle_nidra_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        village_name: data.village_name,
+        interaction_details: data.interaction_details || null,
+        grievances_collected: data.grievances_collected || null,
+        intel_notes: data.intel_notes || null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'PALLE_NIDRA_CHECK', check.id, req, `Palle Nidra logged for ${data.village_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Palle Nidra check logged successfully'));
+  } catch (error) {
+    console.error('submitPalleNidra error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ── 19. Submit Drone Surveillance Check ───────────────────────────────
+export const submitDroneSurveillance = async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const psId = user.policeStationId;
+    if (!psId) return res.status(400).json({ message: 'Officer must be assigned to a PS' });
+
+    const data = req.body;
+    const check = await prisma.drone_surveillance_checks.create({
+      data: {
+        ps_id: BigInt(psId),
+        officer_id: BigInt(user.userId),
+        area_name: data.area_name,
+        drone_operator: data.drone_operator || null,
+        area_scanned_sqm: data.area_scanned_sqm ? parseFloat(String(data.area_scanned_sqm)) : null,
+        ganja_detected: data.ganja_detected || false,
+        findings_notes: data.findings_notes || null,
+        no_suspicious_activity: data.no_suspicious_activity || false,
+        geo_lat: data.geo_lat ? parseFloat(String(data.geo_lat)) : null,
+        geo_lng: data.geo_lng ? parseFloat(String(data.geo_lng)) : null,
+        photo_url: data.photo_url || null,
+      }
+    });
+
+    await logAudit('CREATE', 'DRONE_SURVEILLANCE_CHECK', check.id, req, `Drone surveillance logged for ${data.area_name}`);
+    res.status(201).json(successResponse({ ...check, id: check.id.toString() }, 'Drone surveillance check logged successfully'));
+  } catch (error) {
+    console.error('submitDroneSurveillance error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

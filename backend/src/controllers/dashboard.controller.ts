@@ -343,6 +343,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
     // ── Absconder list for ticker (scoped) ───────────────────────────────
     const absconders = await prisma.case_accused.findMany({
       where: { ...caseAccusedWhere, arrest_status: 'ABSCONDING' },
+      orderBy: { cases: { case_date: 'asc' } },
       take: 10,
       include: {
         offenders: { select: { full_name: true } },
@@ -360,7 +361,62 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         firNo: a.cases?.fir_no || '?',
         daysOutstanding,
       };
+    }).sort((a, b) => b.daysOutstanding - a.daysOutstanding);
+
+    // ── Most Wanted List (Top 10, scoped) ────────────────────────────────
+    const mostWantedOffenders = await prisma.offenders.findMany({
+      where: {
+        ...offenderWhere,
+        status: { in: ['ACTIVE', 'ABSCONDING'] },
+        case_accused: {
+          none: {
+            arrest_status: 'ARRESTED'
+          }
+        }
+      },
+      select: {
+        id: true,
+        full_name: true,
+        alias: true,
+        category: true,
+        risk_score: true,
+        status: true,
+        photo_url: true,
+        police_stations: {
+          select: {
+            name: true,
+          }
+        },
+        _count: {
+          select: {
+            case_accused: true,
+          }
+        }
+      }
     });
+
+    const riskScoreOrder: Record<string, number> = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+    const mostWanted = mostWantedOffenders
+      .map(o => ({
+        id: o.id.toString(),
+        fullName: o.full_name,
+        alias: o.alias,
+        category: o.category,
+        riskScore: o.risk_score,
+        status: o.status,
+        photoUrl: o.photo_url,
+        psName: o.police_stations?.name,
+        totalCases: o._count.case_accused,
+      }))
+      .sort((a, b) => {
+        const scoreA = riskScoreOrder[a.riskScore || 'LOW'] || 0;
+        const scoreB = riskScoreOrder[b.riskScore || 'LOW'] || 0;
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
+        return b.totalCases - a.totalCases;
+      })
+      .slice(0, 10);
 
     // ── Response ─────────────────────────────────────────────────────────
     const summaryData = {
@@ -391,6 +447,7 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       // Alerts & activity
       recentAlerts: recentAlerts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10),
       absconderTicker,
+      mostWanted,
       editRequests: editRequests.map(r => ({
         id: r.id.toString(),
         entity_type: r.entity_type,

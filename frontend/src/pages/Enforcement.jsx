@@ -9,6 +9,13 @@ import DrunkDriveForm from '../components/enforcement/forms/DrunkDriveForm';
 import CourierCheckForm from '../components/enforcement/forms/CourierCheckForm';
 import RailwayCheckForm from '../components/enforcement/forms/RailwayCheckForm';
 import BusStandCheckForm from '../components/enforcement/forms/BusStandCheckForm';
+import RowdySheeterForm from '../components/enforcement/forms/RowdySheeterForm';
+import BoundOverForm from '../components/enforcement/forms/BoundOverForm';
+import VehicleCheckForm from '../components/enforcement/forms/VehicleCheckForm';
+import MvActForm from '../components/enforcement/forms/MvActForm';
+import PettyCasesForm from '../components/enforcement/forms/PettyCasesForm';
+import PalleNidraForm from '../components/enforcement/forms/PalleNidraForm';
+import DroneSurveillanceForm from '../components/enforcement/forms/DroneSurveillanceForm';
 
 export default function Enforcement() {
   const perms = usePermissions();
@@ -253,7 +260,14 @@ function FieldOperationsHub({ perms }) {
                   mod.id === 'drunk_drive' || 
                   mod.id === 'courier_check' || 
                   mod.id === 'railway_check' || 
-                  mod.id === 'bus_stand_check'
+                  mod.id === 'bus_stand_check' ||
+                  mod.id === 'rowdy_sheeter' ||
+                  mod.id === 'bound_over' ||
+                  mod.id === 'vehicle_check' ||
+                  mod.id === 'mv_act' ||
+                  mod.id === 'petty_cases' ||
+                  mod.id === 'palle_nidra' ||
+                  mod.id === 'drone_surveillance'
                 ) {
                   setActiveForm(mod.id);
                   setActiveTab('form');
@@ -353,6 +367,90 @@ function FieldOperationsHub({ perms }) {
           <BusStandCheckForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
         </div>
       )}
+
+      {activeTab === 'form' && activeForm === 'rowdy_sheeter' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Verify Rowdy Sheeter
+          </h2>
+          <RowdySheeterForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'bound_over' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Log Bound Over Check
+          </h2>
+          <BoundOverForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'vehicle_check' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm-2 1h-6m-4-6h12l-1-4H6l-1 4zm-3-2V8m12 2V8" />
+            </svg>
+            Log Vehicle Check
+          </h2>
+          <VehicleCheckForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'mv_act' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            Log MV Act Violation
+          </h2>
+          <MvActForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'petty_cases' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7V3m0 0h12m0 0v4m0-4v14m0-14l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9h-6m-2 10h4a2 2 0 012 2v1h-8v-1a2 2 0 012-2z" />
+            </svg>
+            Log Petty Case
+          </h2>
+          <PettyCasesForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'palle_nidra' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            Log Palle Nidra Halt
+          </h2>
+          <PalleNidraForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
+
+      {activeTab === 'form' && activeForm === 'drone_surveillance' && (
+        <div className="card p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-5 h-5 text-fuchsia-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Log Drone Surveillance
+          </h2>
+          <DroneSurveillanceForm onCancel={() => { setActiveTab('hub'); setActiveForm(null); }} onSuccess={() => { setActiveTab('hub'); setActiveForm(null); }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -401,6 +499,13 @@ function GarudaCommandDashboard() {
   const courierCount = summary?.thisMonth?.courier || 0;
   const railwayCount = summary?.thisMonth?.railway || 0;
   const busCount = summary?.thisMonth?.bus || 0;
+  const rowdyCount = summary?.thisMonth?.rowdySheeter || 0;
+  const boundOverCount = summary?.thisMonth?.boundOver || 0;
+  const vehicleCheckCount = summary?.thisMonth?.vehicleCheck || 0;
+  const mvActCount = summary?.thisMonth?.mvAct || 0;
+  const pettyCount = summary?.thisMonth?.pettyCases || 0;
+  const palleNidraCount = summary?.thisMonth?.palleNidra || 0;
+  const droneCount = summary?.thisMonth?.droneSurveillance || 0;
 
   const villageVisitsTrend = summary?.trends?.villageVisits || '0%';
   const lodgeChecksTrend = summary?.trends?.lodgeChecks || '0%';
@@ -409,6 +514,13 @@ function GarudaCommandDashboard() {
   const courierTrend = summary?.trends?.courier || '0%';
   const railwayTrend = summary?.trends?.railway || '0%';
   const busTrend = summary?.trends?.bus || '0%';
+  const rowdyTrend = summary?.trends?.rowdySheeter || '0%';
+  const boundOverTrend = summary?.trends?.boundOver || '0%';
+  const vehicleCheckTrend = summary?.trends?.vehicleCheck || '0%';
+  const mvActTrend = summary?.trends?.mvAct || '0%';
+  const pettyTrend = summary?.trends?.pettyCases || '0%';
+  const palleNidraTrend = summary?.trends?.palleNidra || '0%';
+  const droneTrend = summary?.trends?.droneSurveillance || '0%';
 
   // Dynamic mock weekly data scaled to actual current counts
   const data = [
@@ -429,6 +541,13 @@ function GarudaCommandDashboard() {
     { name: 'Courier Checks', value: courierCount, color: '#ec4899' },
     { name: 'Railway Checks', value: railwayCount, color: '#06b6d4' },
     { name: 'Bus Stand Checks', value: busCount, color: '#20b8a6' },
+    { name: 'Rowdy Sheeter Checks', value: rowdyCount, color: '#6366f1' },
+    { name: 'Bound Over Checks', value: boundOverCount, color: '#10b981' },
+    { name: 'Vehicle Checks', value: vehicleCheckCount, color: '#0ea5e9' },
+    { name: 'MV Act Violations', value: mvActCount, color: '#6b7280' },
+    { name: 'Petty Cases', value: pettyCount, color: '#f97316' },
+    { name: 'Palle Nidra Halts', value: palleNidraCount, color: '#a78bfa' },
+    { name: 'Drone Surveillance', value: droneCount, color: '#d946ef' },
   ].filter(p => p.value > 0);
 
   const displayPieData = pieData.length > 0 ? pieData : [
@@ -461,7 +580,7 @@ function GarudaCommandDashboard() {
       </div>
 
       {/* High-level KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {[
           { label: 'Village Visits', value: villageVisitsCount, trend: villageVisitsTrend, color: 'text-blue-400' },
           { label: 'Lodge Checks', value: lodgeChecksCount, trend: lodgeChecksTrend, color: 'text-purple-400' },
@@ -470,16 +589,23 @@ function GarudaCommandDashboard() {
           { label: 'Courier Checks', value: courierCount, trend: courierTrend, color: 'text-pink-400' },
           { label: 'Railway Checks', value: railwayCount, trend: railwayTrend, color: 'text-cyan-400' },
           { label: 'Bus Stand Checks', value: busCount, trend: busTrend, color: 'text-teal-400' },
+          { label: 'Rowdy Checks', value: rowdyCount, trend: rowdyTrend, color: 'text-indigo-400' },
+          { label: 'Bound Overs', value: boundOverCount, trend: boundOverTrend, color: 'text-emerald-400' },
+          { label: 'Vehicle Checks', value: vehicleCheckCount, trend: vehicleCheckTrend, color: 'text-sky-400' },
+          { label: 'MV Act Cases', value: mvActCount, trend: mvActTrend, color: 'text-gray-400' },
+          { label: 'Petty Cases', value: pettyCount, trend: pettyTrend, color: 'text-orange-400' },
+          { label: 'Palle Nidras', value: palleNidraCount, trend: palleNidraTrend, color: 'text-violet-400' },
+          { label: 'Drone Flights', value: droneCount, trend: droneTrend, color: 'text-fuchsia-400' },
         ].map(kpi => (
-          <div key={kpi.label} className="card p-5 animate-fade-in" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>{kpi.label}</h3>
-            <div className="flex items-end gap-3 mt-2">
+          <div key={kpi.label} className="card p-4 animate-fade-in" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: 'var(--color-garuda-400)' }} title={kpi.label}>{kpi.label}</h3>
+            <div className="flex items-end justify-between mt-2">
               {isLoading ? (
-                <div className="h-6 bg-slate-700/60 rounded w-12 animate-pulse mt-1"></div>
+                <div className="h-6 bg-slate-700/60 rounded w-10 animate-pulse mt-1"></div>
               ) : (
                 <>
-                  <span className="text-2xl font-bold" style={{ color: 'var(--color-garuda-100)' }}>{kpi.value}</span>
-                  <span className={`text-[10px] font-bold pb-1 ${kpi.color}`}>{kpi.trend}</span>
+                  <span className="text-xl font-bold" style={{ color: 'var(--color-garuda-100)' }}>{kpi.value}</span>
+                  <span className={`text-[9px] font-bold ${kpi.color}`}>{kpi.trend}</span>
                 </>
               )}
             </div>
