@@ -437,9 +437,29 @@ export default function CaseForm() {
             {accused.length > 0 && (
               <ul className="space-y-2">
                 {accused.map((a) => (
-                  <li key={a.offenderId} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--color-garuda-900)' }}>
-                    <span className="text-sm" style={{ color: 'var(--color-garuda-100)' }}>{a.offenderName}</span>
-                    <button type="button" onClick={() => removeAccused(a.offenderId)} className="text-xs text-red-400">Remove</button>
+                  <li key={a.offenderId} className="flex items-center justify-between gap-3 p-2.5 rounded-lg" style={{ background: 'var(--color-garuda-900)' }}>
+                    <span className="text-sm flex-1 min-w-0 truncate" style={{ color: 'var(--color-garuda-100)' }}>{a.offenderName}</span>
+                    <select
+                      value={a.arrestStatus}
+                      onChange={(e) => {
+                        setAccused(accused.map(x =>
+                          x.offenderId === a.offenderId
+                            ? { ...x, arrestStatus: e.target.value }
+                            : x
+                        ));
+                      }}
+                      className="px-2 py-1.5 rounded-md text-xs font-semibold outline-none"
+                      style={{
+                        background: a.arrestStatus === 'ABSCONDING' ? 'rgba(239,68,68,0.15)' : a.arrestStatus === 'BAILED' ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
+                        color: a.arrestStatus === 'ABSCONDING' ? '#ef4444' : a.arrestStatus === 'BAILED' ? '#f59e0b' : '#22c55e',
+                        border: `1px solid ${a.arrestStatus === 'ABSCONDING' ? 'rgba(239,68,68,0.3)' : a.arrestStatus === 'BAILED' ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)'}`,
+                      }}
+                    >
+                      <option value="ARRESTED">Arrested</option>
+                      <option value="ABSCONDING">Absconding</option>
+                      <option value="BAILED">Bailed</option>
+                    </select>
+                    <button type="button" onClick={() => removeAccused(a.offenderId)} className="text-xs text-red-400 hover:text-red-300 transition-colors bg-transparent border-none cursor-pointer font-medium whitespace-nowrap">Remove</button>
                   </li>
                 ))}
               </ul>

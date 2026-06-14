@@ -69,7 +69,7 @@ export default function Dashboard() {
 
   // Refresh data on SSE events (bypasses cache)
   useEffect(() => {
-    if (lastEvent && ['case_created', 'offender_created', 'data_updated'].includes(lastEvent.type)) {
+    if (lastEvent && ['case_created', 'offender_created', 'data_updated', 'absconder_alerts'].includes(lastEvent.type)) {
       fetchSummary(true, timeRange);
     }
   }, [lastEvent]);

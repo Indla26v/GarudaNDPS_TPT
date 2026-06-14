@@ -293,21 +293,65 @@ export const updateAccused = async (req: Request, res: Response) => {
     const caseRecord = await prisma.cases.findFirst({ where: { id, ...scope } });
     if (!caseRecord) return res.status(404).json({ message: 'Case not found or access denied' });
 
+    // ── Fetch existing accused to detect status transitions ──────────────
+    const existingAccused = await prisma.case_accused.findMany({
+      where: { case_id: id },
+      include: { offenders: { select: { full_name: true } } },
+    });
+    const existingMap = new Map(
+      existingAccused.map(ea => [ea.offender_id.toString(), ea])
+    );
+
+    // ── Detect and log arrest status transitions ─────────────────────────
+    for (const incoming of accusedData) {
+      const offId = String(incoming.offenderId || incoming.offender_id);
+      const newStatus = incoming.arrestStatus || incoming.arrest_status || 'ARRESTED';
+      const existing = existingMap.get(offId);
+
+      if (existing && existing.arrest_status !== newStatus) {
+        const offenderName = existing.offenders?.full_name || `#${offId}`;
+        await logAudit(
+          'UPDATE',
+          'CASE_ACCUSED',
+          id,
+          req,
+          `Arrest status changed: ${existing.arrest_status} → ${newStatus} for ${offenderName} (offender #${offId}) in case #${id}`
+        );
+      }
+    }
+
     await prisma.case_accused.deleteMany({ where: { case_id: id } });
 
-    const creates = accusedData.map((a: any) => ({
-      case_id: id,
-      offender_id: BigInt(a.offenderId || a.offender_id),
-      previous_cr_no: a.previousCrNo || a.previous_cr_no,
-      previous_ps_id: a.previousPsId || a.previous_ps_id ? BigInt(a.previousPsId || a.previous_ps_id) : null,
-      arrest_status: a.arrestStatus || a.arrest_status || 'ARRESTED',
-      arrest_date: a.arrestDate || a.arrest_date ? new Date(a.arrestDate || a.arrest_date) : null,
-      bail_date: a.bailDate || a.bail_date ? new Date(a.bailDate || a.bail_date) : null,
-      bail_conditions: a.bailConditions || a.bail_conditions,
-    }));
+    const creates = accusedData.map((a: any) => {
+      const offIdStr = String(a.offenderId || a.offender_id);
+      const existing = existingMap.get(offIdStr);
+
+      return {
+        case_id: id,
+        offender_id: BigInt(offIdStr),
+        previous_cr_no: a.previousCrNo || a.previous_cr_no || existing?.previous_cr_no || null,
+        previous_ps_id: a.previousPsId || a.previous_ps_id 
+          ? BigInt(a.previousPsId || a.previous_ps_id) 
+          : existing?.previous_ps_id 
+            ? BigInt(existing.previous_ps_id) 
+            : null,
+        arrest_status: a.arrestStatus || a.arrest_status || existing?.arrest_status || 'ARRESTED',
+        arrest_date: a.arrestDate || a.arrest_date 
+          ? new Date(a.arrestDate || a.arrest_date) 
+          : existing?.arrest_date 
+            ? new Date(existing.arrest_date) 
+            : null,
+        bail_date: a.bailDate || a.bail_date 
+          ? new Date(a.bailDate || a.bail_date) 
+          : existing?.bail_date 
+            ? new Date(existing.bail_date) 
+            : null,
+        bail_conditions: a.bailConditions || a.bail_conditions || existing?.bail_conditions || null,
+      };
+    });
 
     if (creates.length > 0) await prisma.case_accused.createMany({ data: creates });
-    await logAudit('UPDATE_ACCUSED', 'CASE', id, req);
+    await logAudit('UPDATE', 'CASE', id, req, 'Accused list updated');
     broadcastEvent('data_updated', { entity: 'case', id: id.toString() });
     res.json(successResponse({ id: id.toString() }, 'Accused list updated'));
   } catch (error) {

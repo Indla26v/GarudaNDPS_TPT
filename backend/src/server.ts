@@ -15,7 +15,9 @@ import adminRoutes from './routes/admin.routes';
 import sseRoutes from './routes/sse.routes';
 import enforcementRoutes from './routes/enforcement.routes';
 import vehiclesRoutes from './routes/vehicles.routes';
+import reportsRoutes from './routes/reports.routes';
 import { warmUpConnection } from './config/prisma';
+import { startAbsconderAlertScheduler } from './utils/scheduler';
 
 dotenv.config();
 
@@ -97,6 +99,9 @@ app.use('/api/enforcement', enforcementRoutes);
 // ── Vehicles (seized) routes ──────────────────────────────────────────
 app.use('/api/vehicles', vehiclesRoutes);
 
+// ── Reports routes ───────────────────────────────────────────────────
+app.use('/api/reports', reportsRoutes);
+
 // ── Wake-up endpoint (warms Neon DB from sleep) ───────────────────────
 app.get('/api/wake', async (req, res) => {
   const start = Date.now();
@@ -118,6 +123,7 @@ const PORT = process.env.PORT || 8081;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  startAbsconderAlertScheduler();
 });
 
 export default app;

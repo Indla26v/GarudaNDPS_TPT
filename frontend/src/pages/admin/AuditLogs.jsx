@@ -44,6 +44,21 @@ export default function AuditLogs() {
       const log = rawLogs[i];
       const userId = log.user?.id || 'SYSTEM';
 
+      if (active[userId]) {
+        const session = active[userId];
+        const lastLog = session.actions[session.actions.length - 1];
+
+        const lastTime = new Date(lastLog.timestamp).getTime();
+        const currTime = new Date(log.timestamp).getTime();
+        const dateChanged = new Date(lastLog.timestamp).toDateString() !== new Date(log.timestamp).toDateString();
+        const threshold = 30 * 60 * 1000; // 30 minutes
+
+        if (dateChanged || Math.abs(lastTime - currTime) > threshold || log.action === 'LOGOUT') {
+          grouped.push({ ...session, actions: session.actions.reverse() });
+          delete active[userId];
+        }
+      }
+
       if (!active[userId]) {
         active[userId] = {
           id: `sess_${userId}_${log.id}`,
@@ -73,6 +88,8 @@ export default function AuditLogs() {
     Object.values(active).forEach(session => {
       grouped.push({ ...session, actions: session.actions.reverse() });
     });
+
+    grouped.sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
 
     return grouped;
   };

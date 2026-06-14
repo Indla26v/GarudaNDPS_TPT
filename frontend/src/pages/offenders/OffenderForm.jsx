@@ -1193,7 +1193,7 @@ export default function OffenderForm() {
         {(isEdit || isView) && (
           <div className="card rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>Case History</h3>
-            <OffenderCaseHistory offenderId={id} />
+            <OffenderCaseHistory offenderId={id} isEdit={isEdit} />
           </div>
         )}
 
