@@ -4,6 +4,7 @@ import {
   submitTestResult,
   listEnforcementChecks,
   getEnforcementSummary,
+  getUserLogs,
   getPendingReview,
   reviewEnforcementCheck,
   submitVillageVisit,
@@ -31,6 +32,7 @@ router.use(authenticate);
 // All authenticated officers can view and create enforcement checks
 router.get('/', listEnforcementChecks);
 router.get('/summary', getEnforcementSummary);
+router.get('/user-logs', getUserLogs);
 router.post('/', createEnforcementCheck);
 router.put('/:id/test-result', submitTestResult);
 

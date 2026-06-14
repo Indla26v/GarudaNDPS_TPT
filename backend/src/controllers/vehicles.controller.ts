@@ -82,7 +82,7 @@ export const getSeizedVehicles = async (req: Request, res: Response) => {
  */
 export const getSeizedVehicleById = async (req: Request, res: Response) => {
   try {
-    const id = BigInt(req.params.id);
+    const id = BigInt(req.params.id as string);
     const vehicle = await prisma.seized_vehicles.findUnique({
       where: { id },
       include: {
@@ -110,7 +110,7 @@ export const getSeizedVehicleById = async (req: Request, res: Response) => {
  */
 export const updateSeizedVehicle = async (req: Request, res: Response) => {
   try {
-    const id = BigInt(req.params.id);
+    const id = BigInt(req.params.id as string);
     const data = req.body;
 
     const existing = await prisma.seized_vehicles.findUnique({ where: { id } });

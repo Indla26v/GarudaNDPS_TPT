@@ -1405,6 +1405,61 @@ export const searchOffenders = async (req: Request, res: Response) => {
   }
 };
 
+export const getUserLogs = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const scopeFilter = getEnforcementWhere(user as ScopeUser);
+
+    const [
+      vv, lc, dd, cc, rc, bc, rs, bo, vc, mv, pc, pn, ds, en
+    ] = await Promise.all([
+      prisma.village_visits.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.lodge_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.drunk_drive_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.courier_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.railway_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.bus_stand_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.rowdy_sheeter_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.bound_over_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.vehicle_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.mv_act_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.petty_cases_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.palle_nidra_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.drone_surveillance_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
+      prisma.enforcement_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } })
+    ]);
+
+    const allLogs = [
+      ...vv.map(i => ({ type: 'Village Visit', title: i.village_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...lc.map(i => ({ type: 'Lodge Check', title: i.lodge_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...dd.map(i => ({ type: 'Drunk Drive', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...cc.map(i => ({ type: 'Courier Check', title: i.courier_office_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...rc.map(i => ({ type: 'Railway Check', title: i.station_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...bc.map(i => ({ type: 'Bus Stand Check', title: i.bus_stand_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...rs.map(i => ({ type: 'Rowdy Sheeter', title: i.rowdy_sheeter_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...bo.map(i => ({ type: 'Bound Over', title: i.subject_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...vc.map(i => ({ type: 'Vehicle Check', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...mv.map(i => ({ type: 'MV Act Case', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...pc.map(i => ({ type: 'Petty Case', title: i.accused_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...pn.map(i => ({ type: 'Palle Nidra', title: i.village_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...ds.map(i => ({ type: 'Drone Flight', title: i.area_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
+      ...en.map(i => ({ type: 'NDPS Verification', title: i.subject_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng }))
+    ];
+
+    allLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    res.json(successResponse({ logs: allLogs.slice(0, 30) }, 'User logs fetched'));
+  } catch (error) {
+    console.error('Error fetching user logs:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching user logs.' });
+  }
+};
+
 // ── 9. Submit Drunk & Drive Check ────────────────────────────────────
 export const submitDrunkDrive = async (req: Request, res: Response) => {
   try {
