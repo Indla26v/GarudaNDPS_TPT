@@ -1415,40 +1415,246 @@ export const getUserLogs = async (req: Request, res: Response): Promise<void> =>
 
     const scopeFilter = getEnforcementWhere(user as ScopeUser);
 
-    const [
-      vv, lc, dd, cc, rc, bc, rs, bo, vc, mv, pc, pn, ds, en
-    ] = await Promise.all([
-      prisma.village_visits.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.lodge_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.drunk_drive_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.courier_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.railway_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.bus_stand_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.rowdy_sheeter_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.bound_over_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.vehicle_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.mv_act_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.petty_cases_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.palle_nidra_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.drone_surveillance_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } }),
-      prisma.enforcement_checks.findMany({ where: scopeFilter, take: 10, orderBy: { created_at: 'desc' } })
-    ]);
+    const includeBlock = {
+      officer: { select: { full_name: true, role: true } },
+      police_station: { select: { name: true } }
+    };
+
+    const typeQuery = req.query.type as string | undefined;
+
+    const fetchVV = () => prisma.village_visits.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchLC = () => prisma.lodge_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchDD = () => prisma.drunk_drive_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchCC = () => prisma.courier_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchRC = () => prisma.railway_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchBC = () => prisma.bus_stand_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchRS = () => prisma.rowdy_sheeter_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchBO = () => prisma.bound_over_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchVC = () => prisma.vehicle_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchMV = () => prisma.mv_act_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchPC = () => prisma.petty_cases_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchPN = () => prisma.palle_nidra_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchDS = () => prisma.drone_surveillance_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+    const fetchEN = () => prisma.enforcement_checks.findMany({ where: scopeFilter, include: includeBlock, take: 30, orderBy: { created_at: 'desc' } });
+
+    let vv: any[] = [];
+    let lc: any[] = [];
+    let dd: any[] = [];
+    let cc: any[] = [];
+    let rc: any[] = [];
+    let bc: any[] = [];
+    let rs: any[] = [];
+    let bo: any[] = [];
+    let vc: any[] = [];
+    let mv: any[] = [];
+    let pc: any[] = [];
+    let pn: any[] = [];
+    let ds: any[] = [];
+    let en: any[] = [];
+
+    if (typeQuery && typeQuery !== 'ALL') {
+      if (typeQuery === 'Village Visit') vv = await fetchVV();
+      else if (typeQuery === 'Lodge Check') lc = await fetchLC();
+      else if (typeQuery === 'Drunk Drive') dd = await fetchDD();
+      else if (typeQuery === 'Courier Check') cc = await fetchCC();
+      else if (typeQuery === 'Railway Check') rc = await fetchRC();
+      else if (typeQuery === 'Bus Stand Check') bc = await fetchBC();
+      else if (typeQuery === 'Rowdy Sheeter') rs = await fetchRS();
+      else if (typeQuery === 'Bound Over') bo = await fetchBO();
+      else if (typeQuery === 'Vehicle Check') vc = await fetchVC();
+      else if (typeQuery === 'MV Act Case') mv = await fetchMV();
+      else if (typeQuery === 'Petty Case') pc = await fetchPC();
+      else if (typeQuery === 'Palle Nidra') pn = await fetchPN();
+      else if (typeQuery === 'Drone Flight') ds = await fetchDS();
+      else if (typeQuery === 'NDPS Verification') en = await fetchEN();
+    } else {
+      const results = await Promise.all([
+        prisma.village_visits.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.lodge_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.drunk_drive_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.courier_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.railway_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.bus_stand_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.rowdy_sheeter_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.bound_over_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.vehicle_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.mv_act_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.petty_cases_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.palle_nidra_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.drone_surveillance_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } }),
+        prisma.enforcement_checks.findMany({ where: scopeFilter, include: includeBlock, take: 10, orderBy: { created_at: 'desc' } })
+      ]);
+      vv = results[0];
+      lc = results[1];
+      dd = results[2];
+      cc = results[3];
+      rc = results[4];
+      bc = results[5];
+      rs = results[6];
+      bo = results[7];
+      vc = results[8];
+      mv = results[9];
+      pc = results[10];
+      pn = results[11];
+      ds = results[12];
+      en = results[13];
+    }
 
     const allLogs = [
-      ...vv.map(i => ({ type: 'Village Visit', title: i.village_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...lc.map(i => ({ type: 'Lodge Check', title: i.lodge_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...dd.map(i => ({ type: 'Drunk Drive', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...cc.map(i => ({ type: 'Courier Check', title: i.courier_office_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...rc.map(i => ({ type: 'Railway Check', title: i.station_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...bc.map(i => ({ type: 'Bus Stand Check', title: i.bus_stand_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...rs.map(i => ({ type: 'Rowdy Sheeter', title: i.rowdy_sheeter_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...bo.map(i => ({ type: 'Bound Over', title: i.subject_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...vc.map(i => ({ type: 'Vehicle Check', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...mv.map(i => ({ type: 'MV Act Case', title: i.vehicle_no, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...pc.map(i => ({ type: 'Petty Case', title: i.accused_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...pn.map(i => ({ type: 'Palle Nidra', title: i.village_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...ds.map(i => ({ type: 'Drone Flight', title: i.area_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng })),
-      ...en.map(i => ({ type: 'NDPS Verification', title: i.subject_name, date: i.created_at, lat: i.geo_lat, lng: i.geo_lng }))
+      ...vv.map(i => ({
+        type: 'Village Visit',
+        title: i.village_name,
+        location: `${i.village_name} (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.intel_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.visit_date,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Checklist: bad characters: ${i.verified_bad_chars ? 'Yes' : 'No'}, rowdies: ${i.verified_rowdies ? 'Yes' : 'No'}, bound overs: ${i.verified_bound_overs ? 'Yes' : 'No'}, habitual: ${i.verified_habitual ? 'Yes' : 'No'}`
+      })),
+      ...lc.map(i => ({
+        type: 'Lodge Check',
+        title: i.lodge_name,
+        location: `${i.location ? i.location + ', ' : ''}${(i.police_station as any)?.name || 'N/A'}`,
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.check_date,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Lodge: ${i.lodge_name}${i.owner_name ? `, Owner: ${i.owner_name}` : ''}${i.manager_name ? `, Manager: ${i.manager_name}` : ''}`
+      })),
+      ...dd.map(i => ({
+        type: 'Drunk Drive',
+        title: i.vehicle_no,
+        location: (i.police_station as any)?.name || 'N/A',
+        notes: i.remarks || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Driver: ${i.driver_name} (${i.driver_age ? i.driver_age + ' yrs' : 'N/A'}, ${i.driver_gender || 'N/A'}), BAC: ${i.bac_level} mg/100ml, Fine: ${i.fine_amount ? i.fine_amount + ' INR' : 'None'}, Impounded: ${i.vehicle_impounded ? 'Yes' : 'No'}`
+      })),
+      ...cc.map(i => ({
+        type: 'Courier Check',
+        title: i.courier_office_name,
+        location: `${i.location ? i.location + ', ' : ''}${(i.police_station as any)?.name || 'N/A'}`,
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Courier Office: ${i.courier_office_name}, Manager: ${i.manager_name || 'N/A'}, Parcels: ${i.scanned_parcels_count || 0}`
+      })),
+      ...rc.map(i => ({
+        type: 'Railway Check',
+        title: i.station_name,
+        location: `${i.station_name} station (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Trains Checked: ${i.trains_checked || 'N/A'}, Profiled: ${i.passengers_profiled || 0}, Luggage Inspected: ${i.luggage_inspected_count || 0}`
+      })),
+      ...bc.map(i => ({
+        type: 'Bus Stand Check',
+        title: i.bus_stand_name,
+        location: `${i.bus_stand_name} (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Buses Checked: ${i.buses_checked || 'N/A'}, Passengers: ${i.passengers_checked || 0}, Parcels Verified: ${i.parcels_verified ? 'Yes' : 'No'}`
+      })),
+      ...rs.map(i => ({
+        type: 'Rowdy Sheeter',
+        title: i.rowdy_sheeter_name,
+        location: (i.police_station as any)?.name || 'N/A',
+        notes: i.verification_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Rowdy Sheet No: ${i.rowdy_sheet_no || 'N/A'}, Status: ${i.activity_status || 'N/A'}, Employment: ${i.current_employment || 'N/A'}`
+      })),
+      ...bo.map(i => ({
+        type: 'Bound Over',
+        title: i.subject_name,
+        location: (i.police_station as any)?.name || 'N/A',
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Bound Over Date: ${i.bound_over_date ? new Date(i.bound_over_date).toLocaleDateString() : 'N/A'}, Expiry Date: ${i.expiry_date ? new Date(i.expiry_date).toLocaleDateString() : 'N/A'}, Court Order: ${i.court_order_no || 'N/A'}, Compliance: ${i.compliance_status || 'N/A'}`
+      })),
+      ...vc.map(i => ({
+        type: 'Vehicle Check',
+        title: i.vehicle_no,
+        location: (i.police_station as any)?.name || 'N/A',
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Driver: ${i.driver_name || 'N/A'} (Phone: ${i.driver_phone || 'N/A'}), Owner: ${i.owner_name || 'N/A'}, Checked Boot: ${i.checked_boot ? 'Yes' : 'No'}, Watchlist: ${i.watchlist_match ? 'Match' : 'Clear'}`
+      })),
+      ...mv.map(i => ({
+        type: 'MV Act Case',
+        title: i.vehicle_no,
+        location: (i.police_station as any)?.name || 'N/A',
+        notes: i.remarks || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Driver: ${i.driver_name}, Violation: ${i.violation_type}, Fine: ${i.fine_amount} INR, Challan No: ${i.challan_no || 'N/A'}`
+      })),
+      ...pc.map(i => ({
+        type: 'Petty Case',
+        title: i.accused_name,
+        location: `${i.location ? i.location + ', ' : ''}${(i.police_station as any)?.name || 'N/A'}`,
+        notes: i.remarks || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Section: ${i.act_section}, Fine: ${i.fine_amount ? i.fine_amount + ' INR' : 'None'}, Case No: ${i.petty_case_no || 'N/A'}`
+      })),
+      ...pn.map(i => ({
+        type: 'Palle Nidra',
+        title: i.village_name,
+        location: `${i.village_name} village (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.intel_notes || i.interaction_details || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Grievances: ${i.grievances_collected || 'None'}`
+      })),
+      ...ds.map(i => ({
+        type: 'Drone Flight',
+        title: i.area_name,
+        location: `${i.area_name} (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.findings_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Operator: ${i.drone_operator || 'N/A'}, Area: ${i.area_scanned_sqm ? i.area_scanned_sqm + ' sqm' : 'N/A'}, Ganja Detected: ${i.ganja_detected ? 'Yes' : 'No'}`
+      })),
+      ...en.map(i => ({
+        type: 'NDPS Verification',
+        title: i.subject_name,
+        location: `${i.place_of_enforcement} (${(i.police_station as any)?.name || 'N/A'})`,
+        notes: i.lookup_summary || i.review_notes || null,
+        submittedBy: i.officer ? `${i.officer.full_name} (${i.officer.role})` : 'N/A',
+        date: i.created_at,
+        lat: i.geo_lat,
+        lng: i.geo_lng,
+        details: `Age/Gender: ${i.subject_age || 'N/A'}/${i.subject_gender || 'N/A'}, Test: ${i.test_result}, Consumption: ${i.consumption_type || 'N/A'}`
+      }))
     ];
 
     allLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

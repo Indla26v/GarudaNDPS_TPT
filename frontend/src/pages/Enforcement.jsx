@@ -61,14 +61,24 @@ export default function Enforcement() {
         {isCommandLevel && (
           <button
             onClick={() => setActiveView('dashboard')}
-            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${activeView === 'dashboard' ? 'bg-purple-600/20 border-purple-500/60' : 'bg-transparent border-purple-500/20 hover:bg-purple-500/10'}`}
+            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 cursor-pointer ${
+              activeView === 'dashboard'
+                ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-800/80 text-purple-900 dark:text-purple-200'
+                : 'bg-transparent border-slate-200 dark:border-slate-800 hover:bg-purple-50/30 dark:hover:bg-purple-950/5 hover:border-purple-200 dark:hover:border-purple-900 text-slate-700 dark:text-slate-300'
+            }`}
           >
-            <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+            <div className={`p-2 rounded-lg transition-all ${
+              activeView === 'dashboard'
+                ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400'
+                : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400'
+            }`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             </div>
             <div>
-              <div className="font-semibold text-purple-300">Command Dashboard</div>
-              <div className="text-xs text-purple-400/60 mt-0.5">District-wide metrics</div>
+              <div className="font-bold text-sm">Command Dashboard</div>
+              <div className={`text-xs mt-0.5 ${
+                activeView === 'dashboard' ? 'text-purple-700 dark:text-purple-400/80' : 'text-slate-500 dark:text-slate-400/70'
+              }`}>District-wide metrics</div>
             </div>
           </button>
         )}
@@ -76,28 +86,48 @@ export default function Enforcement() {
         {(isFieldLevel || isCommandLevel) && (
           <button
             onClick={() => setActiveView('field_hub')}
-            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${activeView === 'field_hub' ? 'bg-sky-600/20 border-sky-500/60' : 'bg-transparent border-sky-500/20 hover:bg-sky-500/10'}`}
+            className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 cursor-pointer ${
+              activeView === 'field_hub'
+                ? 'bg-sky-50 dark:bg-sky-950/20 border-sky-300 dark:border-sky-800/80 text-sky-900 dark:text-sky-200'
+                : 'bg-transparent border-slate-200 dark:border-slate-800 hover:bg-sky-50/30 dark:hover:bg-sky-950/5 hover:border-sky-200 dark:hover:border-sky-900 text-slate-700 dark:text-slate-300'
+            }`}
           >
-            <div className="p-2 rounded-lg bg-sky-500/20 text-sky-400">
+            <div className={`p-2 rounded-lg transition-all ${
+              activeView === 'field_hub'
+                ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400'
+                : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400'
+            }`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
             </div>
             <div>
-              <div className="font-semibold text-sky-300">Field Operations</div>
-              <div className="text-xs text-sky-400/60 mt-0.5">Log field activities</div>
+              <div className="font-bold text-sm">Field Operations</div>
+              <div className={`text-xs mt-0.5 ${
+                activeView === 'field_hub' ? 'text-sky-700 dark:text-sky-400/80' : 'text-slate-500 dark:text-slate-400/70'
+              }`}>Log field activities</div>
             </div>
           </button>
         )}
 
         <button
           onClick={() => setActiveView('enforcement_log')}
-          className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${activeView === 'enforcement_log' ? 'bg-emerald-600/20 border-emerald-500/60' : 'bg-transparent border-emerald-500/20 hover:bg-emerald-500/10'}`}
+          className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 cursor-pointer ${
+            activeView === 'enforcement_log'
+              ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200'
+              : 'bg-transparent border-slate-200 dark:border-slate-800 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/5 hover:border-emerald-200 dark:hover:border-emerald-900 text-slate-700 dark:text-slate-300'
+          }`}
         >
-          <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+          <div className={`p-2 rounded-lg transition-all ${
+            activeView === 'enforcement_log'
+              ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
+              : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400'
+          }`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           </div>
           <div>
-            <div className="font-semibold text-emerald-300">Enforcement Log</div>
-            <div className="text-xs text-emerald-400/60 mt-0.5">Geo-tagged history</div>
+            <div className="font-bold text-sm">Enforcement Log</div>
+            <div className={`text-xs mt-0.5 ${
+              activeView === 'enforcement_log' ? 'text-emerald-700 dark:text-emerald-400/80' : 'text-slate-500 dark:text-slate-400/70'
+            }`}>Geo-tagged history</div>
           </div>
         </button>
       </div>
@@ -674,25 +704,39 @@ function GarudaCommandDashboard() {
         </div>
 
         {/* Activity Distribution Pie Chart */}
-        <div className="card p-5" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+        <div className="card p-5 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
           <h3 className="text-base font-bold mb-4" style={{ color: 'var(--color-garuda-100)' }}>Activity Distribution</h3>
           {isLoading ? (
-            <div className="h-64 w-full flex items-center justify-center bg-slate-800/40 rounded-xl border border-slate-700/50 animate-pulse">
+            <div className="h-72 w-full flex items-center justify-center bg-slate-800/40 rounded-xl border border-slate-700/50 animate-pulse">
               <div className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>Loading distribution...</div>
             </div>
           ) : (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={displayPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                    {displayPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col items-center justify-center flex-1">
+              <div className="h-44 w-full flex justify-center items-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={displayPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
+                      {displayPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ backgroundColor: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', borderRadius: '8px', fontSize: '12px' }} labelStyle={{ color: 'var(--color-garuda-100)' }} itemStyle={{ color: 'var(--color-garuda-200)' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              
+              {/* Scrollable grid legend with contrast */}
+              <div className="w-full mt-2 max-h-[120px] overflow-y-auto border-t pt-3 pr-1 space-y-2" style={{ borderColor: 'var(--color-garuda-700)' }}>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                  {displayPieData.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 text-[11px] truncate" title={`${item.name}: ${item.value}`}>
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></span>
+                      <span className="font-semibold truncate" style={{ color: 'var(--color-garuda-300)' }}>{item.name}</span>
+                      <span className="font-bold ml-auto" style={{ color: 'var(--color-garuda-100)' }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -799,11 +843,13 @@ function GarudaCommandDashboard() {
 function UserEnforcementLog() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState('ALL');
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const res = await api.get('/enforcement/user-logs');
+        setLoading(true);
+        const res = await api.get(`/enforcement/user-logs?type=${selectedType}`);
         setLogs(res.data?.data?.logs || []);
       } catch (err) {
         console.error('Failed to fetch user logs', err);
@@ -812,18 +858,45 @@ function UserEnforcementLog() {
       }
     };
     fetchLogs();
-  }, []);
+  }, [selectedType]);
 
   return (
     <div className="card p-6 animate-fade-in" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
-        <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        My Enforcement Log
-      </h2>
-      <p className="text-sm text-gray-400 mb-6">History of your field operations with geo-tag locations.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-garuda-50)' }}>
+            <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            My Enforcement Log
+          </h2>
+          <p className="text-sm text-gray-400 mt-1">History of your field operations with geo-tag locations.</p>
+        </div>
+        
+        <select
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+          className="select px-4 py-2.5 rounded-lg text-sm border font-semibold outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer"
+          style={{ background: 'var(--color-garuda-800)', borderColor: 'var(--color-garuda-700)', color: 'var(--color-garuda-100)', minWidth: '200px' }}
+        >
+          <option value="ALL">All Modules</option>
+          <option value="Village Visit">Village Visits</option>
+          <option value="Lodge Check">Lodge Checks</option>
+          <option value="Drunk Drive">Drunk & Drive Checks</option>
+          <option value="Courier Check">Courier Office Checks</option>
+          <option value="Railway Check">Railway Station Checks</option>
+          <option value="Bus Stand Check">Bus Stand Checks</option>
+          <option value="Rowdy Sheeter">Rowdy Sheeter Checks</option>
+          <option value="Bound Over">Bound Over Checks</option>
+          <option value="Vehicle Check">Vehicle Checks</option>
+          <option value="MV Act Case">MV Act Violations</option>
+          <option value="Petty Case">Petty Cases</option>
+          <option value="Palle Nidra">Palle Nidra Halts</option>
+          <option value="Drone Flight">Drone Flights</option>
+          <option value="NDPS Verification">Ganja / NDPS Verifications</option>
+        </select>
+      </div>
       
       {loading ? (
         <div className="flex justify-center p-12">
@@ -838,19 +911,56 @@ function UserEnforcementLog() {
       ) : (
         <div className="space-y-4">
           {logs.map((log, i) => (
-            <div key={i} className="p-4 rounded-xl border flex justify-between items-center transition-all hover:border-emerald-500/50" style={{ borderColor: 'var(--color-garuda-700)', background: 'var(--color-garuda-900)' }}>
-              <div>
-                <div className="text-xs text-emerald-400 font-semibold mb-1 uppercase tracking-wider">{log.type}</div>
-                <div className="text-sm font-medium text-gray-200">{log.title}</div>
-                <div className="text-xs text-gray-500 mt-1">{new Date(log.date).toLocaleString()}</div>
+            <div key={i} className="p-5 rounded-xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all hover:border-emerald-500/50" style={{ borderColor: 'var(--color-garuda-700)', background: 'var(--color-garuda-900)' }}>
+              <div className="space-y-2 flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">{log.type}</span>
+                  <span className="text-xs" style={{ color: 'var(--color-garuda-400)' }}>{new Date(log.date).toLocaleString()}</span>
+                </div>
+                
+                <h3 className="text-base font-bold" style={{ color: 'var(--color-garuda-100)' }}>{log.title}</h3>
+                
+                {log.location && (
+                  <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-garuda-300)' }}>
+                    <svg className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Location: <strong className="font-semibold" style={{ color: 'var(--color-garuda-100)' }}>{log.location}</strong></span>
+                  </div>
+                )}
+
+                {log.submittedBy && (
+                  <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-garuda-300)' }}>
+                    <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>Submitted by: <strong className="font-semibold" style={{ color: 'var(--color-garuda-100)' }}>{log.submittedBy}</strong></span>
+                  </div>
+                )}
+
+                {log.notes && (
+                  <div className="p-3.5 rounded-lg text-xs italic border" style={{ background: 'var(--color-garuda-600)', borderColor: 'var(--color-garuda-700)', color: 'var(--color-garuda-200)' }}>
+                    <span className="font-bold not-italic block mb-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Officer Notes:</span>
+                    "{log.notes}"
+                  </div>
+                )}
+
+                {log.details && (
+                  <div className="text-xs px-3 py-2 rounded-md border flex flex-wrap items-center gap-2" style={{ background: 'var(--color-garuda-600)', borderColor: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}>
+                    <span className="font-bold text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-garuda-400)' }}>Details:</span>
+                    <span style={{ color: 'var(--color-garuda-100)' }}>{log.details}</span>
+                  </div>
+                )}
               </div>
+
               {log.lat && log.lng && (
-                <div className="text-right flex flex-col items-end">
-                  <div className="text-xs text-gray-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                    <svg className="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <div className="text-left md:text-right flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto border-t md:border-t-0 pt-2 md:pt-0" style={{ borderColor: 'var(--color-garuda-700)' }}>
+                  <div className="text-[10px] uppercase tracking-wider hidden md:block" style={{ color: 'var(--color-garuda-400)' }}>Geo-Tagged</div>
+                  <div className="text-xs font-mono flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border mt-1 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
+                    <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     {Number(log.lat).toFixed(4)}, {Number(log.lng).toFixed(4)}
                   </div>
-                  <div className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">Geo-Tagged</div>
                 </div>
               )}
             </div>

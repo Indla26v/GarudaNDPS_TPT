@@ -17,7 +17,7 @@ import {
 } from '../controllers/team.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/authorize.middleware';
-import { importDprExcel } from '../controllers/import.controller';
+import { importDprExcel, previewDprExcel, confirmDprImport } from '../controllers/import.controller';
 import { uploadExcel } from '../middleware/upload.middleware';
 
 const router = Router();
@@ -43,5 +43,7 @@ router.delete('/teams/:id/members/:userId', requirePermission('TEAM_MANAGEMENT')
 router.delete('/teams/:id', requirePermission('TEAM_MANAGEMENT'), deleteTeam);
 
 router.post('/import/dpr', requirePermission('USER_MANAGEMENT'), uploadExcel.single('file'), importDprExcel);
+router.post('/import/dpr/preview', requirePermission('USER_MANAGEMENT'), uploadExcel.single('file'), previewDprExcel);
+router.post('/import/dpr/confirm', requirePermission('USER_MANAGEMENT'), confirmDprImport);
 
 export default router;

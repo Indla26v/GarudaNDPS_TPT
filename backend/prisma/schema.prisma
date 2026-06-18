@@ -190,6 +190,8 @@ model offenders {
   landmark_area                                                       String?                  @db.VarChar(200)
   district                                                            String?                  @db.VarChar(100)
   state                                                               String?                  @db.VarChar(100)
+  caste                                                               String?                  @db.VarChar(100)
+  mandal                                                              String?                  @db.VarChar(100)
   occupation                                                          String?                  @db.VarChar(100)
   monthly_income                                                      Decimal?                 @db.Decimal(12, 2)
   photo_url                                                           String?                  @db.VarChar(500)
