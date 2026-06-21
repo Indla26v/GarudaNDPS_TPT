@@ -23,22 +23,36 @@ export default function CaseManagement() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('');
+  const [stageCounts, setStageCounts] = useState({
+    FIR: 0,
+    CHARGESHEET: 0,
+    TRIAL: 0,
+    CONVICTED: 0,
+    ACQUITTED: 0,
+    CLOSED: 0,
+  });
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const perms = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCases();
-  }, [stageFilter]);
+  }, [stageFilter, page]);
 
   const fetchCases = async () => {
     try {
       setLoading(true);
-      const params = {};
+      const params = { page, size: 30 };
       if (stageFilter) params.stage = stageFilter;
       if (search) params.search = search;
       const res = await api.get('/cases', { params });
       const payload = res.data.data;
       setCases(payload?.content || (Array.isArray(payload) ? payload : []));
+      setTotalPages(payload?.totalPages || 1);
+      if (payload?.stageCounts) {
+        setStageCounts(payload.stageCounts);
+      }
     } catch (err) {
       setError('Failed to load cases');
     } finally {
@@ -48,11 +62,25 @@ export default function CaseManagement() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchCases();
+    if (page === 0) {
+      fetchCases();
+    } else {
+      setPage(0);
+    }
+  };
+
+  const handleStageClick = (key) => {
+    setStageFilter(prev => prev === key ? '' : key);
+    setPage(0);
+  };
+
+  const handleStageSelect = (e) => {
+    setStageFilter(e.target.value);
+    setPage(0);
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className={`space-y-6 animate-fade-in ${totalPages > 1 ? 'pr-12 sm:pr-16' : ''}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
@@ -86,7 +114,7 @@ export default function CaseManagement() {
         </form>
         <select
           value={stageFilter}
-          onChange={(e) => setStageFilter(e.target.value)}
+          onChange={handleStageSelect}
           className="select"
         >
           <option value="">All Stages</option>
@@ -99,11 +127,11 @@ export default function CaseManagement() {
       {/* Stage Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {Object.entries(STAGE_COLORS).map(([key, val]) => {
-          const count = cases.filter(c => c.stage === key).length;
+          const count = stageCounts[key] || 0;
           return (
             <button
               key={key}
-              onClick={() => setStageFilter(stageFilter === key ? '' : key)}
+              onClick={() => handleStageClick(key)}
               className="card card-hover rounded-xl p-3 text-center cursor-pointer"
               style={{
                 borderColor: stageFilter === key ? val.bg : undefined,
@@ -251,6 +279,84 @@ export default function CaseManagement() {
               })
             )}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div 
+              className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5 p-2 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"
+              style={{ minWidth: '44px' }}
+            >
+              {/* Page Number indicator at the top */}
+              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center select-none pb-1.5 border-b border-slate-100 dark:border-slate-800 w-full mb-0.5">
+                {page + 1}/{totalPages}
+              </div>
+              
+              {/* Previous Button (Up Arrow) */}
+              <button
+                onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+                disabled={page === 0 || loading}
+                title="Previous Page"
+                className="btn btn-secondary btn-sm w-8 h-8 flex items-center justify-center rounded-lg"
+                style={{ padding: 0 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                </svg>
+              </button>
+
+              {/* Vertical Page List */}
+              <div className="flex flex-col gap-1.5">
+                {Array.from({ length: totalPages }).map((_, index) => {
+                  if (
+                    totalPages <= 6 ||
+                    index < 2 ||
+                    index === totalPages - 1 ||
+                    (index >= page - 1 && index <= page + 1)
+                  ) {
+                    const isCurrent = page === index;
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setPage(index)}
+                        className={`btn btn-sm w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold ${
+                          isCurrent
+                            ? 'btn-primary'
+                            : 'btn-secondary text-slate-500 dark:text-slate-400'
+                        }`}
+                        style={{ padding: 0 }}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  }
+                  if (
+                    (index === 2 && page > 2) ||
+                    (index === totalPages - 2 && page < totalPages - 3)
+                  ) {
+                    return (
+                      <span key={`ellipsis-${index}`} className="text-slate-400 dark:text-slate-500 text-center select-none text-[10px] leading-none py-0.5 font-bold">
+                        •••
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+
+              {/* Next Button (Down Arrow) */}
+              <button
+                onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                disabled={page === totalPages - 1 || loading}
+                title="Next Page"
+                className="btn btn-secondary btn-sm w-8 h-8 flex items-center justify-center rounded-lg"
+                style={{ padding: 0 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

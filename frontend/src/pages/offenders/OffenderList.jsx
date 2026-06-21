@@ -172,7 +172,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className={`space-y-6 animate-fade-in ${totalPages > 1 ? 'pr-12 sm:pr-16' : ''}`}>
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>
@@ -464,25 +464,80 @@ export default function OffenderList({ isConsumerOnly = false }) {
           )}
         </div>
 
-        {/* Pagination */}
+        {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: '1px solid var(--color-garuda-700)' }}>
+          <div 
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5 p-2 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"
+            style={{ minWidth: '44px' }}
+          >
+            {/* Page Number indicator at the top */}
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center select-none pb-1.5 border-b border-slate-100 dark:border-slate-800 w-full mb-0.5">
+              {page + 1}/{totalPages}
+            </div>
+            
+            {/* Previous Button (Up Arrow) */}
             <button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-              className="btn btn-secondary btn-sm"
+              onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+              disabled={page === 0 || loading}
+              title="Previous Page"
+              className="btn btn-secondary btn-sm w-8 h-8 flex items-center justify-center rounded-lg"
+              style={{ padding: 0 }}
             >
-              Previous
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+              </svg>
             </button>
-            <span className="text-sm" style={{ color: 'var(--color-garuda-400)' }}>
-              Page {page + 1} of {totalPages}
-            </span>
+
+            {/* Vertical Page List */}
+            <div className="flex flex-col gap-1.5">
+              {Array.from({ length: totalPages }).map((_, index) => {
+                if (
+                  totalPages <= 6 ||
+                  index < 2 ||
+                  index === totalPages - 1 ||
+                  (index >= page - 1 && index <= page + 1)
+                ) {
+                  const isCurrent = page === index;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setPage(index)}
+                      className={`btn btn-sm w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold ${
+                        isCurrent
+                          ? 'btn-primary'
+                          : 'btn-secondary text-slate-500 dark:text-slate-400'
+                      }`}
+                      style={{ padding: 0 }}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                }
+                if (
+                  (index === 2 && page > 2) ||
+                  (index === totalPages - 2 && page < totalPages - 3)
+                ) {
+                  return (
+                    <span key={`ellipsis-${index}`} className="text-slate-400 dark:text-slate-500 text-center select-none text-[10px] leading-none py-0.5 font-bold">
+                      •••
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+
+            {/* Next Button (Down Arrow) */}
             <button
-              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-              disabled={page >= totalPages - 1}
-              className="btn btn-secondary btn-sm"
+              onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
+              disabled={page === totalPages - 1 || loading}
+              title="Next Page"
+              className="btn btn-secondary btn-sm w-8 h-8 flex items-center justify-center rounded-lg"
+              style={{ padding: 0 }}
             >
-              Next
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
             </button>
           </div>
         )}

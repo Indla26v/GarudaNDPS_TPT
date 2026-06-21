@@ -97,14 +97,14 @@ function parseAccusedDetails(raw: string): ParsedAccused {
   let guardianName: string | null = null;
   const guardianMatch = str.match(/\b([SDWC]\/o)\.?\s*([^,]+)/i);
   if (guardianMatch) {
-    guardianName = guardianMatch[2].trim();
+    guardianName = guardianMatch[2] ? guardianMatch[2].trim() : null;
   }
 
   // 5. Phone & Email
   let phone: string | null = null;
   const phoneMatch = str.match(/\b([6-9]\d{9})\b/);
   if (phoneMatch) {
-    phone = phoneMatch[1];
+    phone = phoneMatch[1] || null;
   }
 
   let email: string | null = null;
@@ -117,7 +117,7 @@ function parseAccusedDetails(raw: string): ParsedAccused {
   let caste: string | null = null;
   const casteMatch = str.match(/\bcaste\s*(?:by|:)?\s*([a-zA-Z-]+)/i);
   if (casteMatch) {
-    caste = casteMatch[1].trim();
+    caste = casteMatch[1] ? casteMatch[1].trim() : null;
   }
 
   // 7. Mandal & District
@@ -719,15 +719,15 @@ export const confirmDprImport = async (req: Request, res: Response) => {
           }
 
           if (parsed.phone) {
-            const exists = await prisma.offender_contacts.findFirst({ where: { offender_id: offender.id, contact_type: 'PHONE', value: parsed.phone }});
+            const exists = await prisma.offender_contacts.findFirst({ where: { offender_id: offender.id, contact_type: 'MOBILE_PRIMARY', value: parsed.phone }});
             if (!exists) {
-              await prisma.offender_contacts.create({ data: { offender_id: offender.id, contact_type: 'PHONE', value: parsed.phone } });
+              await prisma.offender_contacts.create({ data: { offender_id: offender.id, contact_type: 'MOBILE_PRIMARY', value: parsed.phone } });
             }
           }
           if (parsed.email) {
-            const exists = await prisma.offender_contacts.findFirst({ where: { offender_id: offender.id, contact_type: 'EMAIL', value: parsed.email }});
+            const exists = await prisma.offender_contacts.findFirst({ where: { offender_id: offender.id, contact_type: 'GMAIL', value: parsed.email }});
             if (!exists) {
-              await prisma.offender_contacts.create({ data: { offender_id: offender.id, contact_type: 'EMAIL', value: parsed.email } });
+              await prisma.offender_contacts.create({ data: { offender_id: offender.id, contact_type: 'GMAIL', value: parsed.email } });
             }
           }
 

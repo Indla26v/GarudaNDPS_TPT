@@ -233,7 +233,7 @@ export const updateCase = async (req: Request, res: Response) => {
 
 export const getCases = async (req: Request, res: Response) => {
   try {
-    const { page = 0, size = 10, stage, search } = req.query;
+    const { page = 0, size = 30, stage, search } = req.query;
     const skip = Number(page) * Number(size);
     const take = Number(size);
     const scope = getCaseWhere((req as any).user) as any;
@@ -246,7 +246,15 @@ export const getCases = async (req: Request, res: Response) => {
       ];
     }
 
-    const [cases, total] = await Promise.all([
+    const countScope = getCaseWhere((req as any).user) as any;
+    if (search) {
+      countScope.OR = [
+        { fir_no: { contains: String(search), mode: 'insensitive' } },
+        { section_of_law: { contains: String(search), mode: 'insensitive' } },
+      ];
+    }
+
+    const [cases, total, stageGroups] = await Promise.all([
       prisma.cases.findMany({
         where: scope,
         include: caseInclude,
@@ -255,14 +263,35 @@ export const getCases = async (req: Request, res: Response) => {
         orderBy: { created_at: 'desc' },
       }),
       prisma.cases.count({ where: scope }),
+      prisma.cases.groupBy({
+        by: ['stage'],
+        where: countScope,
+        _count: { id: true },
+      }),
     ]);
+
+    const stageCounts: Record<string, number> = {
+      FIR: 0,
+      CHARGESHEET: 0,
+      TRIAL: 0,
+      CONVICTED: 0,
+      ACQUITTED: 0,
+      CLOSED: 0,
+    };
+    for (const group of stageGroups) {
+      if (group.stage) {
+        stageCounts[group.stage] = group._count.id;
+      }
+    }
 
     res.json(successResponse({
       content: cases.map((c) => toCaseResponse(c)),
       totalElements: total,
       totalPages: Math.ceil(total / take),
+      stageCounts,
     }));
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
