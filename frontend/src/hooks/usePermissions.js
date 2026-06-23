@@ -118,6 +118,10 @@ export function usePermissions() {
         // Intelligence module
         INTEL_VIEW:          () => hasMinRole('SHO'),
         INTEL_CREATE:        () => hasMinRole('SHO'),
+
+        // Informer Management
+        INFORMER_VIEW:       () => hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
+        INFORMER_CREATE:     () => hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
       };
 
       return PERM_MAP[key] ? PERM_MAP[key]() : false;

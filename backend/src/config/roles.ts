@@ -112,6 +112,10 @@ export const PERMISSIONS = {
   INTEL_VIEW:           { minRole: 'SHO' },
   INTEL_CREATE:         { minRole: 'SHO' },
 
+  // Informer Management
+  INFORMER_VIEW:        { minRole: 'SHO', departments: ['POLICE', 'CYBER_ANALYTICS'] },
+  INFORMER_CREATE:      { minRole: 'SHO', departments: ['POLICE', 'CYBER_ANALYTICS'] },
+
   // Excise-specific (EXCISE department can access their own station's core pages)
   EXCISE_OFFENDER_VIEW: { minRole: 'CONSTABLE', departments: ['EXCISE'] },
   EXCISE_CASE_VIEW:     { minRole: 'CONSTABLE', departments: ['EXCISE'] },

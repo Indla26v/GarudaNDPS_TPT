@@ -103,6 +103,7 @@ model flyway_schema_history {
 model intelligence_inputs {
   id              BigInt          @id @default(autoincrement())
   offender_id     BigInt?
+  informer_id     BigInt?
   ps_id           BigInt
   source_type     source_type
   input_text      String?
@@ -111,12 +112,37 @@ model intelligence_inputs {
   created_at      DateTime        @default(now()) @db.Timestamp(6)
   users           users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   offenders       offenders?      @relation(fields: [offender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  informers       informers?      @relation(fields: [informer_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   police_stations police_stations @relation(fields: [ps_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([created_by], map: "idx_ii_created_by")
   @@index([offender_id], map: "idx_ii_offender")
+  @@index([informer_id], map: "idx_ii_informer")
   @@index([ps_id], map: "idx_ii_ps")
   @@index([source_type], map: "idx_ii_source")
+}
+
+model informers {
+  id            BigInt    @id @default(autoincrement())
+  code_name     String    @unique @db.VarChar(100)
+  phone         String?   @db.VarChar(20)
+  rating        String?   @db.VarChar(5)
+  status        String    @default("ACTIVE") @db.VarChar(20)
+  created_by    BigInt
+  created_at    DateTime  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime  @default(now()) @db.Timestamp(6)
+
+  users         users     @relation("informers_created_by", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intelligence_inputs intelligence_inputs[]
+
+  @@index([created_by], map: "idx_inf_created_by")
+  @@index([status], map: "idx_inf_status")
+}
+
+model system_settings {
+  key        String   @id @db.VarChar(100)
+  value      String
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
 }
 
 model offender_contacts {
@@ -506,6 +532,7 @@ model users {
   palle_nidra_checks_created        palle_nidra_checks[]        @relation("palle_nidra_officer")
   drone_surveillance_checks_created drone_surveillance_checks[] @relation("drone_surveillance_officer")
   imei_records_created              imei_records[]              @relation("imei_created_by")
+  informers_created                 informers[]                 @relation("informers_created_by")
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")

@@ -546,3 +546,219 @@ export const getDprExport = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to export DPR Excel' });
   }
 };
+
+export const getCustomReport = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const { startDate, endDate, psId, contrabandType, stage, format } = req.query;
+
+    const whereClause: any = { ...psFilter };
+    if (startDate) whereClause.case_date = { ...whereClause.case_date, gte: new Date(String(startDate)) };
+    if (endDate) whereClause.case_date = { ...whereClause.case_date, lte: new Date(String(endDate)) };
+    if (psId && psId !== 'ALL') whereClause.ps_id = BigInt(String(psId));
+    if (contrabandType && contrabandType !== 'ALL') whereClause.contraband_type = contrabandType;
+    if (stage && stage !== 'ALL') whereClause.stage = stage;
+
+    const cases = await prisma.cases.findMany({
+      where: whereClause,
+      include: {
+        police_stations: { select: { name: true } },
+        seizures: true,
+        case_accused: {
+          include: { offenders: true }
+        }
+      },
+      orderBy: { case_date: 'desc' }
+    });
+
+    const reportRows = [];
+    for (const c of cases) {
+      const qty = c.seizures.reduce((acc: number, s: any) => acc + (s.contraband_kg ? Number(s.contraband_kg) : 0), 0);
+      const cash = c.seizures.reduce((acc: number, s: any) => acc + (s.cash_amount ? Number(s.cash_amount) : 0), 0);
+      const vehicles = c.seizures.reduce((acc: number, s: any) => acc + (s.vehicles_count ? Number(s.vehicles_count) : 0), 0);
+
+      if (c.case_accused.length === 0) {
+        reportRows.push({
+          'FIR No': c.fir_no,
+          'Case Date': c.case_date ? new Date(c.case_date).toISOString().split('T')[0] : '—',
+          'Section of Law': c.section_of_law || '—',
+          'Stage': c.stage,
+          'Police Station': c.police_stations?.name || '—',
+          'Accused Name': '—',
+          'Age': '—',
+          'Category': '—',
+          'Risk Score': '—',
+          'Status': '—',
+          'Contraband Type': c.contraband_type || '—',
+          'Quantity (KG)': qty > 0 ? `${qty} KG` : '0 KG',
+          'Cash (INR)': cash > 0 ? String(cash) : '0',
+          'Vehicles Seized': String(vehicles)
+        });
+      } else {
+        for (const ca of c.case_accused) {
+          reportRows.push({
+            'FIR No': c.fir_no,
+            'Case Date': c.case_date ? new Date(c.case_date).toISOString().split('T')[0] : '—',
+            'Section of Law': c.section_of_law || '—',
+            'Stage': c.stage,
+            'Police Station': c.police_stations?.name || '—',
+            'Accused Name': ca.offenders?.full_name || '—',
+            'Age': ca.offenders?.age ? String(ca.offenders.age) : '—',
+            'Category': ca.offenders?.category || '—',
+            'Risk Score': ca.offenders?.risk_score || '—',
+            'Status': ca.offenders?.status || '—',
+            'Contraband Type': c.contraband_type || '—',
+            'Quantity (KG)': qty > 0 ? `${qty} KG` : '0 KG',
+            'Cash (INR)': cash > 0 ? String(cash) : '0',
+            'Vehicles Seized': String(vehicles)
+          });
+        }
+      }
+    }
+
+    if (format === 'xlsx') {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(reportRows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Custom Report');
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="custom-report-${Date.now()}.xlsx"`);
+      return res.send(buf);
+    }
+
+    res.json(successResponse({
+      generatedAt: new Date().toISOString(),
+      totalRecords: reportRows.length,
+      records: reportRows
+    }));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to generate custom report' });
+  }
+};
+
+export const getCourtDiary = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const days = req.query.days ? parseInt(String(req.query.days), 10) : 30;
+
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + days);
+    endDate.setHours(23, 59, 59, 999);
+
+    const hearings = await prisma.court_hearings.findMany({
+      where: {
+        hearing_date: {
+          gte: startDate,
+          lte: endDate
+        },
+        cases: psFilter
+      },
+      include: {
+        cases: {
+          include: {
+            police_stations: { select: { name: true } },
+            case_accused: { include: { offenders: true } }
+          }
+        }
+      },
+      orderBy: { hearing_date: 'asc' }
+    });
+
+    const data = hearings.map((h) => ({
+      id: h.id.toString(),
+      scNumber: h.sc_number || '—',
+      courtName: h.court_name || '—',
+      hearingDate: h.hearing_date ? new Date(h.hearing_date).toISOString().split('T')[0] : '—',
+      judgeName: h.judge_name || '—',
+      orderText: h.order_text || '',
+      nextHearingDate: h.next_hearing_date ? new Date(h.next_hearing_date).toISOString().split('T')[0] : null,
+      caseId: h.case_id.toString(),
+      firNo: h.cases?.fir_no || '—',
+      psName: h.cases?.police_stations?.name || '—',
+      accusedNames: h.cases?.case_accused.map(ca => ca.offenders?.full_name).join(', ') || '—'
+    }));
+
+    res.json(successResponse({
+      generatedAt: new Date().toISOString(),
+      totalHearings: data.length,
+      daysFilter: days,
+      hearings: data
+    }));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch court diary' });
+  }
+};
+
+export const getPerformanceMetrics = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+
+    const cases = await prisma.cases.findMany({
+      where: psFilter,
+      include: {
+        police_stations: { select: { name: true } },
+        seizures: true
+      }
+    });
+
+    const totalCases = cases.length;
+    let chargeSheetedCases = 0;
+    let convictedCases = 0;
+    let acquittedCases = 0;
+
+    const stationStats: Record<string, { stationName: string; casesCount: number; contrabandKg: number }> = {};
+
+    cases.forEach((c) => {
+      if (c.stage !== 'FIR') {
+        chargeSheetedCases++;
+      }
+      if (c.stage === 'CONVICTED') {
+        convictedCases++;
+      } else if (c.stage === 'ACQUITTED') {
+        acquittedCases++;
+      }
+
+      const psName = c.police_stations?.name || 'Unknown';
+      if (!stationStats[psName]) {
+        stationStats[psName] = { stationName: psName, casesCount: 0, contrabandKg: 0 };
+      }
+      
+      stationStats[psName].casesCount++;
+      const qty = c.seizures.reduce((acc, s) => acc + (s.contraband_kg ? Number(s.contraband_kg) : 0), 0);
+      stationStats[psName].contrabandKg += qty;
+    });
+
+    const totalDecided = convictedCases + acquittedCases;
+    const convictionRate = totalDecided > 0 ? Math.round((convictedCases / totalDecided) * 100) : 0;
+    const chargeSheetRate = totalCases > 0 ? Math.round((chargeSheetedCases / totalCases) * 100) : 0;
+
+    const leaderboard = Object.values(stationStats)
+      .sort((a, b) => b.casesCount - a.casesCount)
+      .slice(0, 10);
+
+    res.json(successResponse({
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalCases,
+        chargeSheetedCases,
+        convictedCases,
+        acquittedCases,
+        convictionRate,
+        chargeSheetRate
+      },
+      leaderboard
+    }));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to calculate performance metrics' });
+  }
+};
+

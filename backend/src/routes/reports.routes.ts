@@ -8,7 +8,10 @@ import {
   getCourtPendingReport,
   getDrugSeizuresReport,
   getTopOffendersReport,
-  getDprExport
+  getDprExport,
+  getCustomReport,
+  getCourtDiary,
+  getPerformanceMetrics
 } from '../controllers/reports.controller';
 import { authenticate } from '../middleware/auth.middleware';
 
@@ -24,5 +27,8 @@ router.get('/court-pending', getCourtPendingReport);
 router.get('/drug-seizures', getDrugSeizuresReport);
 router.get('/top-offenders', getTopOffendersReport);
 router.get('/dpr-export', getDprExport);
+router.get('/custom', getCustomReport);
+router.get('/court-diary', getCourtDiary);
+router.get('/performance', getPerformanceMetrics);
 
 export default router;

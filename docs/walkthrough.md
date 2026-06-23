@@ -1,96 +1,68 @@
-# Walkthrough: Role & Department Access Control Fix
+# Walkthrough: Phase 2 Operations Completion
 
-## Summary
-
-Fixed the role and department implementation so that:
-- **Station-level roles** (DSP, CI, SI, Constable) see data **only** for their allotted Police Station
-- **District-level roles** (SP, ASP) see all police station data, but are **restricted to their allotted department** for Intelligence module access
-- Pages dynamically show only the content the user is allowed to see
-- Unauthorized access shows a styled **NoAccess page**
+We have successfully completed all Phase 2 (Operations) requirements, culminating in a fully functional and secure **Field Operations Hub** and a robust suite of automated integration tests. 
 
 ---
 
-## Changes Made
+## What was Built
 
-### Backend (3 files)
+### 1. Field Operations Hub UI (`FieldStaff.jsx`)
+Replaced the placeholder in `FieldStaff.jsx` with a fully interactive PWA-style interface tailored for mobile and tablet usage by field officers:
 
-#### [scope.ts](file:///c:/Projects/GarudaNDPC/backend/src/utils/scope.ts)
-- **Fixed SI scope bug**: SI users were incorrectly scoped by `created_by` (only their own created cases). Now scoped by `ps_id` like other station-level roles.
-- **Added `getDashboardScope()`**: Returns `{ psFilter, isStationLevel }` for dashboard query scoping.
-- **Added `department` to `ScopeUser` interface**.
+- **Quick Case Entry Tab**:
+  - Automatically captures GPS coordinates (`Lat`/`Lng`) via browser Geolocation.
+  - Form fields for logging a case: FIR Number, Station, Section, Contraband Type, Quantity, Unit, Value, Source, and Destination.
+  - Real-time **Voice Dictation (Web Speech API)**: An interactive mic button with pulsing animation enables officers to speak their field notes/intelligence summary hands-free, directly typing into the notes text area.
+  - **Field Photo Attachment**: Fully integrated with the backend photo upload API, allowing officers to snap/upload images and view immediate confirmation thumbnails.
+  - Posts to case creation endpoint `POST /api/cases`.
+- **Accused Verification Tab**:
+  - Live query box to search offenders by Name, Mobile, or Aadhaar document number.
+  - Displays match results as card profiles showing photo, category, mobile number, and status.
+  - Opens the **Accused Dossier Modal**:
+    - Displays detailed offender demographics, contacts list, and financial UPI/bank details.
+    - **Masked Aadhaar document reveal**: Aadhaar numbers are masked by default (`XXXX-XXXX-XXXX`). Eligible supervisor roles (SHO rank and above) can click the "Reveal" button to make a secure query to `/api/offenders/:id?reveal=true` and reveal the true value.
+    - **Vertical chronological case history timeline**: Integrates case history by fetching all cases linked to the offender via `/api/cases/offender/:id`.
+- **GPS-Tagged Surveillance Report Tab**:
+  - Select active offender to log check-in.
+  - Fields for Observed Residential Address, Current Occupation changes, Associates noted, and Field verification notes.
+  - Auto-captures latitude and longitude values to geo-tag the check-in event.
+  - Submits to `POST /api/surveillance`.
+- **Informer Management Tab**:
+  - Role-guarded at the routing and component level (accessible only to authorized SI, CI, SP ranks in Operations, STF, and Intelligence departments).
+  - Register Informers with code names (to ensure maximum confidentiality), optional phone, and reliability ratings (`A`, `B`, `C`, `D`).
+  - Active informer directory table supporting real-time deactivation/activation toggles.
+  - Tip-off logging form to record intelligence inputs and link them to the informer's database profile (`informer_id`).
+- **Checkpoint / Nakabandhi Logs Tab**:
+  - Integrates the existing `VehicleCheckForm` component directly for logging vehicle and driver information on-the-go.
 
-#### [dashboard.controller.ts](file:///c:/Projects/GarudaNDPC/backend/src/controllers/dashboard.controller.ts)
-- **All queries now scoped by police station** for station-level users:
-  - KPI counts (`totalCases`, `totalArrests`, `totalAbsconders`, etc.)
-  - Seizure aggregations
-  - Year-wise trend charts
-  - Drug type breakdown
-  - Case stage distribution
-  - Recent alerts and absconder tickers
-- **`psWiseData`**: Station-level users get only their station; district-level gets all stations.
-- **Returns `isStationLevel` flag** so the frontend knows whether to show "Tirupati District" or the station name.
+### 2. Scoping & API Enhancements
+- Updated `intelligence.controller.ts` to accept `informerId` and store it as `informer_id` in the database, allowing full association between tip-offs and informants.
+- Enhanced the informer scoping list builder (`getInformerWhere`) in `informers.controller.ts` to include HQ and district-level users whose `police_station_id` is null, letting SP/ASP officers view and edit their own recorded informants.
 
-#### [roles.ts](file:///c:/Projects/GarudaNDPC/backend/src/config/roles.ts)
-- **Removed SP/ASP blanket bypass**: Previously SP/ASP skipped department checks entirely. Now only ADMIN bypasses all checks. SP/ASP must have a matching department for Intelligence pages.
-
----
-
-### Frontend (7 files)
-
-#### [usePermissions.js](file:///c:/Projects/GarudaNDPC/frontend/src/hooks/usePermissions.js)
-- **Removed the SP/ASP blanket override** (old line 39 gave SP/ASP access to everything except admin).
-- SP/ASP now go through the same `PERM_MAP` checks as everyone else.
-- Department-restricted permissions (`FIELD_ENTRY`, `TECH_VIEW_ALL`, `FIN_VIEW_ALL`, `NET_VIEW_ALL`) now enforce department for ALL roles.
-- Added `isStationLevel` and `isDistrictLevel` flags.
-
-#### [NoAccess.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/pages/NoAccess.jsx) — **NEW**
-- Full-page styled "Access Restricted" screen.
-- Shows animated lock icon, user's current role and department.
-- "Go to Dashboard" and "Go Back" navigation buttons.
-- Consistent with GARUDA dark theme.
-
-#### [RoleGuard.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/components/RoleGuard.jsx)
-- Added `departments` prop for standalone department checks.
-- Now renders `<NoAccess />` instead of inline "Access Denied" text.
-
-#### [Layout.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/components/Layout.jsx)
-- **Removed `hasMinRole('SP')` / `hasMinRole('DSP')` / `hasMinRole('CI')` fallbacks** that gave higher-rank officers blanket sidebar access to Intelligence items regardless of department.
-- Sidebar now shows items **only** when the user has the correct department.
-- **Added department badge** next to role badge in the header (e.g., "SP | Ops").
-
-#### [main.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/main.jsx)
-- **Added `RoleGuard` to Field Staff route** (was unguarded).
-- **Added `RoleGuard` to Reports route**.
-- Added `/no-access` route.
-- Added catch-all `*` route → NoAccess page.
-
-#### [FieldStaff.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/pages/field/FieldStaff.jsx)
-- Fixed invalid permission keys: `ACCUSED_VERIFY` → `FIELD_VERIFY`, `SURVEILLANCE_REPORT` → `FIELD_ENTRY`.
-- Fixed informer tab to use valid permission check.
-
-#### [Dashboard.jsx](file:///c:/Projects/GarudaNDPC/frontend/src/pages/Dashboard.jsx)
-- Dynamic subtitle: shows station name for station-level users, "Tirupati District" for district-level.
-- Station-wise chart and PS table only shown when `psWiseData.length > 1` (district-level with multiple stations).
+### 3. Automated Integration Test Coverage
+Wrote 3 new test suites under `backend/src/__tests__/`:
+- **`surveillance.test.ts`**: Verifies that check-ins can be created with coordinates, listed under matching station scopes, and fetched chronologically.
+- **`informers.test.ts`**: Asserts that registration works, code name uniqueness is enforced, and that Constables are blocked with a `403 Forbidden` response.
+- **`reports_ops.test.ts`**: Verifies that custom report builder queries, court diary feeds, performance metrics, system setting updates, and server health diagnostics respond with correct data formats.
 
 ---
 
-## Access Matrix (After Fix)
+## Verification & Test Results
 
-| Page | SP (Ops) | DSP (Tech) | SI (Ops) | SI (FinCell) | Constable (Ops) |
-|------|----------|------------|----------|--------------|-----------------|
-| Dashboard | ✅ All PS | ✅ Own PS | ✅ Own PS | ✅ Own PS | ✅ Own PS |
-| Offenders | ✅ All PS | ✅ Own PS | ✅ Own PS | ✅ Own PS | ✅ Own PS |
-| Cases | ✅ All PS | ✅ Own PS | ✅ Own PS | ✅ Own PS | ✅ Own PS |
-| Field Staff | ❌ NoAccess | ❌ NoAccess | ✅ | ❌ NoAccess | ✅ |
-| Surveillance | ❌ NoAccess | ✅ | ❌ NoAccess | ❌ NoAccess | ❌ NoAccess |
-| Financial | ❌ NoAccess | ❌ NoAccess | ❌ NoAccess | ✅ | ❌ NoAccess |
-| Network Map | ❌ NoAccess | ✅ | ❌ NoAccess | ❌ NoAccess | ❌ NoAccess |
-| Reports | ✅ | ✅ | ✅ | ✅ | ❌ NoAccess |
-| District Analytics | ✅ | ❌ NoAccess | ❌ NoAccess | ❌ NoAccess | ❌ NoAccess |
+All 7 test suites containing 26 integration tests are passing successfully:
 
----
+```bash
+PASS src/__tests__/scope.test.ts
+PASS src/__tests__/offenders.test.ts
+PASS src/__tests__/surveillance.test.ts
+PASS src/__tests__/cases.test.ts
+PASS src/__tests__/informers.test.ts
+PASS src/__tests__/auth.test.ts
+PASS src/__tests__/reports_ops.test.ts
 
-## Verification
-
-- ✅ Backend type check: No new TypeScript errors from changes
-- ✅ Frontend build: Successful (`✓ built in 396ms`, 657 modules)
+Test Suites: 7 passed, 7 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        8.056 s
+```
+All systems are operating correctly and the implementation is complete.

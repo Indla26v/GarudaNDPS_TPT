@@ -45,6 +45,49 @@ export default function UserManagement() {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [activeTab, setActiveTab] = useState('users');
+  const [settings, setSettings] = useState({
+    CHARGE_SHEET_DUE_DAYS_COMMERCIAL: '180',
+    CHARGE_SHEET_DUE_DAYS_NON_COMMERCIAL: '60',
+    ABSCONDER_ALERT_THRESHOLD_DAYS: '30',
+    COURT_HEARING_REMINDER_DAYS: '1'
+  });
+  const [health, setHealth] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const fetchSettingsAndHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const [settingsRes, healthRes] = await Promise.all([
+        api.get('/admin/settings'),
+        api.get('/admin/system-health')
+      ]);
+      if (settingsRes.data.data) setSettings(settingsRes.data.data);
+      if (healthRes.data.data) setHealth(healthRes.data.data);
+    } catch (err) {
+      console.error('Failed to fetch settings/health:', err);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
+  const saveSettings = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/admin/settings', settings);
+      alert('Threshold settings saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save settings');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'health') {
+      fetchSettingsAndHealth();
+    }
+  }, [activeTab]);
+
   const uniqueDistricts = useMemo(() => {
     return [...new Set(stations.map(s => s.district).filter(Boolean))].sort();
   }, [stations]);
@@ -228,19 +271,217 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>User Management</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-garuda-50)' }}>System Administration</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
-            Manage officers grouped by their assigned locations
+            User management, permission matrix rules, and system configurations
           </p>
         </div>
-        <button
-          onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'POLICE', badgeNumber: '', district: '', divisionId: '' }); setShowForm(true); }}
-          className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap"
-          style={{ background: 'var(--color-accent-500)', color: '#fff' }}
-        >
-          + Add Officer
-        </button>
+        {activeTab === 'users' && (
+          <button
+            onClick={() => { setEditUser(null); setForm({ username: '', password: '', fullName: '', role: 'CONSTABLE', policeStationId: '', department: 'POLICE', badgeNumber: '', district: '', divisionId: '' }); setShowForm(true); }}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap"
+            style={{ background: 'var(--color-accent-500)', color: '#fff' }}
+          >
+            + Add Officer
+          </button>
+        )}
       </div>
+
+      {/* Tab Switcher */}
+      <div className="flex gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--color-garuda-700)', paddingBottom: '0.75rem' }}>
+        {[
+          { id: 'users', label: 'User Accounts' },
+          { id: 'permissions', label: 'Permissions Matrix' },
+          { id: 'health', label: 'Settings & Health' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`btn btn-sm ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'permissions' && (
+        <div className="card rounded-xl overflow-hidden border border-slate-100/50 dark:border-slate-800">
+          <div className="px-6 py-4 border-b border-slate-700" style={{ background: 'var(--color-garuda-800)' }}>
+            <h2 className="text-sm font-semibold text-slate-100">Role-Based Access Control Matrix</h2>
+            <p className="text-xs text-slate-400 mt-1">Detailed overview of authorizations across ranks and departments</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr style={{ background: 'var(--color-garuda-600)' }}>
+                  <th className="px-6 py-3 font-semibold text-slate-200">Module / Permission</th>
+                  <th className="px-6 py-3 font-semibold text-center text-slate-200">SP (Admin)</th>
+                  <th className="px-6 py-3 font-semibold text-center text-slate-200">ASP</th>
+                  <th className="px-6 py-3 font-semibold text-center text-slate-200">SDPO (DSP)</th>
+                  <th className="px-6 py-3 font-semibold text-center text-slate-200">SHO (CI/SI)</th>
+                  <th className="px-6 py-3 font-semibold text-center text-slate-200">Constable</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { name: 'Dashboard View', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true },
+                  { name: 'Offender DB - View', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true },
+                  { name: 'Offender DB - Add/Edit', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: false },
+                  { name: 'Offender DB - Delete', SP: true, ASP: false, SDPO: false, SHO: false, CONSTABLE: false },
+                  { name: 'Case Management - View', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true },
+                  { name: 'Case Management - Add/Edit', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: false },
+                  { name: 'Field Operations Hub - Log', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true },
+                  { name: 'Field Operations Hub - Review', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: false },
+                  { name: 'Technical Surveillance', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true, note: 'STF/Cyber Dept only' },
+                  { name: 'Financial Analysis', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true, note: 'STF/Cyber Dept only' },
+                  { name: 'Network Supply Chain', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: true, note: 'STF/Cyber Dept only' },
+                  { name: 'Reports - View & Generate', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: false },
+                  { name: 'District Analytics', SP: true, ASP: true, SDPO: false, SHO: false, CONSTABLE: false },
+                  { name: 'Informer Management', SP: true, ASP: true, SDPO: true, SHO: true, CONSTABLE: false, note: 'STF/Cyber/Police only' },
+                  { name: 'User Management (Admin)', SP: true, ASP: false, SDPO: false, SHO: false, CONSTABLE: false },
+                  { name: 'System Settings Control', SP: true, ASP: false, SDPO: false, SHO: false, CONSTABLE: false },
+                ].map((row, idx) => (
+                  <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/10" style={{ background: idx % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)' }}>
+                    <td className="px-6 py-4 font-medium text-slate-100">
+                      {row.name}
+                      {row.note && <span className="block text-[10px] text-amber-500 mt-0.5">{row.note}</span>}
+                    </td>
+                    {['SP', 'ASP', 'SDPO', 'SHO', 'CONSTABLE'].map(role => (
+                      <td key={role} className="px-6 py-4 text-center">
+                        {row[role === 'CONSTABLE' ? 'CONSTABLE' : role] ? (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 font-bold text-xs">✓</span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10 text-red-500 font-bold text-xs">✕</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'health' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Settings Form */}
+          <div className="card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4">
+            <h3 className="text-base font-bold text-slate-100">Threshold Settings</h3>
+            <form onSubmit={saveSettings} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-semibold">Charge Sheet Due (Commercial Quantity)</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    value={settings.CHARGE_SHEET_DUE_DAYS_COMMERCIAL || '180'}
+                    onChange={(e) => setSettings({ ...settings, CHARGE_SHEET_DUE_DAYS_COMMERCIAL: e.target.value })}
+                    className="input flex-1"
+                  />
+                  <span className="text-xs text-slate-400">Days</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-semibold">Charge Sheet Due (Non-Commercial)</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    value={settings.CHARGE_SHEET_DUE_DAYS_NON_COMMERCIAL || '60'}
+                    onChange={(e) => setSettings({ ...settings, CHARGE_SHEET_DUE_DAYS_NON_COMMERCIAL: e.target.value })}
+                    className="input flex-1"
+                  />
+                  <span className="text-xs text-slate-400">Days</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-semibold">Absconder Alert Threshold</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    value={settings.ABSCONDER_ALERT_THRESHOLD_DAYS || '30'}
+                    onChange={(e) => setSettings({ ...settings, ABSCONDER_ALERT_THRESHOLD_DAYS: e.target.value })}
+                    className="input flex-1"
+                  />
+                  <span className="text-xs text-slate-400">Days</span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-slate-400 font-semibold">Court Hearing Reminder Days</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    value={settings.COURT_HEARING_REMINDER_DAYS || '1'}
+                    onChange={(e) => setSettings({ ...settings, COURT_HEARING_REMINDER_DAYS: e.target.value })}
+                    className="input flex-1"
+                  />
+                  <span className="text-xs text-slate-400">Days</span>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary w-full mt-2">
+                Save Configurations
+              </button>
+            </form>
+          </div>
+
+          {/* Health Details */}
+          <div className="lg:col-span-2 card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-slate-100">Diagnostics & Server Health</h3>
+              <button onClick={fetchSettingsAndHealth} className="btn btn-secondary btn-sm">🔄 Refresh</button>
+            </div>
+
+            {healthLoading ? (
+              <div className="py-12 text-center text-slate-400">Loading system health details...</div>
+            ) : health ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl border border-slate-700/80 space-y-1" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold">Database Storage Size</span>
+                  <p className="text-lg font-bold text-slate-100">{health.dbSize}</p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-700/80 space-y-1" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold">Active User Count</span>
+                  <p className="text-lg font-bold text-emerald-400">{health.activeUsersCount} Officers</p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-700/80 space-y-1" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold">Audit Logs Recorded (Past 24h)</span>
+                  <p className="text-lg font-bold text-slate-100">{health.recentAuditLogsCount} Logs</p>
+                </div>
+                <div className="p-4 rounded-xl border border-slate-700/80 space-y-1" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold">Node.js Process Uptime</span>
+                  <p className="text-lg font-bold text-slate-100">{health.uptime}</p>
+                </div>
+
+                <div className="md:col-span-2 p-4 rounded-xl border border-slate-700/80 space-y-3" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold">Node Memory Allocation</span>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="block text-slate-400">RSS</span>
+                      <strong className="text-slate-100">{health.memory.rss}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400">Heap Total</span>
+                      <strong className="text-slate-100">{health.memory.heapTotal}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400">Heap Used</span>
+                      <strong className="text-slate-100">{health.memory.heapUsed}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500">Failed to load diagnostics. Make sure server is listening on port 8081.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <>
 
       {/* User Form Modal */}
       {showForm && (
@@ -637,7 +878,10 @@ export default function UserManagement() {
             </div>
           ))}
         </div>
-      )}
-    </div>
+      )
+    }
+    </>
+  )}
+</div>
   );
 }

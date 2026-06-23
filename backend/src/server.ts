@@ -17,6 +17,9 @@ import enforcementRoutes from './routes/enforcement.routes';
 import vehiclesRoutes from './routes/vehicles.routes';
 import reportsRoutes from './routes/reports.routes';
 import intelligenceRoutes from './routes/intelligence.routes';
+import surveillanceRoutes from './routes/surveillance.routes';
+import informerRoutes from './routes/informers.routes';
+import settingsRoutes from './routes/settings.routes';
 import { warmUpConnection } from './config/prisma';
 import { startAbsconderAlertScheduler } from './utils/scheduler';
 
@@ -103,6 +106,9 @@ app.use('/api/vehicles', vehiclesRoutes);
 // ── Reports routes ───────────────────────────────────────────────────
 app.use('/api/reports', reportsRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/surveillance', surveillanceRoutes);
+app.use('/api/informers', informerRoutes);
+app.use('/api/admin', settingsRoutes);
 
 // ── Wake-up endpoint (warms Neon DB from sleep) ───────────────────────
 app.get('/api/wake', async (req, res) => {

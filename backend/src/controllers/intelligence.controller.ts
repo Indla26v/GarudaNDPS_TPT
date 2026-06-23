@@ -26,6 +26,9 @@ export const getIntelligence = async (req: Request, res: Response) => {
         offenders: {
           select: { id: true, full_name: true }
         },
+        informers: {
+          select: { id: true, code_name: true }
+        },
         police_stations: {
           select: { id: true, name: true }
         },
@@ -40,6 +43,8 @@ export const getIntelligence = async (req: Request, res: Response) => {
       id: intel.id.toString(),
       offenderId: intel.offender_id?.toString() || null,
       offenderName: intel.offenders?.full_name || '—',
+      informerId: intel.informer_id?.toString() || null,
+      informerCodeName: intel.informers?.code_name || '—',
       psId: intel.ps_id.toString(),
       psName: intel.police_stations?.name || '—',
       sourceType: intel.source_type,
@@ -60,7 +65,7 @@ export const createIntelligence = async (req: Request, res: Response) => {
   try {
     const user: ScopeUser = (req as any).user || {};
     const userId = user.userId ? BigInt(user.userId) : null;
-    const { offenderId, psId, sourceType, inputText, supplyRoute } = req.body;
+    const { offenderId, psId, sourceType, inputText, supplyRoute, informerId } = req.body;
 
     if (!psId || !sourceType) {
       return res.status(400).json({ message: 'Police Station and Source Type are required' });
@@ -69,6 +74,7 @@ export const createIntelligence = async (req: Request, res: Response) => {
     const newIntel = await prisma.intelligence_inputs.create({
       data: {
         offender_id: offenderId ? BigInt(offenderId) : null,
+        informer_id: informerId ? BigInt(informerId) : null,
         ps_id: BigInt(psId),
         source_type: sourceType,
         input_text: inputText || null,

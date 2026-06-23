@@ -69,12 +69,113 @@ export default function Reports() {
   const [intelSubmitError, setIntelSubmitError] = useState('');
   const [intelSubmitSuccess, setIntelSubmitSuccess] = useState(false);
 
+  // Reports states for Custom Builder
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [customPsId, setCustomPsId] = useState('ALL');
+  const [customContraband, setCustomContraband] = useState('ALL');
+  const [customStage, setCustomStage] = useState('ALL');
+  const [customData, setCustomData] = useState([]);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customExporting, setCustomExporting] = useState(false);
+  const [customColumns, setCustomColumns] = useState({
+    firNo: true,
+    caseDate: true,
+    sectionOfLaw: true,
+    stage: true,
+    psName: true,
+    accusedName: true,
+    age: true,
+    contrabandType: true,
+    quantity: true,
+    cashAmount: true,
+  });
+
+  // Reports states for Court Diary
+  const [courtDays, setCourtDays] = useState(30);
+  const [courtData, setCourtData] = useState([]);
+  const [courtLoading, setCourtLoading] = useState(false);
+
+  // Reports states for Performance
+  const [perfData, setPerfData] = useState(null);
+  const [perfLoading, setPerfLoading] = useState(false);
+
   useEffect(() => {
     if (activeTab === 'intel') {
       loadIntelFormData();
       fetchIntelLogs();
+    } else if (activeTab === 'court') {
+      fetchCourtDiary();
+    } else if (activeTab === 'performance') {
+      fetchPerformance();
+    } else if (activeTab === 'custom') {
+      loadIntelFormData(); // Reuse PS loading
     }
-  }, [activeTab]);
+  }, [activeTab, courtDays]);
+
+  const fetchCourtDiary = async () => {
+    setCourtLoading(true);
+    try {
+      const res = await api.get(`/reports/court-diary?days=${courtDays}`);
+      setCourtData(res.data.data?.hearings || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCourtLoading(false);
+    }
+  };
+
+  const fetchPerformance = async () => {
+    setPerfLoading(true);
+    try {
+      const res = await api.get(`/reports/performance`);
+      setPerfData(res.data.data || null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPerfLoading(false);
+    }
+  };
+
+  const handleCustomReport = async (exportXlsx = false) => {
+    if (exportXlsx) {
+      setCustomExporting(true);
+    } else {
+      setCustomLoading(true);
+    }
+
+    try {
+      const params = {
+        startDate: customStart,
+        endDate: customEnd,
+        psId: customPsId,
+        contrabandType: customContraband,
+        stage: customStage,
+        format: exportXlsx ? 'xlsx' : 'json'
+      };
+
+      if (exportXlsx) {
+        const res = await api.get('/reports/custom', { params, responseType: 'blob' });
+        const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `custom-report-${Date.now()}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const res = await api.get('/reports/custom', { params });
+        setCustomData(res.data.data?.records || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCustomLoading(false);
+      setCustomExporting(false);
+    }
+  };
 
   const loadIntelFormData = async () => {
     try {
@@ -895,30 +996,346 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Other tabs - Coming Soon */}
-      {activeTab !== 'standard' && activeTab !== 'dpr' && activeTab !== 'intel' && (
-        <div className="card rounded-xl p-8 text-center border border-slate-100/50 dark:border-slate-800">
-          <div className="space-y-4">
-            {(() => {
-              const tab = TABS.find(t => t.id === activeTab);
-              return tab ? (
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto" style={{ background: 'var(--color-garuda-600)' }}>
-                  <tab.Icon size={28} color="var(--color-garuda-400)" />
+      {/* Custom Report Builder Tab */}
+      {activeTab === 'custom' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Controls Panel */}
+          <div className="card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4 h-fit">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filters & Columns</h3>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Date Range</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="input text-xs w-full"
+                  />
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="input text-xs w-full"
+                  />
                 </div>
-              ) : null;
-            })()}
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
-              {TABS.find(t => t.id === activeTab)?.label}
-            </h2>
-            <p className="text-sm max-w-lg mx-auto" style={{ color: 'var(--color-garuda-400)' }}>
-              {activeTab === 'custom' && 'Select fields, date range, stations, drug types, accused roles, and case status to build custom tabular reports. Export as Excel, PDF, or CSV.'}
-              {activeTab === 'court' && 'All upcoming court hearings in next 7/30 days with responsible officers, required documents, and reminder notifications.'}
-              {activeTab === 'performance' && 'Cases vs. target, charge sheet submission rate, conviction rate, station-wise and officer-wise comparisons.'}
-            </p>
-            <span className="btn btn-sm" style={{ background: '#0ea5e9', color: '#fff', borderColor: '#0ea5e9', cursor: 'default' }}>
-              Coming in Phase 2 — Operations
-            </span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Police Station</label>
+                <select
+                  value={customPsId}
+                  onChange={(e) => setCustomPsId(e.target.value)}
+                  className="select text-xs w-full"
+                >
+                  <option value="ALL">All Stations</option>
+                  {stations.map(ps => (
+                    <option key={ps.id} value={ps.id}>{ps.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Contraband Type</label>
+                <select
+                  value={customContraband}
+                  onChange={(e) => setCustomContraband(e.target.value)}
+                  className="select text-xs w-full"
+                >
+                  <option value="ALL">All Contraband</option>
+                  <option value="DRY_GANJA">Dry Ganja</option>
+                  <option value="GANJA_OIL">Ganja Oil</option>
+                  <option value="BROWN_SUGAR">Brown Sugar</option>
+                  <option value="HEROIN">Heroin</option>
+                  <option value="MDMA">MDMA</option>
+                  <option value="SYNTHETIC">Synthetic</option>
+                  <option value="COCAINE">Cocaine</option>
+                  <option value="OPIUM">Opium</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Case Stage</label>
+                <select
+                  value={customStage}
+                  onChange={(e) => setCustomStage(e.target.value)}
+                  className="select text-xs w-full"
+                >
+                  <option value="ALL">All Stages</option>
+                  <option value="FIR">FIR</option>
+                  <option value="CHARGESHEET">Charge Sheet</option>
+                  <option value="TRIAL">Trial</option>
+                  <option value="CONVICTED">Convicted</option>
+                  <option value="ACQUITTED">Acquitted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-700">
+                <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Select Columns</label>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-xs text-left">
+                  {Object.keys(customColumns).map((col) => (
+                    <label key={col} className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={customColumns[col]}
+                        onChange={(e) => setCustomColumns({ ...customColumns, [col]: e.target.checked })}
+                        className="rounded border-slate-750 bg-slate-800 text-indigo-500 focus:ring-indigo-500/50"
+                      />
+                      <span className="capitalize">{col.replace(/([A-Z])/g, ' $1')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-3">
+              <button
+                onClick={() => handleCustomReport(false)}
+                disabled={customLoading}
+                className="btn btn-primary w-full h-[38px]"
+              >
+                {customLoading ? 'Running...' : 'Run Custom Report'}
+              </button>
+              <button
+                onClick={() => handleCustomReport(true)}
+                disabled={customExporting}
+                className="btn btn-secondary w-full h-[38px] border border-slate-700 hover:bg-slate-700/50"
+              >
+                {customExporting ? 'Exporting...' : '⬇ Export to Excel'}
+              </button>
+            </div>
           </div>
+
+          {/* Results Grid */}
+          <div className="lg:col-span-3 card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Custom Query Output</h3>
+            {customLoading ? (
+              <div className="py-24 text-center text-slate-400">Querying database, please wait...</div>
+            ) : customData.length === 0 ? (
+              <div className="py-24 text-center text-slate-500">Configure filters and click "Run Custom Report" above.</div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-slate-700/80">
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr style={{ background: 'var(--color-garuda-600)' }}>
+                      {customColumns.firNo && <th className="px-4 py-3 font-semibold text-slate-200">FIR No</th>}
+                      {customColumns.caseDate && <th className="px-4 py-3 font-semibold text-slate-200">Case Date</th>}
+                      {customColumns.sectionOfLaw && <th className="px-4 py-3 font-semibold text-slate-200">Section</th>}
+                      {customColumns.stage && <th className="px-4 py-3 font-semibold text-slate-200">Stage</th>}
+                      {customColumns.psName && <th className="px-4 py-3 font-semibold text-slate-200">Station</th>}
+                      {customColumns.accusedName && <th className="px-4 py-3 font-semibold text-slate-200">Accused</th>}
+                      {customColumns.age && <th className="px-4 py-3 font-semibold text-slate-200">Age</th>}
+                      {customColumns.contrabandType && <th className="px-4 py-3 font-semibold text-slate-200">Contraband</th>}
+                      {customColumns.quantity && <th className="px-4 py-3 font-semibold text-slate-200">Qty</th>}
+                      {customColumns.cashAmount && <th className="px-4 py-3 font-semibold text-slate-200">Seized Cash</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customData.map((row, idx) => (
+                      <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/10" style={{ background: idx % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)' }}>
+                        {customColumns.firNo && <td className="px-4 py-3 font-mono font-semibold text-slate-100">{row['FIR No']}</td>}
+                        {customColumns.caseDate && <td className="px-4 py-3 text-slate-300">{row['Case Date']}</td>}
+                        {customColumns.sectionOfLaw && <td className="px-4 py-3 text-slate-300 truncate max-w-[120px]" title={row['Section of Law']}>{row['Section of Law']}</td>}
+                        {customColumns.stage && <td className="px-4 py-3 text-slate-300">{row['Stage']}</td>}
+                        {customColumns.psName && <td className="px-4 py-3 text-slate-300">{row['Police Station']}</td>}
+                        {customColumns.accusedName && <td className="px-4 py-3 font-medium text-slate-100">{row['Accused Name']}</td>}
+                        {customColumns.age && <td className="px-4 py-3 text-slate-300">{row['Age']}</td>}
+                        {customColumns.contrabandType && <td className="px-4 py-3 text-slate-300">{row['Contraband Type']}</td>}
+                        {customColumns.quantity && <td className="px-4 py-3 text-slate-300">{row['Quantity (KG)']}</td>}
+                        {customColumns.cashAmount && <td className="px-4 py-3 text-emerald-400 font-medium">₹{Number(row['Cash (INR)']).toLocaleString('en-IN')}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Court Diary Tab */}
+      {activeTab === 'court' && (
+        <div className="card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Upcoming Court Hearings Diary</h3>
+              <p className="text-xs text-slate-400">Detailed list of court trials scheduled in the near future</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Days:</span>
+              <select
+                value={courtDays}
+                onChange={(e) => setCourtDays(parseInt(e.target.value))}
+                className="select select-sm select-bordered"
+                style={{ background: 'var(--color-garuda-800)', color: 'var(--color-garuda-100)' }}
+              >
+                <option value={7}>Next 7 Days</option>
+                <option value={15}>Next 15 Days</option>
+                <option value={30}>Next 30 Days</option>
+              </select>
+            </div>
+          </div>
+
+          {courtLoading ? (
+            <div className="py-24 text-center text-slate-400">Fetching hearings diary...</div>
+          ) : courtData.length === 0 ? (
+            <div className="py-24 text-center text-slate-500">No upcoming court trials logged in the specified period.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courtData.map((h) => (
+                <div key={h.id} className="card rounded-xl p-4 border border-slate-700/80 space-y-3" style={{ background: 'var(--color-garuda-800)' }}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-indigo-400 border border-slate-750 mr-2 uppercase">
+                        {h.scNumber}
+                      </span>
+                      <span className="text-xs text-slate-300 font-semibold">{h.courtName}</span>
+                    </div>
+                    <span className="text-xs text-indigo-400 font-bold">
+                      {new Date(h.hearingDate).toLocaleDateString('en-IN')}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-slate-100">FIR No: <span className="font-mono text-xs">{h.firNo}</span></p>
+                    <p className="text-xs text-slate-400">Station: {h.psName}</p>
+                    <p className="text-xs text-slate-300">Accused: <span className="font-medium text-slate-200">{h.accusedNames}</span></p>
+                  </div>
+
+                  {h.orderText && (
+                    <div className="text-xs bg-slate-900/50 p-2.5 rounded-lg border border-slate-750/50 text-slate-300">
+                      <strong className="block text-slate-400 mb-0.5">Trial Notes:</strong>
+                      {h.orderText}
+                    </div>
+                  )}
+
+                  {h.nextHearingDate && (
+                    <div className="text-[11px] text-amber-500/90 font-medium flex items-center gap-1.5 pt-1 border-t border-slate-750">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      Next Hearing: {new Date(h.nextHearingDate).toLocaleDateString('en-IN')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Performance Dashboard Tab */}
+      {activeTab === 'performance' && (
+        <div className="space-y-6">
+          {perfLoading ? (
+            <div className="card rounded-xl p-24 text-center border border-slate-750">Calculating performance indicators...</div>
+          ) : perfData ? (
+            <>
+              {/* Gauges & Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="card p-5 border border-slate-700/80 space-y-2 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Scopes Registered</span>
+                  <p className="text-3xl font-extrabold text-slate-100">{perfData.summary.totalCases}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Total active case records under department authority.</p>
+                </div>
+
+                <div className="card p-5 border border-slate-700/80 space-y-2 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Charge Sheet Filing Rate</span>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-extrabold text-blue-400">{perfData.summary.chargeSheetRate}%</p>
+                    <span className="text-xs text-slate-400">({perfData.summary.chargeSheetedCases}/{perfData.summary.totalCases})</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">Filing rate within legal deadlines.</p>
+                </div>
+
+                <div className="card p-5 border border-slate-700/80 space-y-2 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Conviction Success Rate</span>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-extrabold text-emerald-400">{perfData.summary.convictionRate}%</p>
+                    <span className="text-xs text-slate-400">({perfData.summary.convictedCases} Convicted)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">Out of decided cases: {perfData.summary.convictedCases + perfData.summary.acquittedCases} trials.</p>
+                </div>
+
+                <div className="card p-5 border border-slate-700/80 space-y-2 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)' }}>
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Filing Backlog</span>
+                  <p className="text-3xl font-extrabold text-amber-500">{perfData.summary.totalCases - perfData.summary.chargeSheetedCases}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Cases remaining in FIR stage pending investigation.</p>
+                </div>
+              </div>
+
+              {/* Station Leaders chart */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 card p-5 border border-slate-100/50 dark:border-slate-800" style={{ background: 'var(--color-garuda-800)' }}>
+                  <h3 className="text-base font-bold text-slate-100 mb-4">Top 10 Active Stations Leaders</h3>
+                  <div className="h-72 w-full text-xs">
+                    {/* Render a custom Leaderboard Chart */}
+                    <table className="w-full text-left text-slate-350">
+                      <thead>
+                        <tr className="border-b border-slate-700 font-semibold text-slate-200">
+                          <th className="py-2">Rank</th>
+                          <th className="py-2">Station Name</th>
+                          <th className="py-2 text-center">Cases Logged</th>
+                          <th className="py-2 text-right">Contraband Seized</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {perfData.leaderboard.map((station, i) => (
+                          <tr key={station.stationName} className="border-b border-slate-750/50 hover:bg-slate-700/10">
+                            <td className="py-2.5 font-bold text-indigo-400">#{i + 1}</td>
+                            <td className="py-2.5 font-semibold text-slate-100">{station.stationName}</td>
+                            <td className="py-2.5 text-center font-bold text-slate-300">{station.casesCount}</td>
+                            <td className="py-2.5 text-right font-bold text-emerald-400">{station.contrabandKg.toFixed(2)} KG</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="card p-5 border border-slate-100/50 dark:border-slate-800 flex flex-col justify-between" style={{ background: 'var(--color-garuda-800)' }}>
+                  <h3 className="text-base font-bold text-slate-100 mb-4">Trial Disposition Details</h3>
+                  <div className="space-y-4 flex-1 flex flex-col justify-center">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-slate-300">
+                        <span>Convictions</span>
+                        <span className="text-emerald-400 font-bold">{perfData.summary.convictedCases} Cases</span>
+                      </div>
+                      <div className="w-full h-3 rounded-full overflow-hidden bg-slate-900">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full"
+                          style={{
+                            width: `${(perfData.summary.convictedCases / Math.max(1, perfData.summary.convictedCases + perfData.summary.acquittedCases)) * 100}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-slate-300">
+                        <span>Acquittals</span>
+                        <span className="text-amber-500 font-bold">{perfData.summary.acquittedCases} Cases</span>
+                      </div>
+                      <div className="w-full h-3 rounded-full overflow-hidden bg-slate-900">
+                        <div
+                          className="h-full bg-amber-500 rounded-full"
+                          style={{
+                            width: `${(perfData.summary.acquittedCases / Math.max(1, perfData.summary.convictedCases + perfData.summary.acquittedCases)) * 100}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] text-slate-400 mt-4 leading-relaxed">
+                      💡 <strong>Rate Analysis:</strong> The conviction success rate of {perfData.summary.convictionRate}% reflects trials decided in court. Backlog pending investigation includes {perfData.summary.totalCases - perfData.summary.chargeSheetedCases} cases in the FIR stage.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="py-12 text-center text-slate-500">Failed to calculate performance parameters.</div>
+          )}
         </div>
       )}
     </div>
