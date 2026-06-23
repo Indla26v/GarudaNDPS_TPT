@@ -231,7 +231,7 @@ export default function CaseDetail() {
                         </p>
                       </div>
                       <Link
-                        to={`/offenders/${ca.offenderId}/edit`}
+                        to={`/offenders/${ca.offenderId}`}
                         className="text-xs px-2 py-1 rounded"
                         style={{ background: 'var(--color-garuda-700)', color: 'var(--color-garuda-300)' }}
                       >

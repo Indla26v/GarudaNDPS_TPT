@@ -97,6 +97,24 @@ export const PERMISSIONS = {
   ENFORCEMENT_VIEW:     { minRole: 'CONSTABLE' },
   ENFORCEMENT_CREATE:   { minRole: 'CONSTABLE' },
   ENFORCEMENT_REVIEW:   { minRole: 'SHO' },
+
+  // Offender deletion (separate from edit)
+  OFFENDER_DELETE:      { minRole: 'SP' },
+
+  // Data import
+  IMPORT_DATA:          { minRole: 'SP' },
+
+  // Vehicles (Seized)
+  VEHICLE_VIEW:         { minRole: 'CONSTABLE' },
+  VEHICLE_EDIT:         { minRole: 'SHO' },
+
+  // Intelligence module
+  INTEL_VIEW:           { minRole: 'SHO' },
+  INTEL_CREATE:         { minRole: 'SHO' },
+
+  // Excise-specific (EXCISE department can access their own station's core pages)
+  EXCISE_OFFENDER_VIEW: { minRole: 'CONSTABLE', departments: ['EXCISE'] },
+  EXCISE_CASE_VIEW:     { minRole: 'CONSTABLE', departments: ['EXCISE'] },
 };
 
 /**

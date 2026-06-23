@@ -10,7 +10,7 @@
     "module": "node16",
     "moduleResolution": "node16",
     "target": "esnext",
-    "types": [],
+    "types": ["jest", "node"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

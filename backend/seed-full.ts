@@ -9,6 +9,27 @@ const prisma = new PrismaClient();
 async function main() {
   const ROUNDS = 10;
 
+  // ── Divisions ────────────────────────────────────────────────────────
+  const DIVISIONS = [
+    { name: 'Tirupati Urban', code: 'Tirupati SDPO' },
+    { name: 'Tirupati Rural', code: 'Chandragiri SDPO' },
+    { name: 'Srikalahasti', code: 'Srikalahasti SDPO' },
+    { name: 'Puttur', code: 'Puttur SDPO' },
+    { name: 'Naidupeta', code: 'Naidupet SDPO' },
+    { name: 'Renigunta', code: 'Renigunta SDPO' },
+    { name: 'Tirumala', code: 'Tirumala SDPO' },
+    { name: 'Sri City', code: 'Sri City SDPO' },
+  ];
+
+  for (const div of DIVISIONS) {
+    await (prisma as any).divisions.upsert({
+      where: { code: div.code },
+      update: {},
+      create: { name: div.name, code: div.code, district: 'Tirupati' },
+    });
+  }
+  console.log('✅ Divisions seeded');
+
   // ── Police Stations ──────────────────────────────────────────────────
   const policeStations = [
     // 1. Naidupet SDPO
@@ -151,6 +172,7 @@ async function main() {
 
     // ── Excise ─────────────────────────────────────────────────────────
     { username: 'excise_sho', password: 'password123', full_name: 'Arjun Reddy (Excise SHO)', role: 'SHO' as const, department: 'EXCISE' as const, team_id: teamMap['Excise Enforcement Unit'], badge: 'EX-001', ps_id: exPs?.id },
+    { username: 'excise_si', password: 'password123', full_name: 'Excise SI Demo', role: 'SHO' as const, department: 'EXCISE' as const, team_id: teamMap['Excise Enforcement Unit'], badge: 'EX-002', ps_id: exPs?.id },
   ];
 
   // Delete old-format users if they exist

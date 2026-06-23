@@ -13,6 +13,8 @@ router.use(authenticate);
 
 router.get('/', getSeizedVehicles);
 router.get('/:id', getSeizedVehicleById);
-router.put('/:id', requirePermission('EDIT_RECORDS'), updateSeizedVehicle);
+
+// Admin / Editor routes
+router.put('/:id', requirePermission('VEHICLE_EDIT'), updateSeizedVehicle);
 
 export default router;

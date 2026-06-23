@@ -333,6 +333,25 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       });
     });
 
+    // Add Charge Sheet overdue alerts (scoped)
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const overdueChargeSheets = await prisma.cases.findMany({
+      where: { ...caseWhere, stage: 'FIR', case_date: { lt: sixtyDaysAgo } },
+      take: 5,
+      orderBy: { case_date: 'asc' },
+      include: { police_stations: { select: { name: true } } }
+    });
+
+    overdueChargeSheets.forEach(c => {
+      recentAlerts.push({
+        id: `cs_${c.id.toString()}`,
+        type: 'CHARGE_SHEET',
+        message: `Charge Sheet overdue for case ${c.fir_no} at ${c.police_stations?.name || 'Unknown PS'}`,
+        date: c.case_date || new Date(),
+      });
+    });
+
     // ── Edit requests pending ────────────────────────────────────────────
     const editRequests = await prisma.edit_requests.findMany({
       where: { status: 'PENDING' },

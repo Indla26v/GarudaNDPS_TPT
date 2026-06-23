@@ -86,9 +86,9 @@ export function usePermissions() {
         NET_VIEW_ALL:       () => hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
         NET_BUILD:          () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
-        // Reports — no department restriction
-        REPORTS_VIEW:       () => hasMinRole('SHO'),
-        REPORTS_CUSTOM:     () => hasMinRole('SHO'),
+        // Reports — restricted to SP, ASP, SDPO, and CYBER_ANALYTICS
+        REPORTS_VIEW:       () => hasMinRole('SDPO') || inDepartment('CYBER_ANALYTICS'),
+        REPORTS_CUSTOM:     () => hasMinRole('SDPO') || inDepartment('CYBER_ANALYTICS'),
 
         // SP-only
         USER_MANAGEMENT:    () => role === 'SP',
@@ -104,6 +104,20 @@ export function usePermissions() {
         ENFORCEMENT_VIEW:   () => hasMinRole('CONSTABLE'),
         ENFORCEMENT_CREATE: () => hasMinRole('CONSTABLE'),
         ENFORCEMENT_REVIEW: () => hasMinRole('SHO'),
+
+        // Offender deletion (separate from edit)
+        OFFENDER_DELETE:     () => role === 'SP',
+
+        // Data import
+        IMPORT_DATA:         () => role === 'SP',
+
+        // Vehicles (Seized)
+        VEHICLE_VIEW:        () => hasMinRole('CONSTABLE'),
+        VEHICLE_EDIT:        () => hasMinRole('SHO'),
+
+        // Intelligence module
+        INTEL_VIEW:          () => hasMinRole('SHO'),
+        INTEL_CREATE:        () => hasMinRole('SHO'),
       };
 
       return PERM_MAP[key] ? PERM_MAP[key]() : false;
@@ -149,10 +163,11 @@ export function usePermissions() {
       canViewAllNetwork: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
       canBuildNetwork: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
-      canViewAllReports: hasMinRole('SHO'),
-      canBuildCustomReport: hasMinRole('SHO'),
+      canViewAllReports: hasMinRole('SDPO') || inDepartment('CYBER_ANALYTICS'),
+      canBuildCustomReport: hasMinRole('SDPO') || inDepartment('CYBER_ANALYTICS'),
 
       canViewDistrictAnalytics: hasMinRole('ASP'),
+      canManageUsers: role === 'SP',
       canViewUserManagement: role === 'SP',
       canViewAuditLogs: role === 'SP',
       canApproveEdit: hasMinRole('SHO'),
@@ -162,6 +177,13 @@ export function usePermissions() {
       canEnforcementView: hasMinRole('CONSTABLE'),
       canEnforcementCreate: hasMinRole('CONSTABLE'),
       canEnforcementReview: hasMinRole('SHO'),
+
+      canDeleteOffender: role === 'SP',
+      canImportData: role === 'SP',
+      canViewVehicles: hasMinRole('CONSTABLE'),
+      canEditVehicles: hasMinRole('SHO'),
+      canViewIntel: hasMinRole('SHO'),
+      canCreateIntel: hasMinRole('SHO'),
     };
   }, [role, department, policeStationId]);
 }

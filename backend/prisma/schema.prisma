@@ -133,6 +133,30 @@ model offender_contacts {
   @@index([value], map: "idx_oc_value")
 }
 
+model imei_records {
+  id            BigInt      @id @default(autoincrement())
+  offender_id   BigInt
+  imei_number   String      @db.VarChar(20)
+  device_make   String?     @db.VarChar(100)
+  device_model  String?     @db.VarChar(100)
+  sim_number    String?     @db.VarChar(30)
+  sim_provider  String?     @db.VarChar(100)
+  mobile_number String?     @db.VarChar(20)
+  status        imei_status @default(ACTIVE)
+  first_seen    DateTime    @default(now()) @db.Timestamp(6)
+  last_seen     DateTime?   @db.Timestamp(6)
+  notes         String?
+  created_by    BigInt?
+  created_at    DateTime    @default(now()) @db.Timestamp(6)
+
+  offenders     offenders   @relation(fields: [offender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users?      @relation("imei_created_by", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([offender_id], map: "idx_imei_offender")
+  @@index([imei_number], map: "idx_imei_number")
+  @@index([mobile_number], map: "idx_imei_mobile")
+}
+
 model offender_drug_profile {
   id                     BigInt                 @id @default(autoincrement())
   offender_id            BigInt                 @unique
@@ -215,6 +239,7 @@ model offenders {
   interrogation_sessions                                              interrogation_sessions[]
   enforcement_matched                                                 enforcement_checks[]     @relation("enforcement_matched_offender")
   enforcement_committed                                               enforcement_checks[]     @relation("enforcement_committed_offender")
+  imei_records                                                        imei_records[]
 
   @@index([alias], map: "idx_offenders_alias")
   @@index([category], map: "idx_offenders_category")
@@ -480,6 +505,7 @@ model users {
   petty_cases_checks_created        petty_cases_checks[]        @relation("petty_case_officer")
   palle_nidra_checks_created        palle_nidra_checks[]        @relation("palle_nidra_officer")
   drone_surveillance_checks_created drone_surveillance_checks[] @relation("drone_surveillance_officer")
+  imei_records_created              imei_records[]              @relation("imei_created_by")
 
   @@index([police_station_id], map: "idx_users_ps")
   @@index([role], map: "idx_users_role")
@@ -754,6 +780,26 @@ enum department_type {
 }
 
 // Teams — created by Admin, assigned to a department
+model districts {
+  id         BigInt   @id @default(autoincrement())
+  name       String   @unique @db.VarChar(100)
+  state      String   @default("Andhra Pradesh") @db.VarChar(100)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+}
+
+model divisions {
+  id         BigInt   @id @default(autoincrement())
+  name       String   @unique @db.VarChar(200)
+  code       String   @unique @db.VarChar(20)
+  district   String   @default("Tirupati") @db.VarChar(100)
+  sdpo_name  String?  @db.VarChar(200)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([district], map: "idx_div_district")
+}
+
 model teams {
   id          BigInt          @id @default(autoincrement())
   name        String          @db.VarChar(200)
@@ -786,6 +832,13 @@ enum edit_request_status {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum imei_status {
+  ACTIVE
+  SWAPPED
+  DEACTIVATED
+  SUSPICIOUS
 }
 
 // ============================================================

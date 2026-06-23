@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { getOffenderWhere } from '../utils/scope';
 import { maskAadhaar, canRevealAadhaar, canExportOffenders } from '../utils/pii';
 import { logAudit } from '../utils/auditLogger';
+import { generateHistorySheetPdf } from '../utils/pdfHistorySheet';
 
 function csvEscape(v: unknown): string {
   let s = v == null ? '' : String(v);
@@ -254,6 +255,66 @@ export const exportOffendersCsv = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Export failed' });
   }
 }
+
+export const getOffenderHistorySheetPdf = async (req: Request, res: Response) => {
+  try {
+    const id = BigInt(String(req.params.id));
+    const offender = await prisma.offenders.findUnique({
+      where: { id },
+      include: {
+        police_stations: true,
+        offender_contacts: true,
+        case_accused: {
+          include: {
+            cases: { include: { police_stations: true, seizures: true } },
+          },
+        },
+      },
+    });
+
+    if (!offender) return res.status(404).json({ message: 'Offender not found' });
+
+    const timeline = offender.case_accused
+      .map((ca) => ca.cases)
+      .filter(Boolean)
+      .sort((a, b) => (b!.case_date?.getTime() || 0) - (a!.case_date?.getTime() || 0))
+      .map((c) => ({
+        firNo: c!.fir_no,
+        psName: c!.police_stations?.name,
+        caseDate: c!.case_date,
+        stage: c!.stage,
+        sectionOfLaw: c!.section_of_law,
+        contrabandType: c!.contraband_type,
+        arrestStatus: offender.case_accused.find((ca) => ca.case_id === c!.id)?.arrest_status,
+      }));
+
+    const data = {
+      generatedAt: new Date().toISOString(),
+      offender: {
+        fullName: offender.full_name,
+        alias: offender.alias || undefined,
+        fatherHusbandName: offender.father_husband_name || undefined,
+        age: offender.age || undefined,
+        category: offender.category ? String(offender.category) : undefined,
+        address: offender.full_address || undefined,
+        psName: offender.police_stations?.name || undefined,
+        mobile: offender.offender_contacts.find((c) => c.contact_type === 'MOBILE_PRIMARY')?.value,
+      },
+      timeline,
+    };
+
+    await logAudit('EXPORT', 'OFFENDER', id, req, `PDF history sheet exported for ${offender.full_name}`);
+
+    const doc = generateHistorySheetPdf(data);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="history-sheet-${offender.full_name.replace(/\s/g, '_')}.pdf"`);
+    doc.pipe(res);
+    doc.end();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to generate PDF' });
+  }
+};
 
 export const getOffenderHistorySheet = async (req: Request, res: Response) => {
   try {

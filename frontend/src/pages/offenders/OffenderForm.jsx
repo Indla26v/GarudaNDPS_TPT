@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
-import { OffenderCaseHistory, OffenderInterrogationPanel } from '../../components/OffenderPhase1Panels';
+import { OffenderCaseHistory, OffenderInterrogationPanel, ImeiPanel } from '../../components/OffenderPhase1Panels';
 
 const CATEGORIES = ['CONSUMER','LOCAL_PEDDLER','LOCAL_SUPPLIER','LOCAL_KINGPIN','TRANSPORTER','INTERSTATE_KINGPIN'];
 const GENDERS = ['MALE','FEMALE','OTHER'];
@@ -496,25 +496,10 @@ export default function OffenderForm() {
     }
   };
 
-  const printHistorySheet = async () => {
-    try {
-      const r = await api.get(`/offenders/${id}/history-sheet`);
-      const d = r.data;
-      const w = window.open('', '_blank');
-      if (!w) return;
-      w.document.write(`<html><head><title>History Sheet - ${d.offender.fullName}</title></head><body style="font-family:sans-serif;padding:24px">`);
-      w.document.write(`<h1>NDPS History Sheet</h1><p><strong>${d.offender.fullName}</strong> — ${d.offender.psName || ''}</p>`);
-      w.document.write(`<p>Father: ${d.offender.fatherHusbandName || '—'} | Age: ${d.offender.age || '—'}</p>`);
-      w.document.write('<h2>Case Timeline</h2><table border="1" cellpadding="6" style="border-collapse:collapse;width:100%"><tr><th>FIR</th><th>PS</th><th>Date</th><th>Stage</th></tr>');
-      (d.timeline || []).forEach((c) => {
-        w.document.write(`<tr><td>${c.firNo}</td><td>${c.psName || ''}</td><td>${c.caseDate ? new Date(c.caseDate).toLocaleDateString('en-IN') : ''}</td><td>${c.stage}</td></tr>`);
-      });
-      w.document.write('</table></body></html>');
-      w.document.close();
-      w.print();
-    } catch {
-      setError('Failed to generate history sheet');
-    }
+
+
+  const downloadPdfHistorySheet = () => {
+    window.open(`${api.defaults.baseURL}/offenders/${id}/history-sheet-pdf`, '_blank');
   };
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
@@ -765,8 +750,8 @@ export default function OffenderForm() {
             <>
               <button type="button" onClick={printProfile} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
                 style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>Print Profile</button>
-              <button type="button" onClick={printHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
-                style={{ background: 'var(--color-garuda-600)', color: 'var(--color-garuda-100)' }}>Print History Sheet</button>
+              <button type="button" onClick={downloadPdfHistorySheet} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
+                style={{ background: '#ef4444', color: '#fff' }}>⬇ Download Case History Sheet</button>
             </>
           )}
           <button onClick={() => navigate('/offenders')} className="px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap"
@@ -1202,6 +1187,14 @@ export default function OffenderForm() {
           <div className="card rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
             <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>Interrogation Sessions</h3>
             <OffenderInterrogationPanel offenderId={id} />
+          </div>
+        )}
+
+        {/* Division 10: IMEI Register (Edit & View only) */}
+        {(isEdit || isView) && (
+          <div className="card rounded-xl p-6" style={{ background: 'var(--color-garuda-800)', border: '1px solid var(--color-garuda-700)' }}>
+            <h3 className="text-lg font-semibold mb-4 pb-2 border-b" style={{ borderColor: 'var(--color-garuda-700)', color: 'var(--color-accent-400)' }}>IMEI Register</h3>
+            <ImeiPanel offenderId={id} isEdit={isEdit} />
           </div>
         )}
       </div>

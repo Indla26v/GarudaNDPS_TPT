@@ -42,8 +42,8 @@ router.post('/teams/:id/members', requirePermission('TEAM_MANAGEMENT'), addMembe
 router.delete('/teams/:id/members/:userId', requirePermission('TEAM_MANAGEMENT'), removeMember);
 router.delete('/teams/:id', requirePermission('TEAM_MANAGEMENT'), deleteTeam);
 
-router.post('/import/dpr', requirePermission('USER_MANAGEMENT'), uploadExcel.single('file'), importDprExcel);
-router.post('/import/dpr/preview', requirePermission('USER_MANAGEMENT'), uploadExcel.single('file'), previewDprExcel);
-router.post('/import/dpr/confirm', requirePermission('USER_MANAGEMENT'), confirmDprImport);
+router.post('/import/dpr', requirePermission('IMPORT_DATA'), uploadExcel.single('file'), importDprExcel);
+router.post('/import/dpr/preview', requirePermission('IMPORT_DATA'), uploadExcel.single('file'), previewDprExcel);
+router.post('/import/dpr/confirm', requirePermission('IMPORT_DATA'), confirmDprImport);
 
 export default router;

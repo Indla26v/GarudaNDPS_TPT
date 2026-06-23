@@ -77,6 +77,52 @@ async function checkAbsconderAlerts() {
   }
 }
 
+async function checkChargeSheetAlerts() {
+  try {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const pendingCases = await prisma.cases.findMany({
+      where: {
+        stage: 'FIR',
+        case_date: { lt: sixtyDaysAgo },
+      },
+      include: {
+        police_stations: { select: { name: true } },
+      },
+      orderBy: { case_date: 'asc' },
+    });
+
+    const alerts = pendingCases.map(c => {
+      const daysPending = c.case_date
+        ? Math.floor((Date.now() - new Date(c.case_date).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+      return {
+        caseId: c.id.toString(),
+        firNo: c.fir_no,
+        psName: c.police_stations?.name || '?',
+        daysPending,
+        severity: daysPending > 180 ? 'CRITICAL' : daysPending > 90 ? 'HIGH' : 'MEDIUM',
+      };
+    });
+
+    if (alerts.length > 0) {
+      broadcastEvent('chargesheet_overdue_alerts', {
+        count: alerts.length,
+        criticalCount: alerts.filter(a => a.severity === 'CRITICAL').length,
+        topAlerts: alerts.slice(0, 20),
+        checkedAt: new Date().toISOString(),
+      });
+
+      console.log(
+        `[Scheduler] CS overdue check: ${alerts.length} cases pending >60 days`
+      );
+    }
+  } catch (error) {
+    console.error('[Scheduler] CS overdue check failed:', error);
+  }
+}
+
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 
 /**
@@ -93,10 +139,14 @@ export function startAbsconderAlertScheduler() {
   // Run the first check after a brief delay to let the server fully start
   setTimeout(() => {
     checkAbsconderAlerts();
+    checkChargeSheetAlerts();
   }, 10000);
 
   // Schedule recurring checks
-  intervalHandle = setInterval(checkAbsconderAlerts, intervalMs);
+  intervalHandle = setInterval(() => {
+    checkAbsconderAlerts();
+    checkChargeSheetAlerts();
+  }, intervalMs);
 }
 
 /**
