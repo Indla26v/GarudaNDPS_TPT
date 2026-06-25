@@ -5,7 +5,7 @@ interface HistorySheetData {
     fullName: string;
     alias?: string;
     fatherHusbandName?: string;
-    age?: number;
+    age?: number | null;
     category?: string;
     address?: string;
     psName?: string;
