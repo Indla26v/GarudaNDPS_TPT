@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import { useSSE } from '../../hooks/useSSE';
+import * as XLSX from 'xlsx';
 
 /* ────────────────────────────────────────────────── */
 /*  Import Log Card                                   */
@@ -124,29 +125,49 @@ export default function DataImport() {
 
     setIsParsing(true);
     setPreviewData(null);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('importType', importType);
 
-    try {
-      const res = await api.post('/admin/import/dpr/preview', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setPreviewData(res.data.data.rows);
-    } catch (err) {
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'array' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const aoa = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        const res = await api.post('/admin/import/dpr/preview', {
+          aoa,
+          importType
+        });
+        setPreviewData(res.data.data.rows);
+      } catch (err) {
+        console.error(err);
+        const logMessage = {
+          id: 'err_' + Date.now() + Math.random(),
+          timestamp: new Date().toLocaleTimeString(),
+          type: 'error',
+          text: `Preview Failed: ${err.response?.data?.message || err.message || 'Unknown error'}`,
+          errors: [err.response?.data?.message || err.message || 'Unknown error'],
+        };
+        setImportLogs((prev) => [logMessage, ...prev]);
+      } finally {
+        setIsParsing(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.onerror = (err) => {
       console.error(err);
+      setIsParsing(false);
       const logMessage = {
         id: 'err_' + Date.now() + Math.random(),
         timestamp: new Date().toLocaleTimeString(),
         type: 'error',
-        text: `Preview Failed: ${err.response?.data?.message || err.message || 'Unknown error'}`,
-        errors: [err.response?.data?.message || err.message || 'Unknown error'],
+        text: `File Reading Failed: ${err.message || 'Unknown error'}`,
+        errors: [err.message || 'Unknown error'],
       };
       setImportLogs((prev) => [logMessage, ...prev]);
-    } finally {
-      setIsParsing(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   /* ── Inline Editing ── */

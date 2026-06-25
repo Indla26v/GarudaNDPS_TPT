@@ -21,6 +21,141 @@ function pick(row: Record<string, unknown>, ...keys: string[]): string {
   return '';
 }
 
+function cleanPSName(rawName: string): string {
+  if (!rawName) return '';
+  // Remove leading list numbering like "1).", "2.", "A-1.", etc.
+  return rawName.replace(/^(?:\d+|[A-Z]-\d+)[\.\)\-\s]+/, '').trim();
+}
+
+function normPS(name: string): string {
+  let s = name.toLowerCase();
+  // Clean up punctuation, spaces, suffixes
+  s = s.replace(/\b(ps|p\.s\.|ups|u\.p\.s\.)\b/g, '');
+  s = s.replace(/[^a-z0-9]/g, '');
+  
+  // Normalize spelling variations
+  s = s.replace(/srikalahasthi/g, 'srikalahasti');
+  s = s.replace(/tirupathi/g, 'tirupati');
+  s = s.replace(/thotambedu/g, 'thottambedu');
+  s = s.replace(/vardaiahpalem/g, 'varadaiahpalem');
+  s = s.replace(/varadhaiapalam/g, 'varadaiahpalem');
+  s = s.replace(/chittamuru/g, 'chittamur');
+  s = s.replace(/naidupeta/g, 'naidupet');
+  s = s.replace(/dvsatram/g, 'doravarisatram');
+  s = s.replace(/doravarisatram/g, 'doravarisatram');
+  s = s.replace(/bnkandriga/g, 'bnkandriga');
+  s = s.replace(/b\.n\.kandriga/g, 'bnkandriga');
+  s = s.replace(/sricity/g, 'sricity');
+  s = s.replace(/sacity/g, 'sricity');
+  s = s.replace(/y\.?v\.?\s*palem/g, 'yerravaripalem');
+  s = s.replace(/yvpalem/g, 'yerravaripalem');
+  s = s.replace(/yerpedu/g, 'yerpedu');
+  
+  return s.trim();
+}
+
+function findPS(psNameRaw: string, psCodeRaw: string, psByName: Map<string, any>, psByCode: Map<string, any>): any | null {
+  const codeKey = normKey(psCodeRaw);
+  if (codeKey && psByCode.has(codeKey)) {
+    return psByCode.get(codeKey);
+  }
+
+  const cleanedName = cleanPSName(psNameRaw);
+  const searchKey = normPS(cleanedName);
+  if (!searchKey) return null;
+
+  // 1. Direct match on normalized key
+  for (const [k, v] of psByName) {
+    if (normPS(v.name) === searchKey) {
+      return v;
+    }
+  }
+
+  // 2. Substring match on normalized key
+  for (const [k, v] of psByName) {
+    const dbKey = normPS(v.name);
+    if (dbKey.includes(searchKey) || searchKey.includes(dbKey)) {
+      return v;
+    }
+  }
+
+  return null;
+}
+
+function isHeaderOrHelperRow(row: Record<string, unknown>, importType: string): boolean {
+  const accusedDetailsRaw = pick(row, 'Details of the Accused/ Peddler (Full name, age, father name)',
+    'Details of the Accused', 'Details of Accused', 'Accused Details', 'AccusedDetails', 'Full Name', 'Name');
+  const crNoRaw = pick(row, 'Cr. No.', 'Cr No', 'CR No.', 'CR No', 'Cr.No. & Year', 'Cr.No & Year');
+  const psNameRaw = pick(row, 'Name of the PS', 'Name of the P.S.', 'Police station', 'Police Station', 'PS');
+
+  const accusedDetailsNorm = accusedDetailsRaw.toLowerCase().trim();
+  const crNoNorm = crNoRaw.toLowerCase().trim();
+  const psNameNorm = psNameRaw.toLowerCase().trim();
+
+  // If the "Details of Accused" matches standard header wording
+  if (
+    accusedDetailsNorm === 'details of the accused' ||
+    accusedDetailsNorm === 'details of accused' ||
+    accusedDetailsNorm === 'accused details' ||
+    accusedDetailsNorm === 'accuseddetails' ||
+    accusedDetailsNorm === 'name' ||
+    accusedDetailsNorm === 'full name' ||
+    accusedDetailsNorm === 'details of the accused/ peddler (full name, age, father name)'
+  ) {
+    return true;
+  }
+
+  // If the "Cr. No." matches standard header wording
+  if (
+    crNoNorm === 'cr. no.' ||
+    crNoNorm === 'cr no' ||
+    crNoNorm === 'cr. no. & year' ||
+    crNoNorm === 'cr.no & year' ||
+    crNoNorm === 'cr.no. & year'
+  ) {
+    return true;
+  }
+
+  // If the "PS Name" matches standard header wording
+  if (
+    psNameNorm === 'name of the ps' ||
+    psNameNorm === 'name of the p.s.' ||
+    psNameNorm === 'police station' ||
+    psNameNorm === 'ps'
+  ) {
+    return true;
+  }
+
+  // If the row contains header placeholder text
+  if (
+    accusedDetailsNorm === 'name' ||
+    accusedDetailsNorm === 'age' ||
+    accusedDetailsNorm === 'father name' ||
+    accusedDetailsNorm === 'guardian' ||
+    accusedDetailsNorm === 'guardian name'
+  ) {
+    return true;
+  }
+
+  // Check if the row is purely numeric headers (e.g. 1, 2, 3, 4...)
+  let numericHeadersCount = 0;
+  let totalFilledFields = 0;
+  for (const val of Object.values(row)) {
+    if (val !== undefined && val !== null && String(val).trim() !== '') {
+      totalFilledFields++;
+      const num = Number(String(val).trim());
+      if (!Number.isNaN(num) && Number.isInteger(num) && num > 0 && num <= 50) {
+        numericHeadersCount++;
+      }
+    }
+  }
+  if (totalFilledFields > 3 && numericHeadersCount / totalFilledFields > 0.4) {
+    return true;
+  }
+
+  return false;
+}
+
 function parseContrabandType(raw: string): string | null {
   const s = raw.toUpperCase();
   if (s.includes('GANJA') && s.includes('OIL')) return 'GANJA_OIL';
@@ -177,23 +312,49 @@ function cleanString(s: string | null | undefined): string | null {
 
 export const importDprExcel = async (req: Request, res: Response) => {
   try {
-    if (!req.file?.buffer) {
-      return res.status(400).json({ message: 'Upload an Excel file (.xlsx, .xls)' });
+    let sheet: XLSX.WorkSheet;
+
+    if (req.body.aoa) {
+      const aoa = req.body.aoa;
+      if (!Array.isArray(aoa)) {
+        return res.status(400).json({ message: 'Invalid data format. Expected aoa array.' });
+      }
+      sheet = XLSX.utils.aoa_to_sheet(aoa);
+    } else {
+      if (!req.file?.buffer) {
+        return res.status(400).json({ message: 'Upload an Excel file (.xlsx, .xls) or provide parsed aoa.' });
+      }
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const firstSheetName = wb.SheetNames[0];
+      if (!firstSheetName) {
+        return res.status(400).json({ message: 'Excel workbook has no sheets' });
+      }
+      const s = wb.Sheets[firstSheetName];
+      if (!s) {
+        return res.status(400).json({ message: 'Excel sheet could not be loaded' });
+      }
+      sheet = s;
     }
 
-    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const firstSheetName = wb.SheetNames[0];
-    if (!firstSheetName) {
-      return res.status(400).json({ message: 'Excel workbook has no sheets' });
+    const sheetAoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(20, sheetAoa.length); i++) {
+      const rowString = (sheetAoa[i] || []).join(' ').toLowerCase();
+      if (
+        rowString.includes('name of the ps') ||
+        rowString.includes('cr. no') ||
+        rowString.includes('details of the accused') ||
+        rowString.includes('accused details')
+      ) {
+        headerRowIndex = i;
+        break;
+      }
     }
-    const sheet = wb.Sheets[firstSheetName];
-    if (!sheet) {
-      return res.status(400).json({ message: 'Excel sheet could not be loaded' });
-    }
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { range: headerRowIndex });
 
     if (!rows.length) {
-      return res.status(400).json({ message: 'Sheet is empty' });
+      return res.status(400).json({ message: 'Sheet is empty or missing headers' });
     }
 
     const stations = await prisma.police_stations.findMany();
@@ -207,6 +368,10 @@ export const importDprExcel = async (req: Request, res: Response) => {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
+      if (isHeaderOrHelperRow(row, 'UNIFIED')) {
+        continue;
+      }
+
       try {
         const crNo = cleanString(pick(row, 'Cr. No.', 'Cr No', 'CR No.', 'CR No'));
         const accusedDetails = cleanString(pick(row, 'Accused Details', 'AccusedDetails'));
@@ -217,20 +382,9 @@ export const importDprExcel = async (req: Request, res: Response) => {
           continue;
         }
 
-        const psName = pick(row, 'Police station', 'Police Station', 'PS');
+        const psName = pick(row, 'Name of the PS', 'Name of the P.S.', 'Police station', 'Police Station', 'PS');
         const psCode = pick(row, 'PS Code', 'ps_code');
-        let ps = psByCode.get(normKey(psCode));
-        if (!ps) {
-          ps = psByName.get(normKey(psName));
-          if (!ps) {
-            for (const [k, v] of psByName) {
-              if (k.includes(normKey(psName)) || normKey(psName).includes(k)) {
-                ps = v;
-                break;
-              }
-            }
-          }
-        }
+        const ps = findPS(psName, psCode, psByName, psByCode);
         if (!ps) {
           stats.skipped++;
           stats.errors.push(`Row ${i + 2}: unknown station "${psName || psCode}"`);
@@ -432,24 +586,35 @@ export const importDprExcel = async (req: Request, res: Response) => {
 export const previewDprExcel = async (req: Request, res: Response) => {
   try {
     const importType = req.body.importType || 'UNIFIED';
-    if (!req.file?.buffer) {
-      return res.status(400).json({ message: 'Upload an Excel file (.xlsx, .xls)' });
+    let sheet: XLSX.WorkSheet;
+
+    if (req.body.aoa) {
+      const aoa = req.body.aoa;
+      if (!Array.isArray(aoa)) {
+        return res.status(400).json({ message: 'Invalid data format. Expected aoa array.' });
+      }
+      sheet = XLSX.utils.aoa_to_sheet(aoa);
+    } else {
+      if (!req.file?.buffer) {
+        return res.status(400).json({ message: 'Upload an Excel file (.xlsx, .xls) or provide parsed aoa.' });
+      }
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const firstSheetName = wb.SheetNames[0];
+      if (!firstSheetName) {
+        return res.status(400).json({ message: 'Excel workbook has no sheets' });
+      }
+      const s = wb.Sheets[firstSheetName];
+      if (!s) {
+        return res.status(400).json({ message: 'Excel sheet could not be loaded' });
+      }
+      sheet = s;
     }
 
-    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const firstSheetName = wb.SheetNames[0];
-    if (!firstSheetName) {
-      return res.status(400).json({ message: 'Excel workbook has no sheets' });
-    }
-    const sheet = wb.Sheets[firstSheetName];
-    if (!sheet) {
-      return res.status(400).json({ message: 'Excel sheet could not be loaded' });
-    }
     // ── Find the true header row ──
-    const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+    const sheetAoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
     let headerRowIndex = 0;
-    for (let i = 0; i < Math.min(20, aoa.length); i++) {
-      const rowString = (aoa[i] || []).join(' ').toLowerCase();
+    for (let i = 0; i < Math.min(20, sheetAoa.length); i++) {
+      const rowString = (sheetAoa[i] || []).join(' ').toLowerCase();
       if (
         rowString.includes('name of the ps') ||
         rowString.includes('cr. no') ||
@@ -475,22 +640,14 @@ export const previewDprExcel = async (req: Request, res: Response) => {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
+      if (isHeaderOrHelperRow(row, importType)) {
+        continue;
+      }
 
       // ── PS lookup (common to all import types) ──
       const psNameRaw = pick(row, 'Name of the PS', 'Name of the P.S.', 'Police station', 'Police Station', 'PS');
       const psCodeRaw = pick(row, 'PS Code', 'ps_code');
-      let ps = psByCode.get(normKey(psCodeRaw));
-      if (!ps) {
-        ps = psByName.get(normKey(psNameRaw));
-        if (!ps && psNameRaw) {
-          for (const [k, v] of psByName) {
-            if (k && (k.includes(normKey(psNameRaw)) || normKey(psNameRaw).includes(k))) {
-              ps = v;
-              break;
-            }
-          }
-        }
-      }
+      const ps = findPS(psNameRaw, psCodeRaw, psByName, psByCode);
 
       if (importType === 'OFFENDER') {
         // ── Parse "Details of the Accused" column (name, age, father) ──
@@ -731,6 +888,10 @@ export const confirmDprImport = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid data format' });
     }
 
+    const stations = await prisma.police_stations.findMany();
+    const psByName = new Map(stations.map((s) => [normKey(s.name), s]));
+    const psByCode = new Map(stations.map((s) => [normKey(s.ps_code), s]));
+
     let userId: bigint | null = null;
     if ((req as any).user?.userId) userId = BigInt((req as any).user.userId);
 
@@ -741,6 +902,19 @@ export const confirmDprImport = async (req: Request, res: Response) => {
       if (!row.isValid) {
         stats.skipped++;
         stats.errors.push(`Row ${row.originalRow}: Skipped due to validation errors`);
+        continue;
+      }
+
+      // Re-match PS dynamically in case psName was edited/corrected in frontend grid
+      const matchedPS = findPS(row.psName, row.psCode, psByName, psByCode);
+      if (matchedPS) {
+        row.psId = Number(matchedPS.id);
+        row.stationType = matchedPS.station_type;
+        row.psDistrict = matchedPS.district;
+        row.psState = matchedPS.state;
+      } else {
+        stats.skipped++;
+        stats.errors.push(`Row ${row.originalRow}: Police station "${row.psName || ''}" not found`);
         continue;
       }
 
