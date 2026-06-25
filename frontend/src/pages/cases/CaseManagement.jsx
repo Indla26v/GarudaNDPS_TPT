@@ -80,7 +80,7 @@ export default function CaseManagement() {
   };
 
   return (
-    <div className={`space-y-6 animate-fade-in ${totalPages > 1 ? 'pr-12 sm:pr-16' : ''}`}>
+    <div className={`space-y-6 animate-fade-in ${totalPages > 1 ? 'pb-20 sm:pb-6 pr-0 sm:pr-16' : ''}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
@@ -283,11 +283,11 @@ export default function CaseManagement() {
           {/* Pagination Controls */}
           {totalPages > 1 && !loading && (
             <div 
-              className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5 p-2 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"
+              className="fixed bottom-4 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-4 sm:top-1/2 sm:bottom-auto sm:-translate-y-1/2 z-50 flex flex-row sm:flex-col items-center gap-2 p-2 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"
               style={{ minWidth: '44px' }}
             >
               {/* Page Number indicator at the top */}
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center select-none pb-1.5 border-b border-slate-100 dark:border-slate-800 w-full mb-0.5">
+              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center select-none pr-2 sm:pr-0 pb-0 sm:pb-1.5 border-r sm:border-r-0 sm:border-b border-slate-200 dark:border-slate-800 mr-1.5 sm:mr-0">
                 {page + 1}/{totalPages}
               </div>
               
@@ -304,8 +304,8 @@ export default function CaseManagement() {
                 </svg>
               </button>
 
-              {/* Vertical Page List */}
-              <div className="flex flex-col gap-1.5">
+              {/* Page List */}
+              <div className="flex flex-row sm:flex-col gap-1.5">
                 {Array.from({ length: totalPages }).map((_, index) => {
                   if (
                     totalPages <= 6 ||

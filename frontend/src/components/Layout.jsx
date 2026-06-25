@@ -385,25 +385,25 @@ const DEPT_FULL_LABELS = {
       {/* ---- Main Content ---- */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header
-          className="grid grid-cols-3 items-center px-4 sm:px-6 py-3 min-h-[101px] gap-4 flex-shrink-0"
+          className="grid grid-cols-3 items-center px-2 sm:px-6 py-2 md:py-3 min-h-[70px] md:min-h-[101px] gap-2 sm:gap-4 flex-shrink-0"
           style={{ background: 'var(--color-header-bg, #fff)', borderBottom: '1px solid var(--color-garuda-700)' }}
         >
           {/* Left section: Hamburger and Garuda Logo */}
-          <div className="flex items-center gap-4 h-full justify-start">
+          <div className="flex items-center gap-1.5 sm:gap-4 h-full justify-start">
             {/* Hamburger menu for mobile */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-2 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 md:hidden cursor-pointer flex items-center justify-center"
+              className="p-1.5 -ml-1 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 md:hidden cursor-pointer flex items-center justify-center"
               aria-label="Open sidebar"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <svg className="w-5.5 h-5.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
             <img
               src={garudaLogo}
               alt="Garuda Logo"
-              className="h-18 sm:h-30 max-w-[200px] sm:max-w-none object-contain"
+              className="h-9 sm:h-18 md:h-24 max-w-[110px] sm:max-w-none object-contain"
             />
           </div>
 
@@ -412,7 +412,7 @@ const DEPT_FULL_LABELS = {
             <img
               src={apEmblem}
               alt="Andhra Pradesh State Emblem"
-              className="h-12 sm:h-22 object-contain"
+              className="h-9 sm:h-22 object-contain"
             />
           </div>
 
@@ -421,7 +421,7 @@ const DEPT_FULL_LABELS = {
             <img
               src={cmPhoto}
               alt="AP CM Photo"
-              className="h-20 sm:h-32 object-contain rounded-md shadow-md border border-gray-200/50 dark:border-slate-800"
+              className="h-11 sm:h-20 md:h-28 object-contain rounded-md shadow-md border border-gray-200/50 dark:border-slate-800"
             />
           </div>
         </header>

@@ -22,7 +22,7 @@ export default function GlobalLoader() {
   if (!loading) return null;
 
   return (
-    <div className="fixed inset-0 z-[45] flex flex-col items-center justify-center backdrop-blur-sm bg-slate-900/40 dark:bg-slate-950/50 transition-all duration-300 pointer-events-auto">
+    <div className="absolute inset-0 z-[45] flex flex-col items-center justify-center backdrop-blur-sm bg-slate-900/40 dark:bg-slate-950/50 transition-all duration-300 pointer-events-auto">
       <div className="relative flex flex-col items-center">
         {/* Concentric scanning circles */}
         <div className="relative w-24 h-24 flex items-center justify-center">
