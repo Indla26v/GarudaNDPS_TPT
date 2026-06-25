@@ -23,6 +23,7 @@ import { useSSE } from '../hooks/useSSE';
 import {
   IconClipboard, IconLock, IconRunning, IconHourglass, IconScale, IconCheckCircle,
   IconPackage, IconDollar, IconCar, IconBell, IconMegaphone, IconSearch, IconReports, IconShield,
+  IconNetwork, IconOffender, IconConsumer, IconChain
 } from '../components/Icons';
 
 const getAvatarColor = (name) => {
@@ -52,6 +53,74 @@ const ALERT_ICON_MAP = {
   CHARGE_SHEET: IconHourglass,
   CONVICTION: IconCheckCircle,
 };
+
+const IconTruck = ({ size = 20, color = 'currentColor' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M14 18H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8v16z" />
+    <path d="M14 6h4l4 4v6h-8V6z" />
+    <circle cx="7.5" cy="18.5" r="2.5" />
+    <circle cx="16.5" cy="16.5" r="2.5" />
+  </svg>
+);
+
+const IconCrown = ({ size = 20, color = 'currentColor' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+    <path d="M5 20h14" />
+  </svg>
+);
+
+const HIERARCHY_STAGES = [
+  {
+    step: 1,
+    key: 'interstateLink',
+    label: 'Interstate Link',
+    borderColor: '#6366f1',
+    iconType: 'network',
+  },
+  {
+    step: 2,
+    key: 'financier',
+    label: 'Financier',
+    borderColor: '#16a34a',
+    iconType: 'rupee',
+  },
+  {
+    step: 3,
+    key: 'supplier',
+    label: 'Supplier',
+    borderColor: '#2563eb',
+    iconType: 'supplier',
+  },
+  {
+    step: 4,
+    key: 'transporter',
+    label: 'Transporter',
+    borderColor: '#ea580c',
+    iconType: 'truck',
+  },
+  {
+    step: 5,
+    key: 'localKingpin',
+    label: 'Local Kingpin',
+    borderColor: '#dc2626',
+    iconType: 'crown',
+  },
+  {
+    step: 6,
+    key: 'localPeddler',
+    label: 'Local Peddler',
+    borderColor: '#8b5cf6',
+    iconType: 'peddler',
+  },
+  {
+    step: 7,
+    key: 'consumer',
+    label: 'Consumers',
+    borderColor: '#0d9488',
+    iconType: 'consumers',
+  },
+];
 
 // Simple in-memory client-side cache for tab switching
 let cachedSummary = null;
@@ -165,12 +234,7 @@ export default function Dashboard() {
                 {isConnected ? 'Live' : 'Offline'}
               </span>
             </div>
-            {loading && (
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-accent-400)] animate-pulse ml-2">
-                <span className="w-2.5 h-2.5 rounded-full border border-current border-t-transparent animate-spin inline-block" />
-                Updating...
-              </div>
-            )}
+
           </div>
           <p className="text-sm mt-1" style={{ color: 'var(--color-garuda-400)' }}>
             NDPS Operations{summary?.isStationLevel
@@ -353,6 +417,74 @@ export default function Dashboard() {
               </div>
             </>
           )}
+        </div>
+      </div>
+
+      {/* ── Hierarchy of Smugglers ────────────────────────────────────── */}
+      <div className="card rounded-xl p-5 shadow-card border border-slate-700/20 relative overflow-hidden">
+        {/* Decorative corner grid background */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none rounded-bl-full" />
+        
+        <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
+          <IconChain size={16} className="text-indigo-500" /> Hierarchy of Smugglers
+        </h3>
+
+        <div className="overflow-x-auto pb-2 scrollbar-thin">
+          <div className="flex items-stretch justify-between min-w-[840px] gap-2 px-2">
+            {HIERARCHY_STAGES.map((stage, idx) => {
+              const count = summary?.smugglerHierarchy?.[stage.key];
+              
+              // Render Icon based on type
+              let IconComponent = null;
+              if (stage.iconType === 'network') {
+                IconComponent = <IconNetwork size={22} color="#ffffff" />;
+              } else if (stage.iconType === 'rupee') {
+                IconComponent = <span className="text-xl font-black text-white">₹</span>;
+              } else if (stage.iconType === 'supplier' || stage.iconType === 'peddler') {
+                IconComponent = <IconOffender size={22} color="#ffffff" />;
+              } else if (stage.iconType === 'truck') {
+                IconComponent = <IconTruck size={22} color="#ffffff" />;
+              } else if (stage.iconType === 'crown') {
+                IconComponent = <IconCrown size={22} color="#ffffff" />;
+              } else if (stage.iconType === 'consumers') {
+                IconComponent = <IconConsumer size={22} color="#ffffff" />;
+              }
+
+              return (
+                <div key={stage.key} className="flex flex-col items-center flex-1 text-center select-none group relative">
+                  {/* Large Icon Badge with dynamic colored glow and connecting dotted lines */}
+                  <div className="relative flex items-center justify-center w-full mb-4">
+                    <div 
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-md group-hover:scale-110 relative z-10"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${stage.borderColor}dd, ${stage.borderColor})`,
+                        boxShadow: `0 4px 10px ${stage.borderColor}33`,
+                      }}
+                    >
+                      {IconComponent}
+                    </div>
+                    
+                    {/* Connecting dotted line pointing to next step */}
+                    {idx < HIERARCHY_STAGES.length - 1 && (
+                      <div className="absolute left-[calc(50%+28px)] right-[calc(-50%+28px)] top-1/2 -translate-y-1/2 z-0">
+                        <div 
+                          className="border-t-2 border-dotted h-0 w-full" 
+                          style={{ borderColor: 'var(--color-garuda-400)', opacity: 0.5 }} 
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Title Label */}
+                  <p className="text-[10px] font-extrabold tracking-wider uppercase mb-1 min-h-[30px] flex items-center justify-center leading-tight" style={{ color: 'var(--color-garuda-300)' }}>
+                    {stage.label}
+                  </p>
+
+
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

@@ -437,6 +437,29 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       })
       .slice(0, 10);
 
+    // ── Smuggler Hierarchy Counts ────────────────────────────────────────
+    const interstateKingpins = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'INTERSTATE_LINK' },
+    });
+    const financiers = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'FINANCIER' },
+    });
+    const localSuppliers = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'SUPPLIER' },
+    });
+    const transporters = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'TRANSPORTER' },
+    });
+    const localKingpins = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'LOCAL_KINGPIN' },
+    });
+    const localPeddlers = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'LOCAL_PEDDLER' },
+    });
+    const consumers = await prisma.offenders.count({
+      where: { ...offenderWhere, category: 'CONSUMER' },
+    });
+
     // ── Response ─────────────────────────────────────────────────────────
     const summaryData = {
       // KPI cards
@@ -446,6 +469,15 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
       totalAbsconders,
       pendingChargeSheets,
       pendingCourtCases,
+      smugglerHierarchy: {
+        interstateLink: interstateKingpins,
+        financier: financiers,
+        supplier: localSuppliers,
+        transporter: transporters,
+        localKingpin: localKingpins,
+        localPeddler: localPeddlers,
+        consumer: consumers,
+      },
       convictionsThisYear,
       totalContrabandKg: totalContraband,
       totalCashSeized: totalCash,

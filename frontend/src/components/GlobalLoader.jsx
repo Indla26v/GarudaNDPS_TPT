@@ -8,6 +8,17 @@ export default function GlobalLoader() {
     return subscribeToLoading(setLoading);
   }, []);
 
+  useEffect(() => {
+    if (loading) {
+      document.body.classList.add('global-loading');
+    } else {
+      document.body.classList.remove('global-loading');
+    }
+    return () => {
+      document.body.classList.remove('global-loading');
+    };
+  }, [loading]);
+
   if (!loading) return null;
 
   return (

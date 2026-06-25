@@ -14,7 +14,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 export const uploadExcel = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   fileFilter: (_req, file, cb) => {
     const ok =
       file.mimetype.includes('spreadsheet') ||

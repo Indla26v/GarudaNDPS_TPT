@@ -9,6 +9,7 @@
 @theme {
   /* ---- Brand Palette (Light Mode) ---- */
   --color-garuda-900: #ffffff; /* Page Canvas Background */
+
   --color-garuda-800: #f8fafc; /* Card/Sidebar Background */
   --color-garuda-700: #e2e8f0; /* Border/Divider */
   --color-garuda-600: #f1f5f9; /* Active/Hover/Stripe State */
@@ -422,4 +423,9 @@ body {
 
 .recharts-default-tooltip .recharts-tooltip-item {
   color: var(--color-garuda-200) !important;
+}
+
+/* Global Loading Scroll Lock */
+.global-loading * {
+  overflow: hidden !important;
 }

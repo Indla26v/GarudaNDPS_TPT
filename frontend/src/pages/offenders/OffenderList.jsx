@@ -164,11 +164,11 @@ export default function OffenderList({ isConsumerOnly = false }) {
   const categoryColors = {
     CONSUMER: { bg: 'rgba(59, 130, 246, 0.08)', color: '#1d4ed8' },
     LOCAL_PEDDLER: { bg: 'rgba(245, 158, 11, 0.08)', color: '#b45309' },
-    SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
-    LOCAL_SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
     LOCAL_KINGPIN: { bg: 'rgba(236, 72, 153, 0.08)', color: '#be185d' },
     TRANSPORTER: { bg: 'rgba(34, 197, 94, 0.08)', color: '#15803d' },
-    INTERSTATE_KINGPIN: { bg: 'rgba(168, 85, 247, 0.08)', color: '#6d28d9' },
+    SUPPLIER: { bg: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c' },
+    FINANCIER: { bg: 'rgba(14, 165, 233, 0.08)', color: '#0369a1' },
+    INTERSTATE_LINK: { bg: 'rgba(168, 85, 247, 0.08)', color: '#6d28d9' },
   };
 
   return (
@@ -272,10 +272,11 @@ export default function OffenderList({ isConsumerOnly = false }) {
             <option value="">All Categories</option>
             <option value="CONSUMER">Consumer</option>
             <option value="LOCAL_PEDDLER">Local Peddler</option>
-            <option value="LOCAL_SUPPLIER">Local Supplier</option>
             <option value="LOCAL_KINGPIN">Local Kingpin</option>
             <option value="TRANSPORTER">Transporter</option>
-            <option value="INTERSTATE_KINGPIN">Interstate Kingpin</option>
+            <option value="SUPPLIER">Supplier</option>
+            <option value="FINANCIER">Financier</option>
+            <option value="INTERSTATE_LINK">Interstate Link</option>
           </select>
         )}
         <select

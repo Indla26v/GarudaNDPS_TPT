@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import os from 'os';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
 import authRoutes from './routes/auth.routes';
 import offendersRoutes from './routes/offenders.routes';
 import dashboardRoutes from './routes/dashboard.routes';
@@ -125,6 +126,18 @@ app.get('/api/wake', async (req, res) => {
 // ── Health check ──────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Garuda API is running smoothly!' });
+});
+// ── Global Error Handler ──────────────────────────────────────────────
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File is too large. Maximum allowed size is 50MB.' });
+    }
+    return res.status(400).json({ message: `Upload error: ${err.message}` });
+  }
+  
+  console.error('[Global Error]', err);
+  res.status(500).json({ message: err?.message || 'Internal Server Error' });
 });
 
 const PORT = process.env.PORT || 8081;

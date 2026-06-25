@@ -730,12 +730,13 @@ enum gender_type {
 }
 
 enum offender_category {
-  CONSUMER
-  LOCAL_PEDDLER
-  LOCAL_SUPPLIER
-  LOCAL_KINGPIN
+  INTERSTATE_LINK
+  FINANCIER
+  SUPPLIER
   TRANSPORTER
-  INTERSTATE_KINGPIN
+  LOCAL_KINGPIN
+  LOCAL_PEDDLER
+  CONSUMER
 }
 
 enum offender_status {

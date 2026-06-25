@@ -4,7 +4,7 @@ import api from '../../api/axios';
 import { usePermissions } from '../../hooks/usePermissions';
 import { OffenderCaseHistory, OffenderInterrogationPanel, ImeiPanel } from '../../components/OffenderPhase1Panels';
 
-const CATEGORIES = ['CONSUMER','LOCAL_PEDDLER','LOCAL_SUPPLIER','LOCAL_KINGPIN','TRANSPORTER','INTERSTATE_KINGPIN'];
+const CATEGORIES = ['INTERSTATE_LINK','FINANCIER','SUPPLIER','TRANSPORTER','LOCAL_KINGPIN','LOCAL_PEDDLER','CONSUMER'];
 const GENDERS = ['MALE','FEMALE','OTHER'];
 const PURCHASE_MODES = ['CASH','UPI','CREDIT','BARTER','OTHER'];
 const CORE_CONTACT_TYPES = ['MOBILE_PRIMARY','MOBILE_SECONDARY','MOBILE_SIBLING','GMAIL'];
