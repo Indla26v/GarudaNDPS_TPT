@@ -43,8 +43,8 @@ createRoot(document.getElementById('root')).render(
     <ConnectionGuard>
       <AuthProvider>
         <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+          <Routes>
+            <Route path="/login" element={<Login />} />
           
           {/* Protected Routes */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

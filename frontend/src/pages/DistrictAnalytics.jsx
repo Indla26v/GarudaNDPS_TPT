@@ -26,8 +26,23 @@ export default function DistrictAnalytics() {
   const [loading, setLoading] = useState(true);
   const { lastEvent, isConnected } = useSSE();
 
+  // Filters state (Comparison section)
+  const [stationsDetails, setStationsDetails] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [divisionFilter, setDivisionFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('cases');
+
+  // Filters & Sorting state (Detailed Breakdown Table)
+  const [tableSearch, setTableSearch] = useState('');
+  const [tableDivision, setTableDivision] = useState('ALL');
+  const [tableType, setTableType] = useState('ALL');
+  const [tableSortField, setTableSortField] = useState('totalCases');
+  const [tableSortAsc, setTableSortAsc] = useState(false);
+
   useEffect(() => {
     fetchSummary();
+    fetchStationsDetails();
   }, []);
 
   // Refresh data on SSE events
@@ -47,6 +62,85 @@ export default function DistrictAnalytics() {
       setLoading(false);
     }
   };
+
+  const fetchStationsDetails = async () => {
+    try {
+      const res = await api.get('/police-stations');
+      setStationsDetails(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to load station details:', err);
+    }
+  };
+
+  // Combine summary psWiseData with details (sdpo, station_type)
+  const enrichedPsData = summary?.psWiseData?.map((ps) => {
+    const details = stationsDetails.find(s => String(s.id) === String(ps.psId) || s.ps_code === ps.psCode);
+    return {
+      ...ps,
+      sdpo: details?.sdpo || 'Other',
+      stationType: details?.station_type || 'POLICE',
+    };
+  }) || [];
+
+  // Extract unique divisions dynamically
+  const divisionsList = Array.from(
+    new Set(stationsDetails.map(s => s.sdpo).filter(Boolean))
+  ).sort();
+
+  // Filter and Sort the data
+  const filteredPsData = enrichedPsData
+    .filter((ps) => {
+      const matchesSearch = 
+        ps.psName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ps.psCode.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesDivision = divisionFilter === 'ALL' || ps.sdpo === divisionFilter;
+      const matchesType = typeFilter === 'ALL' || ps.stationType === typeFilter;
+
+      return matchesSearch && matchesDivision && matchesType;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'cases') return b.totalCases - a.totalCases;
+      if (sortBy === 'arrests') return b.totalArrests - a.totalArrests;
+      if (sortBy === 'absconders') return b.totalAbsconders - a.totalAbsconders;
+      if (sortBy === 'contraband') return b.totalContrabandKg - a.totalContrabandKg;
+      if (sortBy === 'cash') return b.totalCashSeized - a.totalCashSeized;
+      return 0;
+    });
+
+  const handleTableSort = (field) => {
+    if (tableSortField === field) {
+      setTableSortAsc(!tableSortAsc);
+    } else {
+      setTableSortField(field);
+      setTableSortAsc(false);
+    }
+  };
+
+  // Filter and Sort Detailed Table Data
+  const tableData = enrichedPsData
+    .filter((ps) => {
+      const matchesSearch = 
+        ps.psName.toLowerCase().includes(tableSearch.toLowerCase()) ||
+        ps.psCode.toLowerCase().includes(tableSearch.toLowerCase());
+      
+      const matchesDivision = tableDivision === 'ALL' || ps.sdpo === tableDivision;
+      const matchesType = tableType === 'ALL' || ps.stationType === tableType;
+
+      return matchesSearch && matchesDivision && matchesType;
+    })
+    .sort((a, b) => {
+      const fieldA = a[tableSortField];
+      const fieldB = b[tableSortField];
+      
+      if (typeof fieldA === 'number' && typeof fieldB === 'number') {
+        return tableSortAsc ? fieldA - fieldB : fieldB - fieldA;
+      }
+      
+      const strA = String(fieldA || '');
+      const strB = String(fieldB || '');
+      return tableSortAsc ? strA.localeCompare(strB) : strB.localeCompare(strA);
+    });
 
   const formatNumber = (val) => {
     if (val === null || val === undefined) return '0';
@@ -70,12 +164,6 @@ export default function DistrictAnalytics() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {loading && (
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-accent-400)] animate-pulse mr-2">
-              <span className="w-2.5 h-2.5 rounded-full border border-current border-t-transparent animate-spin inline-block" />
-              Updating...
-            </div>
-          )}
           <span
             className="w-2 h-2 rounded-full animate-pulse"
             style={{ background: isConnected ? '#22c55e' : '#ef4444' }}
@@ -86,7 +174,10 @@ export default function DistrictAnalytics() {
         </div>
       </div>
  
-      {/* Summary Cards */}
+      {/* Main Content Area */}
+      <div className="relative min-h-[400px]">
+
+        {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {METRIC_CARDS.map((card) => (
           <div
@@ -105,35 +196,96 @@ export default function DistrictAnalytics() {
             <p className="text-xs mt-1" style={{ color: 'var(--color-garuda-400)' }}>{card.label}</p>
           </div>
         ))}
-      </div>
- 
-      {/* PS Comparison Chart (table representation) */}
+      </div>      {/* PS Comparison Chart (table representation) */}
       <div className="card rounded-xl overflow-hidden">
-        <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
             Police Station Comparison
           </h2>
           <span className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>
-            {summary?.psWiseData?.length || 0} stations
+            Showing {filteredPsData.length} of {summary?.psWiseData?.length || 0} stations
           </span>
         </div>
- 
+
+        {/* Interactive Filters Bar */}
+        <div className="px-6 py-4 border-b flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between" style={{ borderColor: 'var(--color-garuda-700)', background: 'rgba(var(--color-garuda-600), 0.1)' }}>
+          <div className="flex flex-wrap gap-3 flex-1 w-full">
+            {/* Search Input */}
+            <div className="w-full sm:w-60">
+              <input
+                type="text"
+                placeholder="Search station name or code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input text-xs"
+              />
+            </div>
+
+            {/* Division/SDPO Select */}
+            <div className="w-full sm:w-48">
+              <select
+                value={divisionFilter}
+                onChange={(e) => setDivisionFilter(e.target.value)}
+                className="select text-xs w-full"
+              >
+                <option value="ALL">All Divisions</option>
+                {divisionsList.map((div) => (
+                  <option key={div} value={div}>{div}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Station Type Select */}
+            <div className="w-full sm:w-40">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="select text-xs w-full"
+              >
+                <option value="ALL">All Types</option>
+                <option value="POLICE">Police Stations</option>
+                <option value="EXCISE">Excise Stations</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Sort Control */}
+          <div className="w-full sm:w-56 flex items-center gap-2">
+            <span className="text-xs font-semibold whitespace-nowrap" style={{ color: 'var(--color-garuda-400)' }}>Sort By:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="select text-xs w-full"
+            >
+              <option value="cases">Cases</option>
+              <option value="arrests">Arrests</option>
+              <option value="absconders">Absconders</option>
+              <option value="contraband">Contraband</option>
+              <option value="cash">Cash Seized</option>
+            </select>
+          </div>
+        </div>
+
         <div className="p-6 space-y-4">
           {loading && !summary ? (
             <div className="py-12 text-center text-sm text-[var(--color-garuda-400)] animate-pulse">
               Loading comparisons...
             </div>
+          ) : filteredPsData.length === 0 ? (
+            <div className="py-12 text-center text-sm" style={{ color: 'var(--color-garuda-400)' }}>
+              No stations match the selected filters.
+            </div>
           ) : (
-            summary?.psWiseData?.map((ps) => {
-              const maxCases = Math.max(...(summary.psWiseData.map(p => p.totalCases) || [1]));
-              const percentage = maxCases > 0 ? (ps.totalCases / maxCases) * 100 : 0;
- 
+            filteredPsData.map((ps) => {
+              const maxCases = Math.max(...filteredPsData.map(p => p.totalCases), 1);
+              const percentage = (ps.totalCases / maxCases) * 100;
+
               return (
                 <div key={ps.psId} className="space-y-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="text-sm font-medium" style={{ color: 'var(--color-garuda-100)' }}>
                       {ps.psName}
-                      <span className="text-xs ml-2 font-mono" style={{ color: 'var(--color-garuda-500)' }}>
+                      <span className="text-xs ml-2 font-mono font-normal" style={{ color: 'var(--color-garuda-500)' }}>
                         {ps.psCode}
                       </span>
                     </span>
@@ -161,26 +313,92 @@ export default function DistrictAnalytics() {
           )}
         </div>
       </div>
- 
+
       {/* Detailed Table */}
       <div className="card rounded-xl overflow-hidden">
-        <div className="px-6 py-4" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
+        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--color-garuda-700)' }}>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
             Detailed Breakdown
           </h2>
+          <span className="text-xs" style={{ color: 'var(--color-garuda-500)' }}>
+            Showing {tableData.length} of {summary?.psWiseData?.length || 0} stations
+          </span>
         </div>
+
+        {/* Dedicated Filters for Table */}
+        <div className="px-6 py-4 border-b flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between" style={{ borderColor: 'var(--color-garuda-700)', background: 'rgba(var(--color-garuda-600), 0.1)' }}>
+          <div className="flex flex-wrap gap-3 flex-1 w-full">
+            {/* Table Search */}
+            <div className="w-full sm:w-60">
+              <input
+                type="text"
+                placeholder="Search station name or code..."
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                className="input text-xs"
+              />
+            </div>
+
+            {/* Table Division Select */}
+            <div className="w-full sm:w-48">
+              <select
+                value={tableDivision}
+                onChange={(e) => setTableDivision(e.target.value)}
+                className="select text-xs w-full"
+              >
+                <option value="ALL">All Divisions</option>
+                {divisionsList.map((div) => (
+                  <option key={div} value={div}>{div}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Table Station Type Select */}
+            <div className="w-full sm:w-40">
+              <select
+                value={tableType}
+                onChange={(e) => setTableType(e.target.value)}
+                className="select text-xs w-full"
+              >
+                <option value="ALL">All Types</option>
+                <option value="POLICE">Police Stations</option>
+                <option value="EXCISE">Excise Stations</option>
+              </select>
+            </div>
+          </div>
+          <div className="text-xs font-semibold text-[var(--color-garuda-400)]">
+            💡 Click column headers to sort the table
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="table-header">
-                <th>PS Name</th>
-                <th>Code</th>
-                <th className="text-right">Cases</th>
-                <th className="text-right">Offenders</th>
-                <th className="text-right">Arrests</th>
-                <th className="text-right">Absconders</th>
-                <th className="text-right">Contraband (Kg)</th>
-                <th className="text-right">Cash (₹)</th>
+              <tr className="table-header select-none">
+                <th className="cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('psName')}>
+                  PS Name {tableSortField === 'psName' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('psCode')}>
+                  Code {tableSortField === 'psCode' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalCases')}>
+                  Cases {tableSortField === 'totalCases' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalOffenders')}>
+                  Offenders {tableSortField === 'totalOffenders' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalArrests')}>
+                  Arrests {tableSortField === 'totalArrests' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalAbsconders')}>
+                  Absconders {tableSortField === 'totalAbsconders' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalContrabandKg')}>
+                  Contraband (Kg) {tableSortField === 'totalContrabandKg' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
+                <th className="text-right cursor-pointer hover:bg-black/10 px-4 py-3" onClick={() => handleTableSort('totalCashSeized')}>
+                  Cash (₹) {tableSortField === 'totalCashSeized' ? (tableSortAsc ? '▲' : '▼') : ''}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -190,8 +408,14 @@ export default function DistrictAnalytics() {
                     Loading breakdown table...
                   </td>
                 </tr>
+              ) : tableData.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm" style={{ color: 'var(--color-garuda-400)' }}>
+                    No stations match the selected filters.
+                  </td>
+                </tr>
               ) : (
-                summary?.psWiseData?.map((ps, i) => (
+                tableData.map((ps) => (
                   <tr
                     key={ps.psId}
                     className="table-row"
@@ -210,6 +434,7 @@ export default function DistrictAnalytics() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

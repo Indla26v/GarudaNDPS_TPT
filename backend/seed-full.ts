@@ -152,7 +152,7 @@ async function main() {
 
   const users = [
     // SP — District Admin (Police)
-    { username: 'sp', password: 'password123', full_name: 'K. Ramesh Kumar (SP)', role: 'SP' as const, department: 'POLICE' as const, team_id: null, district: 'Tirupati' },
+    { username: 'sp', password: 'password123', full_name: 'L. Subbarayudu (SP)', role: 'SP' as const, department: 'POLICE' as const, team_id: null, district: 'Tirupati' },
 
     // ASP — District level (Police)
     { username: 'asp', password: 'password123', full_name: 'V. Srinivas Rao (ASP)', role: 'ASP' as const, department: 'POLICE' as const, team_id: teamMap['Narcotics Task Force'], district: 'Tirupati' },

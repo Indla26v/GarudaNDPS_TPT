@@ -1110,41 +1110,87 @@ export default function Reports() {
 
           {/* Results Grid */}
           <div className="lg:col-span-3 card rounded-xl p-5 border border-slate-100/50 dark:border-slate-800 space-y-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Custom Query Output</h3>
+            <h3 className="text-base font-semibold" style={{ color: 'var(--color-garuda-100)' }}>Custom Query Output</h3>
             {customLoading ? (
-              <div className="py-24 text-center text-slate-400">Querying database, please wait...</div>
+              <div className="py-24 text-center" style={{ color: 'var(--color-garuda-400)' }}>Querying database, please wait...</div>
             ) : customData.length === 0 ? (
-              <div className="py-24 text-center text-slate-500">Configure filters and click "Run Custom Report" above.</div>
+              <div className="py-24 text-center" style={{ color: 'var(--color-garuda-400)' }}>Configure filters and click "Run Custom Report" above.</div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-slate-700/80">
+              <div className="overflow-x-auto rounded-lg border" style={{ borderColor: 'var(--color-garuda-700)' }}>
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr style={{ background: 'var(--color-garuda-600)' }}>
-                      {customColumns.firNo && <th className="px-4 py-3 font-semibold text-slate-200">FIR No</th>}
-                      {customColumns.caseDate && <th className="px-4 py-3 font-semibold text-slate-200">Case Date</th>}
-                      {customColumns.sectionOfLaw && <th className="px-4 py-3 font-semibold text-slate-200">Section</th>}
-                      {customColumns.stage && <th className="px-4 py-3 font-semibold text-slate-200">Stage</th>}
-                      {customColumns.psName && <th className="px-4 py-3 font-semibold text-slate-200">Station</th>}
-                      {customColumns.accusedName && <th className="px-4 py-3 font-semibold text-slate-200">Accused</th>}
-                      {customColumns.age && <th className="px-4 py-3 font-semibold text-slate-200">Age</th>}
-                      {customColumns.contrabandType && <th className="px-4 py-3 font-semibold text-slate-200">Contraband</th>}
-                      {customColumns.quantity && <th className="px-4 py-3 font-semibold text-slate-200">Qty</th>}
-                      {customColumns.cashAmount && <th className="px-4 py-3 font-semibold text-slate-200">Seized Cash</th>}
+                    <tr className="table-header">
+                      {customColumns.firNo && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>FIR No</th>}
+                      {customColumns.caseDate && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Case Date</th>}
+                      {customColumns.sectionOfLaw && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Section</th>}
+                      {customColumns.stage && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Stage</th>}
+                      {customColumns.psName && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Station</th>}
+                      {customColumns.accusedName && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Accused</th>}
+                      {customColumns.age && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Age</th>}
+                      {customColumns.contrabandType && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Contraband</th>}
+                      {customColumns.quantity && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Qty</th>}
+                      {customColumns.cashAmount && <th className="px-4 py-3 font-semibold" style={{ color: 'var(--color-garuda-200)' }}>Seized Cash</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {customData.map((row, idx) => (
-                      <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/10" style={{ background: idx % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)' }}>
-                        {customColumns.firNo && <td className="px-4 py-3 font-mono font-semibold text-slate-100">{row['FIR No']}</td>}
-                        {customColumns.caseDate && <td className="px-4 py-3 text-slate-300">{row['Case Date']}</td>}
-                        {customColumns.sectionOfLaw && <td className="px-4 py-3 text-slate-300 truncate max-w-[120px]" title={row['Section of Law']}>{row['Section of Law']}</td>}
-                        {customColumns.stage && <td className="px-4 py-3 text-slate-300">{row['Stage']}</td>}
-                        {customColumns.psName && <td className="px-4 py-3 text-slate-300">{row['Police Station']}</td>}
-                        {customColumns.accusedName && <td className="px-4 py-3 font-medium text-slate-100">{row['Accused Name']}</td>}
-                        {customColumns.age && <td className="px-4 py-3 text-slate-300">{row['Age']}</td>}
-                        {customColumns.contrabandType && <td className="px-4 py-3 text-slate-300">{row['Contraband Type']}</td>}
-                        {customColumns.quantity && <td className="px-4 py-3 text-slate-300">{row['Quantity (KG)']}</td>}
-                        {customColumns.cashAmount && <td className="px-4 py-3 text-emerald-400 font-medium">₹{Number(row['Cash (INR)']).toLocaleString('en-IN')}</td>}
+                      <tr 
+                        key={idx} 
+                        className="table-row" 
+                        style={{ 
+                          background: idx % 2 === 0 ? 'transparent' : 'var(--color-garuda-800)' 
+                        }}
+                      >
+                        {customColumns.firNo && (
+                          <td className="px-4 py-3 font-mono font-semibold" style={{ color: 'var(--color-garuda-100)' }}>
+                            {row['FIR No']}
+                          </td>
+                        )}
+                        {customColumns.caseDate && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Case Date']}
+                          </td>
+                        )}
+                        {customColumns.sectionOfLaw && (
+                          <td className="px-4 py-3 truncate max-w-[120px]" title={row['Section of Law']} style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Section of Law']}
+                          </td>
+                        )}
+                        {customColumns.stage && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Stage']}
+                          </td>
+                        )}
+                        {customColumns.psName && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Police Station']}
+                          </td>
+                        )}
+                        {customColumns.accusedName && (
+                          <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-garuda-100)' }}>
+                            {row['Accused Name']}
+                          </td>
+                        )}
+                        {customColumns.age && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Age']}
+                          </td>
+                        )}
+                        {customColumns.contrabandType && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Contraband Type']}
+                          </td>
+                        )}
+                        {customColumns.quantity && (
+                          <td className="px-4 py-3" style={{ color: 'var(--color-garuda-300)' }}>
+                            {row['Quantity (KG)']}
+                          </td>
+                        )}
+                        {customColumns.cashAmount && (
+                          <td className="px-4 py-3 text-emerald-600 dark:text-emerald-400 font-semibold">
+                            ₹{Number(row['Cash (INR)']).toLocaleString('en-IN')}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

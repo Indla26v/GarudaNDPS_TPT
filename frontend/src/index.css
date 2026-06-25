@@ -124,6 +124,11 @@ body.dark .btn-secondary:hover {
   50%      { box-shadow: 0 0 20px rgba(234, 88, 12, 0.4); }
 }
 
+@keyframes loading-bar {
+  0% { left: -50%; }
+  100% { left: 150%; }
+}
+
 
 /* ============================================================
    Global Styles

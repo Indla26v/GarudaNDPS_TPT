@@ -465,7 +465,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
         </div>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && (
+        {totalPages > 1 && !loading && (
           <div 
             className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2.5 p-2 rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md"
             style={{ minWidth: '44px' }}

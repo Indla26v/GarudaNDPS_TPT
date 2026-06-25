@@ -1,5 +1,24 @@
 import axios from 'axios';
 
+let activeRequests = 0;
+const listeners = new Set();
+
+export const subscribeToLoading = (listener) => {
+  listeners.add(listener);
+  // Initial sync
+  listener(activeRequests > 0);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+const updateLoading = (delta) => {
+  activeRequests += delta;
+  if (activeRequests < 0) activeRequests = 0;
+  const isLoading = activeRequests > 0;
+  listeners.forEach((l) => l(isLoading));
+};
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
@@ -23,20 +42,43 @@ function getRetryDelay(retryCount) {
   return RETRY_BASE_DELAY * Math.pow(2, retryCount);
 }
 
-// Request interceptor removed: Tokens are now sent automatically via HttpOnly cookies
+// Request interceptor to track active requests
+api.interceptors.request.use(
+  (config) => {
+    if (!config.headers?.['X-Skip-Loading']) {
+      updateLoading(1);
+    }
+    return config;
+  },
+  (error) => {
+    if (error.config && !error.config.headers?.['X-Skip-Loading']) {
+      updateLoading(-1);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor — handle retries + 401 (token expired)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (!response.config.headers?.['X-Skip-Loading']) {
+      updateLoading(-1);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+    if (originalRequest && !originalRequest.headers?.['X-Skip-Loading']) {
+      updateLoading(-1);
+    }
 
     // ── Retry logic for cold-start / network errors ──────────────
-    if (!originalRequest._retryCount) {
+    if (originalRequest && !originalRequest._retryCount) {
       originalRequest._retryCount = 0;
     }
 
     if (
+      originalRequest &&
       shouldRetry(error) &&
       originalRequest._retryCount < MAX_RETRIES &&
       !originalRequest._isRefreshRequest
@@ -51,7 +93,7 @@ api.interceptors.response.use(
     }
 
     // ── 401 handling — token refresh via HttpOnly Cookie ────────────────
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
       originalRequest._retry = true;
 
       try {

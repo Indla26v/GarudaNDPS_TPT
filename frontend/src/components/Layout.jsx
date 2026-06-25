@@ -7,6 +7,7 @@ import apEmblem from '../assets/Emblem_of_Andhra_Pradesh.svg.png';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import api from '../api/axios';
+import GlobalLoader from './GlobalLoader';
 import {
   IconDashboard, IconOffender, IconConsumer, IconCases, IconFieldStaff,
   IconSurveillance, IconFinance, IconNetwork, IconReports, IconMap,
@@ -426,7 +427,8 @@ const DEPT_FULL_LABELS = {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ background: 'var(--color-garuda-900)' }}>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 relative" style={{ background: 'var(--color-garuda-900)' }}>
+          <GlobalLoader />
           <Outlet />
         </main>
       </div>
