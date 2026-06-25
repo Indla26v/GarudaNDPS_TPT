@@ -3,22 +3,22 @@ import PDFDocument from 'pdfkit';
 interface HistorySheetData {
   offender: {
     fullName: string;
-    alias?: string;
-    fatherHusbandName?: string;
+    alias?: string | null;
+    fatherHusbandName?: string | null;
     age?: number | null;
-    category?: string;
-    address?: string;
-    psName?: string;
-    mobile?: string;
+    category?: string | null;
+    address?: string | null;
+    psName?: string | null;
+    mobile?: string | null;
   };
   timeline: Array<{
     firNo: string;
-    psName?: string;
-    caseDate?: Date | string;
-    stage?: string;
-    sectionOfLaw?: string;
-    contrabandType?: string;
-    arrestStatus?: string;
+    psName?: string | null;
+    caseDate?: Date | string | null;
+    stage?: string | null;
+    sectionOfLaw?: string | null;
+    contrabandType?: string | null;
+    arrestStatus?: string | null;
   }>;
   generatedAt: string;
 }
