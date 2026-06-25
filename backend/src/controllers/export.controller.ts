@@ -280,12 +280,12 @@ export const getOffenderHistorySheetPdf = async (req: Request, res: Response) =>
       .sort((a, b) => (b!.case_date?.getTime() || 0) - (a!.case_date?.getTime() || 0))
       .map((c) => ({
         firNo: c!.fir_no,
-        psName: c!.police_stations?.name,
-        caseDate: c!.case_date,
-        stage: c!.stage,
-        sectionOfLaw: c!.section_of_law,
-        contrabandType: c!.contraband_type,
-        arrestStatus: offender.case_accused.find((ca) => ca.case_id === c!.id)?.arrest_status,
+        psName: c!.police_stations?.name || null,
+        caseDate: c!.case_date || null,
+        stage: c!.stage || null,
+        sectionOfLaw: c!.section_of_law || null,
+        contrabandType: c!.contraband_type || null,
+        arrestStatus: offender.case_accused.find((ca) => ca.case_id === c!.id)?.arrest_status || null,
       }));
 
     const data = {
