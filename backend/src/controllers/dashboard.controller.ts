@@ -401,6 +401,8 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         risk_score: true,
         status: true,
         photo_url: true,
+        district: true,
+        state: true,
         police_stations: {
           select: {
             name: true,
@@ -424,6 +426,8 @@ export const getDashboardSummary = async (req: Request, res: Response) => {
         riskScore: o.risk_score,
         status: o.status,
         photoUrl: o.photo_url,
+        district: o.district,
+        state: o.state,
         psName: o.police_stations?.name,
         totalCases: o._count.case_accused,
       }))

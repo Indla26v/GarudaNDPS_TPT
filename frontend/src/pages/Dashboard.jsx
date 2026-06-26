@@ -242,7 +242,22 @@ export default function Dashboard() {
               : ' — Tirupati District'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Global Dashboard Period Filter */}
+          <div className="flex items-center gap-1.5 mr-2">
+            <span className="text-[11px] font-bold tracking-wide uppercase select-none text-[var(--color-garuda-400)]">Period:</span>
+            <select 
+              className="select py-1 px-2.5 text-xs rounded-md border border-slate-700/20 bg-[var(--color-garuda-800)] text-[var(--color-garuda-100)] font-bold cursor-pointer hover:bg-[var(--color-garuda-600)] transition-colors duration-150 outline-none" 
+              value={timeRange} 
+              onChange={(e) => handleTimeRangeChange(e.target.value)}
+            >
+              <option value="all">All Time</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
           {perms.canRegisterCase && (
             <Link to="/cases/new" className="btn btn-primary btn-sm">
               + New Case
@@ -420,70 +435,226 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Hierarchy of Smugglers ────────────────────────────────────── */}
-      <div className="card rounded-xl p-5 shadow-card border border-slate-700/20 relative overflow-hidden">
-        {/* Decorative corner grid background */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none rounded-bl-full" />
-        
-        <h3 className="text-sm font-bold uppercase tracking-wider mb-6 flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
-          <IconChain size={16} className="text-indigo-500" /> Hierarchy of Smugglers
-        </h3>
+      {/* ── Side-by-Side: Most Wanted List & Hierarchy of Smugglers ────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Most Wanted List */}
+        <div className="card rounded-xl p-5 shadow-card border border-slate-700/20 flex flex-col relative overflow-hidden">
+          <div className="flex justify-between items-center mb-5 border-b border-slate-700/20 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-red-500">
+              Most Wanted List
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 font-bold uppercase tracking-wider border border-red-500/20">
+              Top 10 Active
+            </span>
+          </div>
 
-        <div className="overflow-x-auto pb-2 scrollbar-thin">
-          <div className="flex items-stretch justify-between min-w-[840px] gap-2 px-2">
-            {HIERARCHY_STAGES.map((stage, idx) => {
-              const count = summary?.smugglerHierarchy?.[stage.key];
-              
-              // Render Icon based on type
-              let IconComponent = null;
-              if (stage.iconType === 'network') {
-                IconComponent = <IconNetwork size={22} color="#ffffff" />;
-              } else if (stage.iconType === 'rupee') {
-                IconComponent = <span className="text-xl font-black text-white">₹</span>;
-              } else if (stage.iconType === 'supplier' || stage.iconType === 'peddler') {
-                IconComponent = <IconOffender size={22} color="#ffffff" />;
-              } else if (stage.iconType === 'truck') {
-                IconComponent = <IconTruck size={22} color="#ffffff" />;
-              } else if (stage.iconType === 'crown') {
-                IconComponent = <IconCrown size={22} color="#ffffff" />;
-              } else if (stage.iconType === 'consumers') {
-                IconComponent = <IconConsumer size={22} color="#ffffff" />;
-              }
+          <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-stretch flex-1">
+            {/* Gangster/Detective Badge (Left side) */}
+            <div className="flex flex-col items-center justify-center p-4 border border-red-500/10 rounded-xl bg-red-500/[0.03] select-none w-full sm:w-[150px] shrink-0">
+              <div className="relative flex items-center justify-center w-24 h-24 rounded-full border-4 border-red-500/15 group">
+                <svg viewBox="0 0 100 100" className="w-16 h-16 text-red-500 transition-all duration-300 group-hover:scale-105" fill="currentColor">
+                  {/* Target rings */}
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="opacity-60" />
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-30" />
+                  
+                  {/* Crosshairs */}
+                  <line x1="50" y1="6" x2="50" y2="14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="50" y1="86" x2="50" y2="94" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="6" y1="50" x2="14" y2="50" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="86" y1="50" x2="94" y2="50" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
 
-              return (
-                <div key={stage.key} className="flex flex-col items-center flex-1 text-center select-none group relative">
-                  {/* Large Icon Badge with dynamic colored glow and connecting dotted lines */}
-                  <div className="relative flex items-center justify-center w-full mb-4">
-                    <div 
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-md group-hover:scale-110 relative z-10"
-                      style={{ 
-                        background: `linear-gradient(135deg, ${stage.borderColor}dd, ${stage.borderColor})`,
-                        boxShadow: `0 4px 10px ${stage.borderColor}33`,
-                      }}
-                    >
-                      {IconComponent}
-                    </div>
-                    
-                    {/* Connecting dotted line pointing to next step */}
-                    {idx < HIERARCHY_STAGES.length - 1 && (
-                      <div className="absolute left-[calc(50%+28px)] right-[calc(-50%+28px)] top-1/2 -translate-y-1/2 z-0">
-                        <div 
-                          className="border-t-2 border-dotted h-0 w-full" 
-                          style={{ borderColor: 'var(--color-garuda-400)', opacity: 0.5 }} 
-                        />
-                      </div>
+                  {/* Hat Crown */}
+                  <path d="M33 39 C33 22, 67 22, 67 39 Z" />
+
+                  {/* Hat Ribbon */}
+                  <path d="M32.5 37 L67.5 37 L67 40 L33 40 Z" fill="#7f1d1d" />
+
+                  {/* Hat Brim */}
+                  <path d="M18 43 C18 40.5, 30 40, 50 40 C70 40, 82 40.5, 82 43 C82 45, 70 45.5, 50 45.5 C30 45.5, 18 45, 18 43 Z" />
+
+                  {/* Face & Neck */}
+                  <path d="M35 44 L65 44 L63 56 C61 63, 57 64, 50 64 C43 64, 39 63, 37 56 Z" />
+                  <path d="M44 62 L56 62 L56 68 L44 68 Z" />
+
+                  {/* Sunglasses (cuts through face) */}
+                  <path d="M38 50 C38 47, 47 47, 47 50 C47 53, 38 53, 38 50 Z M53 50 C53 47, 62 47, 62 50 C62 53, 53 53, 53 50 Z" fill="var(--color-garuda-800)" />
+                  <line x1="47" y1="49" x2="53" y2="49" stroke="var(--color-garuda-800)" strokeWidth="2" />
+
+                  {/* Coat / Shoulders */}
+                  <path d="M22 76 L34 66 L42 70 L50 63 L58 70 L66 66 L78 76 C78 76, 50 82, 22 76 Z" />
+                </svg>
+              </div>
+              <div className="mt-3 text-red-500 font-extrabold text-[10px] tracking-widest uppercase bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shadow-sm animate-pulse">
+                Most Wanted
+              </div>
+              <div className="flex gap-1 mt-2 text-red-500 text-xs">
+                <span>★</span><span>★</span><span>★</span>
+              </div>
+            </div>
+
+            {/* Table of Suspects (Right side) */}
+            <div className="flex-1 w-full overflow-x-auto">
+              <div className="max-h-[220px] overflow-y-auto scrollbar-thin pr-2">
+                <table className="w-full text-left text-xs border-collapse table-fixed">
+                  <thead>
+                    <tr className="border-b border-slate-700/20 text-[10px] font-extrabold uppercase tracking-wider text-[var(--color-garuda-400)]">
+                      <th className="py-2 px-1 w-[50%]">Name / Alias</th>
+                      <th className="py-2 px-1 w-[28%]">District</th>
+                      <th className="py-2 px-1 w-[22%]">State</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading && !summary ? (
+                      [...Array(5)].map((_, idx) => (
+                        <tr key={idx} className="border-b border-slate-700/10 animate-pulse">
+                          <td className="py-3 px-1 w-[50%]"><span className="inline-block w-24 h-4 bg-slate-700/50 rounded" /></td>
+                          <td className="py-3 px-1 w-[28%]"><span className="inline-block w-16 h-4 bg-slate-700/50 rounded" /></td>
+                          <td className="py-3 px-1 w-[22%]"><span className="inline-block w-16 h-4 bg-slate-700/50 rounded" /></td>
+                        </tr>
+                      ))
+                    ) : summary?.mostWanted?.length > 0 ? (
+                      summary.mostWanted.map((o) => {
+                        const riskBorders = {
+                          CRITICAL: '#dc2626',
+                          HIGH: '#f97316',
+                          MEDIUM: '#eab308',
+                          LOW: '#3b82f6',
+                        };
+                        const borderColor = riskBorders[o.riskScore] || '#3b82f6';
+                        return (
+                          <tr 
+                            key={o.id} 
+                            onClick={() => navigate(`/offenders/${o.id}`)}
+                            className="border-b border-slate-700/10 hover:bg-red-500/[0.04] cursor-pointer transition-colors duration-150"
+                          >
+                            <td className="py-2.5 px-1 w-[50%]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {/* Avatar */}
+                                <div 
+                                  className="w-6.5 h-6.5 rounded-full overflow-hidden border flex-shrink-0 flex items-center justify-center text-[9px] font-black text-white"
+                                  style={{ borderColor: borderColor, backgroundColor: getAvatarColor(o.fullName) }}
+                                >
+                                  {o.photoUrl ? (
+                                    <img src={o.photoUrl} alt={o.fullName} className="w-full h-full object-cover" />
+                                  ) : (
+                                    o.fullName?.charAt(0).toUpperCase() || '?'
+                                  )}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-extrabold text-xs text-[var(--color-garuda-100)] truncate hover:text-red-500 transition-colors duration-150" title={o.fullName}>
+                                    {o.fullName}
+                                  </span>
+                                  {o.alias && (
+                                    <span className="text-[9px] font-bold text-[var(--color-garuda-400)] truncate tracking-wide" title={o.alias}>
+                                      @{o.alias}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-1 w-[28%] text-[var(--color-garuda-300)] font-semibold text-xs truncate" title={o.district || o.psName || 'Tirupati'}>
+                              {o.district || o.psName || 'Tirupati'}
+                            </td>
+                            <td className="py-2.5 px-1 w-[22%] text-[var(--color-garuda-300)] font-semibold text-xs truncate" title={o.state || 'Andhra Pradesh'}>
+                              {o.state || 'Andhra Pradesh'}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="text-center py-6 text-[var(--color-garuda-500)]">
+                          No active or absconding suspects.
+                        </td>
+                      </tr>
                     )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hierarchy of Smugglers */}
+        <div className="card rounded-xl p-5 shadow-card border border-slate-700/20 relative overflow-hidden flex flex-col justify-between">
+          {/* Decorative corner grid background */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none rounded-bl-full" />
+          
+          <div className="flex justify-between items-center mb-5 border-b border-slate-700/20 pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400">
+              Hierarchy of Smugglers
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-bold uppercase tracking-wider border border-indigo-500/20">
+              Level 1 to 7
+            </span>
+          </div>
+
+          <div className="overflow-x-auto pb-2 scrollbar-thin flex-1 flex items-center">
+            <div className="flex items-stretch justify-between min-w-[520px] lg:min-w-0 gap-1 px-1 w-full">
+              {HIERARCHY_STAGES.map((stage, idx) => {
+                const count = summary?.smugglerHierarchy?.[stage.key];
+                
+                // Render Icon based on type
+                let IconComponent = null;
+                if (stage.iconType === 'network') {
+                  IconComponent = <IconNetwork size={16} color="#ffffff" />;
+                } else if (stage.iconType === 'rupee') {
+                  IconComponent = <span className="text-sm font-black text-white">₹</span>;
+                } else if (stage.iconType === 'supplier' || stage.iconType === 'peddler') {
+                  IconComponent = <IconOffender size={16} color="#ffffff" />;
+                } else if (stage.iconType === 'truck') {
+                  IconComponent = <IconTruck size={16} color="#ffffff" />;
+                } else if (stage.iconType === 'crown') {
+                  IconComponent = <IconCrown size={16} color="#ffffff" />;
+                } else if (stage.iconType === 'consumers') {
+                  IconComponent = <IconConsumer size={16} color="#ffffff" />;
+                }
+
+                return (
+                  <div key={stage.key} className="flex flex-col items-center flex-1 text-center select-none group relative">
+                    {/* Large Icon Badge with dynamic colored glow and connecting dotted lines */}
+                    <div className="flex flex-col items-center w-full mb-2">
+                      {/* Relative container for badge and line */}
+                      <div className="relative w-full flex items-center justify-center">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-md group-hover:scale-110 relative z-10"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${stage.borderColor}dd, ${stage.borderColor})`,
+                            boxShadow: `0 4px 10px ${stage.borderColor}33`,
+                          }}
+                        >
+                          {IconComponent}
+                        </div>
+                        
+                        {/* Connecting dotted line pointing to next step */}
+                        {idx < HIERARCHY_STAGES.length - 1 && (
+                          <div className="absolute left-[calc(50%+20px)] right-[calc(-50%+20px)] top-1/2 -translate-y-1/2 z-0">
+                            <div 
+                              className="border-t-2 border-dotted h-0 w-full" 
+                              style={{ borderColor: 'var(--color-garuda-400)', opacity: 0.5 }} 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Title Label */}
+                    <p className="text-[9px] font-extrabold tracking-wider uppercase mb-1 min-h-[24px] flex items-center justify-center leading-tight text-[var(--color-garuda-300)]">
+                      {stage.label}
+                    </p>
+
+                    {/* Count/Data */}
+                    <div className="text-base font-black mt-0.5 transition-all duration-300 group-hover:scale-110 text-[var(--color-garuda-100)]">
+                      {loading && !summary ? (
+                        <span className="inline-block w-8 h-4 bg-slate-700/50 animate-pulse rounded" />
+                      ) : (
+                        fmt(count)
+                      )}
+                    </div>
                   </div>
-
-                  {/* Title Label */}
-                  <p className="text-[10px] font-extrabold tracking-wider uppercase mb-1 min-h-[30px] flex items-center justify-center leading-tight" style={{ color: 'var(--color-garuda-300)' }}>
-                    {stage.label}
-                  </p>
-
-
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -591,118 +762,7 @@ export default function Dashboard() {
         );
       })()}
 
-      {/* ── Most Wanted List (Top 10) ───────────────────────────────── */}
-      <div className="card rounded-xl p-5">
-        <div className="flex justify-between items-center mb-5">
-          <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--color-garuda-200)' }}>
-            <IconShield size={18} color="#dc2626" /> Most Wanted Suspects (Top 10)
-          </h3>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-black/10 text-[var(--color-garuda-400)] font-bold uppercase tracking-wider">
-            Active / Absconding
-          </span>
-        </div>
-        
-        {loading && !summary ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
-            {[...Array(10)].map((_, idx) => (
-              <div key={idx} className="h-40 bg-black/5 rounded-xl border border-slate-700/20 animate-pulse" />
-            ))}
-          </div>
-        ) : summary?.mostWanted?.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
-            {summary.mostWanted.map((o) => {
-              const riskColors = {
-                CRITICAL: { bg: 'rgba(220, 38, 38, 0.04)', color: '#dc2626', border: '#dc2626', glow: 'rgba(220, 38, 38, 0.25)', textBg: 'rgba(220, 38, 38, 0.08)' },
-                HIGH: { bg: 'rgba(249, 115, 22, 0.04)', color: '#f97316', border: '#f97316', glow: 'rgba(249, 115, 22, 0.2)', textBg: 'rgba(249, 115, 22, 0.08)' },
-                MEDIUM: { bg: 'rgba(234, 179, 8, 0.04)', color: '#eab308', border: '#eab308', glow: 'rgba(234, 179, 8, 0.12)', textBg: 'rgba(234, 179, 8, 0.08)' },
-                LOW: { bg: 'rgba(59, 130, 246, 0.04)', color: '#3b82f6', border: '#3b82f6', glow: 'rgba(59, 130, 246, 0.12)', textBg: 'rgba(59, 130, 246, 0.08)' },
-              };
-              const risk = riskColors[o.riskScore] || riskColors.LOW;
 
-              return (
-                <div
-                  key={o.id}
-                  onClick={() => navigate(`/offenders/${o.id}`)}
-                  className="card rounded-xl p-2.5 flex flex-col items-center text-center cursor-pointer transition-all duration-300 relative group overflow-hidden border-t-[3px]"
-                  style={{
-                    background: `linear-gradient(180deg, var(--color-garuda-900) 0%, ${risk.bg} 100%)`,
-                    borderTopColor: risk.border,
-                    borderColor: 'var(--color-garuda-700)',
-                    boxShadow: 'var(--shadow-card)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = `0 8px 20px -5px ${risk.glow}, 0 6px 8px -6px rgba(0,0,0,0.05)`;
-                    e.currentTarget.style.borderColor = risk.border;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'var(--shadow-card)';
-                    e.currentTarget.style.borderColor = 'var(--color-garuda-700)';
-                  }}
-                >
-                  {/* Subtle Target Watermark in background */}
-                  <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-slate-400 group-hover:opacity-[0.08] group-hover:scale-110 transition-all duration-300 pointer-events-none">
-                    <IconShield size={60} />
-                  </div>
-
-                  {/* Status Dot (top right) */}
-                  <div className="absolute top-2 right-2">
-                    {o.status === 'ABSCONDING' ? (
-                      <span className="flex h-1.5 w-1.5 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
-                      </span>
-                    ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    )}
-                  </div>
-
-                  {/* Avatar / Photo with Double Colored Ring */}
-                  <div 
-                    className="w-10 h-10 rounded-full overflow-hidden border-2 bg-slate-900 flex items-center justify-center mb-1.5 mt-1.5 transition-all duration-300 shadow-md group-hover:scale-105"
-                    style={{ borderColor: risk.border }}
-                  >
-                    {o.photoUrl ? (
-                      <img src={o.photoUrl} alt={o.fullName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: getAvatarColor(o.fullName) }}
-                      >
-                        {o.fullName?.charAt(0).toUpperCase() || '?'}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Name & Alias */}
-                  <h4 className="font-extrabold text-[11px] text-[var(--color-garuda-100)] truncate w-full" title={o.fullName}>
-                    {o.fullName}
-                  </h4>
-                  <p className="text-[9px] font-semibold text-[var(--color-accent-400)] truncate w-full mb-2 tracking-wide">
-                    {o.alias ? `[ ${o.alias} ]` : '—'}
-                  </p>
-
-                  {/* Info Badges */}
-                  <div className="w-full space-y-1.5 mt-auto z-10">
-                    <div className="text-[8px] py-0.5 px-1.5 rounded font-extrabold tracking-widest uppercase text-center transition-colors duration-200" style={{ background: risk.textBg, color: risk.color }}>
-                      {o.riskScore}
-                    </div>
-
-                    <div className="text-[9px] font-bold text-[var(--color-info-400)] text-center pt-1 border-t border-slate-700/20">
-                      {o.totalCases} {o.totalCases === 1 ? 'Case' : 'Cases'}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-sm text-[var(--color-garuda-500)]">
-            No active or absconding offenders on record.
-          </div>
-        )}
-      </div>
 
       {/* ── Bottom Row: Alerts + Absconder Ticker ───────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

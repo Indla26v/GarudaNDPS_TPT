@@ -372,14 +372,23 @@ const DEPT_FULL_LABELS = {
           )}
         </div>
 
-        {/* Toggle */}
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="hidden md:block px-4 py-3 text-sm transition-colors cursor-pointer"
-          style={{ color: 'rgba(255,255,255,0.65)', borderTop: '1px solid rgba(255,255,255,0.15)' }}
+        {/* Toggle & Version Footer */}
+        <div
+          className="hidden md:flex items-center justify-between px-4 py-3"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}
         >
-          {sidebarOpen ? '← Collapse' : '→'}
-        </button>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="text-sm transition-colors cursor-pointer bg-transparent border-none p-0 text-white/60 hover:text-white"
+          >
+            {sidebarOpen ? '← Collapse' : '→'}
+          </button>
+          {sidebarOpen && (
+            <span className="text-white/45 font-extrabold select-none text-[10px] uppercase tracking-widest">
+              Version 1.6.33
+            </span>
+          )}
+        </div>
       </aside>
 
       {/* ---- Main Content ---- */}
