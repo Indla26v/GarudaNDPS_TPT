@@ -32,6 +32,18 @@ export default function Login() {
     }
   };
 
+  const handleQuickLogin = async (usr) => {
+    setUsername(usr);
+    setPassword('password123');
+    setError('');
+    const result = await login(usr, 'password123');
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.message);
+    }
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
@@ -140,6 +152,31 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Quick Login Section */}
+          <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--color-garuda-700)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2.5 text-center" style={{ color: 'var(--color-garuda-400)' }}>Developer Quick Logins</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => handleQuickLogin('sp')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                👑 District SP
+              </button>
+              <button onClick={() => handleQuickLogin('asp')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                ⚡ Task Force ASP
+              </button>
+              <button onClick={() => handleQuickLogin('sdpo')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                👮 Renigunta SDPO
+              </button>
+              <button onClick={() => handleQuickLogin('sho')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                📝 Station SHO
+              </button>
+              <button onClick={() => handleQuickLogin('cyber_sdpo')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                🌐 Cyber SDPO
+              </button>
+              <button onClick={() => handleQuickLogin('excise_sho')} className="btn btn-secondary text-xs text-left cursor-pointer transition-all p-2 flex items-center justify-start gap-1">
+                🍇 Excise SHO
+              </button>
+            </div>
+          </div>
 
           <p className="text-xs text-center mt-6" style={{ color: 'var(--color-garuda-500)' }}>
             Authorized personnel only. All access is monitored.

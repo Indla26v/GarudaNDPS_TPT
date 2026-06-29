@@ -22,8 +22,8 @@ export interface ScopeUser {
 export function getCaseWhere(user: ScopeUser): Record<string, any> {
   if (!user?.role) return { id: BigInt(-1) };
 
-  // SP and ASP roles: scoped to district
-  if (user.role === 'SP' || user.role === 'ASP') {
+  // SP and ASP roles, or Cyber Analytics department: scoped to district
+  if (user.role === 'SP' || user.role === 'ASP' || user.department === 'CYBER_ANALYTICS') {
     if (user.district) {
       return { police_stations: { district: user.district } };
     }
@@ -52,8 +52,8 @@ export function getCaseWhere(user: ScopeUser): Record<string, any> {
 export function getOffenderWhere(user: ScopeUser): Record<string, any> {
   if (!user?.role) return { id: BigInt(-1) };
 
-  // SP and ASP roles: scoped to district
-  if (user.role === 'SP' || user.role === 'ASP') {
+  // SP and ASP roles, or Cyber Analytics department: scoped to district
+  if (user.role === 'SP' || user.role === 'ASP' || user.department === 'CYBER_ANALYTICS') {
     if (user.district) {
       return { police_stations: { district: user.district } };
     }
@@ -83,7 +83,7 @@ export function getDashboardScope(user: ScopeUser): { psFilter: Record<string, a
     return { psFilter: { id: BigInt(-1) }, isStationLevel: true };
   }
 
-  if (user.role === 'SP' || user.role === 'ASP') {
+  if (user.role === 'SP' || user.role === 'ASP' || user.department === 'CYBER_ANALYTICS') {
     if (user.district) {
       return { psFilter: { police_stations: { district: user.district } }, isStationLevel: false };
     }

@@ -69,13 +69,16 @@ async function main() {
 
   const nonConsumerCategories = [
     'LOCAL_PEDDLER',
-    'LOCAL_SUPPLIER',
+    'SUPPLIER',
     'LOCAL_KINGPIN',
     'TRANSPORTER',
-    'INTERSTATE_KINGPIN'
+    'INTERSTATE_LINK'
   ];
 
   let seededCount = 0;
+  const createdOffenders: any[] = [];
+  const createdCases: any[] = [];
+  
   for (let i = 0; i < stations.length; i++) {
     const ps = stations[i]!;
 
@@ -103,7 +106,7 @@ async function main() {
 
       const monthlyIncome = category === 'CONSUMER'
         ? 10000 + (i % 5) * 4000
-        : category.includes('KINGPIN')
+        : (category.includes('KINGPIN') || category === 'INTERSTATE_LINK')
           ? 60000 + (i % 5) * 15000
           : 18000 + (i % 5) * 5000;
 
@@ -181,19 +184,10 @@ async function main() {
                 notes: 'Savings account'
               }
             ]
-          },
-          supply_chain_links_supply_chain_links_offender_idTooffenders: {
-            create: [
-              {
-                link_type: i % 3 === 0 ? 'PEDDLER' : i % 3 === 1 ? 'SUPPLIER' : 'TRANSPORTER',
-                linked_person_name: i % 2 === 0 ? 'Chandra Sekhar' : 'Appa Rao',
-                linked_person_contact: `9440${(100000 + i * 73 + j * 29).toString()}`,
-                notes: 'Identified contact'
-              }
-            ]
           }
         }
       });
+      createdOffenders.push(offender);
 
       // Create a corresponding case for this offender
       const firNo = `${ps.ps_code}/2026/${100 + i * 2 + j}`;
@@ -227,6 +221,7 @@ async function main() {
           destination_location: 'Local distribution',
         }
       });
+      createdCases.push(c);
 
       // Create a seizure record for the case
       await prisma.seizures.create({
@@ -261,6 +256,100 @@ async function main() {
 
       seededCount++;
     }
+  }
+
+  // =========================================================================
+  // CREATE COMPLEX INTERCONNECTIONS (Cross-PS cases, Supply Chain Links)
+  // =========================================================================
+  console.log("Creating complex interconnections...");
+
+  if (createdOffenders.length >= 4 && stations.length >= 2) {
+    // 1. Cross connection NDPS cases across multiple PS
+    const kingpin = createdOffenders.find(o => o.category === 'INTERSTATE_LINK' || o.category === 'LOCAL_KINGPIN') || createdOffenders[1];
+    const peddler = createdOffenders.find(o => o.category === 'LOCAL_PEDDLER' && o.ps_id !== kingpin.ps_id) || createdOffenders[3];
+    const consumer = createdOffenders.find(o => o.category === 'CONSUMER' && o.ps_id !== kingpin.ps_id && o.ps_id !== peddler.ps_id) || createdOffenders[0];
+    
+    if (kingpin && peddler && consumer) {
+      const crossCase = await prisma.cases.create({
+        data: {
+          fir_no: `CROSS/2026/001`,
+          ps_id: kingpin.ps_id,
+          section_of_law: 'Sec. 8(c) r/w 20(b)(ii)(C) of NDPS Act',
+          case_date: new Date('2026-06-15'),
+          stage: 'FIR',
+          nature_of_offence: 'Inter-district smuggling and distribution',
+          contraband_type: 'DRY_GANJA',
+          quantity: 25.5,
+          quantity_unit: 'KG',
+          street_value: 500000,
+          department: 'POLICE',
+          source_location: 'Odisha Border',
+          destination_location: 'Multiple districts in AP',
+        }
+      });
+      
+      await prisma.case_accused.createMany({
+        data: [
+          { case_id: crossCase.id, offender_id: kingpin.id, arrest_status: 'ARRESTED', arrest_date: new Date('2026-06-16') },
+          { case_id: crossCase.id, offender_id: peddler.id, arrest_status: 'ARRESTED', arrest_date: new Date('2026-06-17') },
+          { case_id: crossCase.id, offender_id: consumer.id, arrest_status: 'BAILED', arrest_date: new Date('2026-06-18') }
+        ]
+      });
+      console.log(`Created cross-PS case (FIR CROSS/2026/001) involving 3 offenders from different stations.`);
+    }
+
+    // 2. Consumer linked to two different groups
+    const targetConsumer = createdOffenders.find(o => o.category === 'CONSUMER') || createdOffenders[0];
+    const peddler1 = createdOffenders.find(o => (o.category === 'LOCAL_PEDDLER' || o.category === 'SUPPLIER') && o.id !== targetConsumer.id) || createdOffenders[1];
+    const peddler2 = createdOffenders.find(o => (o.category === 'LOCAL_PEDDLER' || o.category === 'SUPPLIER') && o.id !== targetConsumer.id && o.id !== peddler1.id) || createdOffenders[3];
+
+    if (targetConsumer && peddler1 && peddler2) {
+      await prisma.supply_chain_links.createMany({
+        data: [
+          { offender_id: targetConsumer.id, linked_offender_id: peddler1.id, link_type: 'PEDDLER', notes: 'Buys small quantities regularly from group A' },
+          { offender_id: targetConsumer.id, linked_offender_id: peddler2.id, link_type: 'PEDDLER', notes: 'Also sources from group B when group A is dry' }
+        ]
+      });
+      console.log(`Created supply chain links for a consumer to two different peddler groups.`);
+    }
+    
+    // 3. Chain of supply (Kingpin -> Transporter -> Supplier -> Peddler -> Consumer)
+    const transporter = createdOffenders.find(o => o.category === 'TRANSPORTER') || createdOffenders[2];
+    const supplier = createdOffenders.find(o => o.category === 'SUPPLIER') || createdOffenders[4];
+    
+    if (kingpin && transporter && supplier && peddler && targetConsumer) {
+      await prisma.supply_chain_links.createMany({
+        data: [
+          { offender_id: transporter.id, linked_offender_id: kingpin.id, link_type: 'KINGPIN', notes: 'Transports for the kingpin' },
+          { offender_id: supplier.id, linked_offender_id: transporter.id, link_type: 'TRANSPORTER', notes: 'Receives bulk shipments' },
+          { offender_id: peddler.id, linked_offender_id: supplier.id, link_type: 'SUPPLIER', notes: 'Gets stock from supplier' },
+        ]
+      });
+      console.log(`Created a deep supply chain from Kingpin down to Peddler.`);
+    }
+
+    // 4. Random cross-connections to make graph interesting
+    const linkTypes = ['CO_CONSUMER', 'PEDDLER', 'SUPPLIER', 'TRANSPORTER', 'KINGPIN'];
+    let randomLinks = 0;
+    for(let i=0; i<15; i++) {
+      const idx1 = Math.floor(Math.random() * createdOffenders.length);
+      const idx2 = Math.floor(Math.random() * createdOffenders.length);
+      if (idx1 !== idx2) {
+        const off1 = createdOffenders[idx1];
+        const off2 = createdOffenders[idx2];
+        const linkType = linkTypes[Math.floor(Math.random() * linkTypes.length)] as any;
+        await prisma.supply_chain_links.create({
+          data: {
+            offender_id: off1.id,
+            linked_offender_id: off2.id,
+            link_type: linkType,
+            notes: 'Random intelligence connection'
+          }
+        });
+        randomLinks++;
+      }
+    }
+    console.log(`Created ${randomLinks} random supply chain links.`);
   }
 
   console.log(`Successfully seeded ${seededCount} detailed dummy offenders, cases, seizures, and accused linkages.`);

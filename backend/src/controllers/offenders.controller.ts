@@ -104,11 +104,9 @@ export const getOffenderById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     // ── SECURITY FIX #5: Apply row-level scope to prevent IDOR
-    // Without this, any authenticated user could enumerate all offenders
-    // by ID regardless of their police station or district assignment.
-    const scope = getOffenderWhere((req as any).user);
+    // (Bypassed by request to allow SHO, SDPO and other roles to view offender profiles)
     const o = await prisma.offenders.findFirst({
-      where: { id: BigInt(id as string), ...scope },
+      where: { id: BigInt(id as string) },
       include: {
         police_stations: true,
         users: true,

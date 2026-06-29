@@ -168,7 +168,7 @@ async function main() {
 
     // ── Cyber Analytics (STF) ──────────────────────────────────────────
     { username: 'cyber_sdpo', password: 'password123', full_name: 'Vijay Singh (Cyber SDPO)', role: 'SDPO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-001', division_id: 'Tirupati SDPO' },
-    { username: 'cyber_sho', password: 'password123', full_name: 'Ravi Kumar (Cyber SHO)', role: 'SHO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-002', ps_id: ps1?.id },
+    { username: 'cyber_sho', password: 'password123', full_name: 'Ravi Kumar (Cyber SHO)', role: 'SHO' as const, department: 'CYBER_ANALYTICS' as const, team_id: teamMap['Cyber Surveillance Unit'], badge: 'CA-002', ps_id: null, district: 'Tirupati' },
 
     // ── Excise ─────────────────────────────────────────────────────────
     { username: 'excise_sho', password: 'password123', full_name: 'Arjun Reddy (Excise SHO)', role: 'SHO' as const, department: 'EXCISE' as const, team_id: teamMap['Excise Enforcement Unit'], badge: 'EX-001', ps_id: exPs?.id },

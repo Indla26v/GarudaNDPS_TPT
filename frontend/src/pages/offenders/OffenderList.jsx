@@ -22,7 +22,7 @@ export default function OffenderList({ isConsumerOnly = false }) {
   const [search, setSearch] = useState('');
   const [psFilter, setPsFilter] = useState(() => {
     const role = user?.role;
-    if (role === 'SP' || role === 'ASP' || role === 'SDPO') {
+    if (role === 'SP' || role === 'ASP' || role === 'SDPO' || user?.department === 'CYBER_ANALYTICS') {
       return '';
     }
     return user?.policeStationId ? String(user.policeStationId) : '';

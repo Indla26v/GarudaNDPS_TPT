@@ -47,10 +47,10 @@ export function usePermissions() {
     const inDepartment = (...depts) => depts.includes(department);
 
     /** Is this user station-level (sees only their PS data)? */
-    const isStationLevel = STATION_LEVEL_ROLES.includes(role);
+    const isStationLevel = STATION_LEVEL_ROLES.includes(role) && department !== 'CYBER_ANALYTICS';
 
     /** Is this user district-level (sees all PS data)? */
-    const isDistrictLevel = DISTRICT_LEVEL_ROLES.includes(role);
+    const isDistrictLevel = DISTRICT_LEVEL_ROLES.includes(role) || department === 'CYBER_ANALYTICS';
 
     /**
      * Check a specific permission key.

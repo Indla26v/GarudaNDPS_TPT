@@ -91,3 +91,151 @@ export const createIntelligence = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to record intelligence input' });
   }
 };
+
+export const getNetworkGraph = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const psId = psFilter?.ps_id ? psFilter.ps_id.toString() : '';
+
+    const url = new URL(`${serviceUrl}/analytics/network-graph`);
+    if (psId) {
+      url.searchParams.append('ps_id', psId);
+    }
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[NetworkGraph Controller Error]', error);
+    res.status(500).json({ message: 'Failed to fetch network graph analytics: ' + error.message });
+  }
+};
+
+export const getDuplicateContacts = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const psId = psFilter?.ps_id ? psFilter.ps_id.toString() : '';
+
+    const url = new URL(`${serviceUrl}/analytics/duplicate-contacts`);
+    if (psId) {
+      url.searchParams.append('ps_id', psId);
+    }
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[DuplicateContacts Controller Error]', error);
+    res.status(500).json({ message: 'Failed to fetch contact correlation analytics: ' + error.message });
+  }
+};
+
+export const predictRisk = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const response = await fetch(`${serviceUrl}/analytics/predict-risk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[PredictRisk Controller Error]', error);
+    res.status(500).json({ message: 'Failed to run risk prediction: ' + error.message });
+  }
+};
+
+export const getInterstateRoutes = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const psId = psFilter?.ps_id ? psFilter.ps_id.toString() : '';
+
+    const url = new URL(`${serviceUrl}/analytics/interstate-routes`);
+    if (psId) {
+      url.searchParams.append('ps_id', psId);
+    }
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[InterstateRoutes Controller Error]', error);
+    res.status(500).json({ message: 'Failed to fetch interstate routes: ' + error.message });
+  }
+};
+
+export const getConsignmentTrails = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const psId = psFilter?.ps_id ? psFilter.ps_id.toString() : '';
+
+    const url = new URL(`${serviceUrl}/analytics/consignment-trails`);
+    if (psId) {
+      url.searchParams.append('ps_id', psId);
+    }
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[ConsignmentTrails Controller Error]', error);
+    res.status(500).json({ message: 'Failed to fetch consignment trails: ' + error.message });
+  }
+};
+
+export const getCaseLinkages = async (req: Request, res: Response) => {
+  try {
+    const serviceUrl = process.env.INTELLIGENCE_SERVICE_URL || 'http://localhost:8082';
+    const user: ScopeUser = (req as any).user || {};
+    const { psFilter } = getDashboardScope(user);
+    const psId = psFilter?.ps_id ? psFilter.ps_id.toString() : '';
+
+    const url = new URL(`${serviceUrl}/analytics/case-linkage`);
+    if (psId) {
+      url.searchParams.append('ps_id', psId);
+    }
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(`Microservice responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(successResponse(data));
+  } catch (error: any) {
+    console.error('[CaseLinkage Controller Error]', error);
+    res.status(500).json({ message: 'Failed to fetch case linkage index: ' + error.message });
+  }
+};
