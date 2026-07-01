@@ -211,6 +211,14 @@ Function: detectAnomalies(offenderId)
 - Flag dormant accounts that suddenly become active
 - **Alert Priority:** LOW-MEDIUM
 
+#### 3.6 🟤 Financier Centrality & Network Analysis
+```
+Function: calculateFinancierCentrality()
+```
+- Construct a transaction flow graph using the **`graphology`** library in Node.js where nodes are offenders/counterparties and directed edges represent the total volume of money transferred.
+- Run **PageRank** and **Degree Centrality** on this graph to identify key hubs (potential financiers, layerers, or handlers).
+- Set alert priorities based on centrality score threshold spikes.
+
 ---
 
 ### Step 4: Backend — Intelligence Query APIs
@@ -221,7 +229,7 @@ GET  /api/finance/uploads             → List all upload batches (paginated, fi
 GET  /api/finance/transactions        → Paginated transaction list with filters (offender, date range, flagged-only, amount range)
 GET  /api/finance/alerts              → All flagged transactions grouped by alert type and priority
 GET  /api/finance/offender-links      → Offender ↔ offender transaction pairs (for graph visualization)
-GET  /api/finance/flow-map/:offenderId → Money flow graph: nodes (offenders + unknown counterparties) and edges (transactions with amounts)
+GET  /api/finance/flow-map/:offenderId → Money flow graph built with `graphology` on the server: nodes (offenders + unknown counterparties) with calculated PageRank/centrality, and edges (aggregated transactions with amounts)
 GET  /api/finance/common-counterparties → List of counterparties shared across multiple offenders
 GET  /api/finance/analysis/monthly/:offenderId → Month-over-month analysis for a single offender
 POST /api/finance/rerun-analysis/:batchId → Re-run cross-analysis on an existing batch
@@ -346,7 +354,7 @@ As per [security_standards.md](file:///c:/Projects/GarudaNDPS_TPT/docs/security_
 | `backend/src/controllers/finance.controller.ts` | Upload, parse, analysis engine, query APIs |
 | `backend/src/routes/finance.routes.ts` | Route definitions |
 | `backend/src/services/statementParser.ts` | CSV/XLSX/PDF parsing logic |
-| `backend/src/services/financeAnalysis.ts` | Cross-analysis intelligence engine |
+| `backend/src/services/financeAnalysis.ts` | Cross-analysis intelligence engine (built natively using `graphology` & `@graphology/metrics` for transaction graph PageRank/centrality) |
 | `backend/src/__tests__/finance.test.ts` | Integration tests |
 
 ### Backend (Modify)
