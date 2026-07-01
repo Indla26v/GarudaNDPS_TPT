@@ -122,6 +122,11 @@ export function usePermissions() {
         // Informer Management
         INFORMER_VIEW:       () => hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
         INFORMER_CREATE:     () => hasMinRole('SHO') && inDepartment('POLICE', 'CYBER_ANALYTICS'),
+
+        // Finance Intelligence (Page 6) — Cyber Analytics cell
+        FINANCE_VIEW:        () => hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+        FINANCE_UPLOAD:      () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
+        FINANCE_ANALYZE:     () => hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
       };
 
       return PERM_MAP[key] ? PERM_MAP[key]() : false;
@@ -164,6 +169,9 @@ export function usePermissions() {
       canAddTechIntel: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 
       canViewAllFinance: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+      canViewFinance: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
+      canUploadFinance: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
+      canAnalyzeFinance: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
       canViewAllNetwork: hasMinRole('CONSTABLE') && inDepartment('CYBER_ANALYTICS'),
       canBuildNetwork: hasMinRole('SHO') && inDepartment('CYBER_ANALYTICS'),
 

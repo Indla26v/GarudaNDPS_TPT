@@ -18,6 +18,7 @@ import enforcementRoutes from './routes/enforcement.routes';
 import vehiclesRoutes from './routes/vehicles.routes';
 import reportsRoutes from './routes/reports.routes';
 import intelligenceRoutes from './routes/intelligence.routes';
+import financeRoutes from './routes/finance.routes';
 import surveillanceRoutes from './routes/surveillance.routes';
 import informerRoutes from './routes/informers.routes';
 import settingsRoutes from './routes/settings.routes';
@@ -107,6 +108,7 @@ app.use('/api/vehicles', vehiclesRoutes);
 // ── Reports routes ───────────────────────────────────────────────────
 app.use('/api/reports', reportsRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/finance', financeRoutes);
 app.use('/api/surveillance', surveillanceRoutes);
 app.use('/api/informers', informerRoutes);
 app.use('/api/admin', settingsRoutes);
