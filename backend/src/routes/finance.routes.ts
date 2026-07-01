@@ -10,6 +10,7 @@ import {
   getCommonCounterparties,
   getMonthlyAnalysis,
   rerunAnalysis,
+  updateTransaction,
 } from '../controllers/finance.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/authorize.middleware';
@@ -31,6 +32,9 @@ router.get('/offender-links', requirePermission('FINANCE_VIEW'), getOffenderLink
 router.get('/common-counterparties', requirePermission('FINANCE_VIEW'), getCommonCounterparties);
 router.get('/flow-map/:offenderId', requirePermission('FINANCE_VIEW'), getFlowMap);
 router.get('/analysis/monthly/:offenderId', requirePermission('FINANCE_VIEW'), getMonthlyAnalysis);
+
+// Update transaction notes / flags
+router.put('/transaction/:id', requirePermission('FINANCE_VIEW'), updateTransaction);
 
 // Re-run analysis (FIN analyze permission)
 router.post('/rerun-analysis/:batchId', requirePermission('FINANCE_ANALYZE'), rerunAnalysis);

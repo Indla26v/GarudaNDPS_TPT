@@ -296,8 +296,32 @@ export const IconVehicle = ({ size, color = '#ec4899' }) => (
   </Icon>
 );
 
+export const IconPlus = ({ size, color = 'currentColor' }) => (
+  <Icon size={size} color={color}>
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </Icon>
+);
+
+export const IconArrowRight = ({ size, color = 'currentColor' }) => (
+  <Icon size={size} color={color}>
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </Icon>
+);
+
+export const IconRefresh = ({ size, color = 'currentColor' }) => (
+  <Icon size={size} color={color}>
+    <path d="M23 4v6h-6" />
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+  </Icon>
+);
+
 // ─── Icon Mapping (for lookups by key) ───────────────────────────────
 const ICON_MAP = {
+  plus: IconPlus,
+  arrowRight: IconArrowRight,
+  refresh: IconRefresh,
   dashboard: IconDashboard,
   offender: IconOffender,
   consumer: IconConsumer,

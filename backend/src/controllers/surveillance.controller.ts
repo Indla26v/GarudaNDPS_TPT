@@ -674,3 +674,75 @@ export const getTowerIntersections = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const listSocialIntel = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user || {};
+    const { offenderId } = req.query;
+    const where: any = { ...linkedOffenderScope(user) };
+    if (offenderId) {
+      where.offender_id = BigInt(String(offenderId));
+    }
+    const rows = await prisma.social_media_intel.findMany({
+      where,
+      include: {
+        offenders: { select: { id: true, full_name: true, alias: true } },
+        users: { select: { id: true, full_name: true } }
+      },
+      orderBy: { created_at: 'desc' },
+      take: 100
+    });
+    const data = rows.map((r) => ({
+      id: r.id.toString(),
+      offenderId: r.offender_id.toString(),
+      offenderName: r.offenders?.full_name || '—',
+      offenderAlias: r.offenders?.alias || '',
+      platform: r.platform,
+      handleOrUrl: r.handle_or_url,
+      rating: r.rating,
+      notes: r.notes || '',
+      createdByName: r.users?.full_name || '—',
+      createdAt: r.created_at
+    }));
+    res.json(successResponse(data));
+  } catch (error) {
+    console.error('listSocialIntel error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const listMessagingIntel = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user || {};
+    const { offenderId } = req.query;
+    const where: any = { ...linkedOffenderScope(user) };
+    if (offenderId) {
+      where.offender_id = BigInt(String(offenderId));
+    }
+    const rows = await prisma.messaging_intel.findMany({
+      where,
+      include: {
+        offenders: { select: { id: true, full_name: true, alias: true } },
+        users: { select: { id: true, full_name: true } }
+      },
+      orderBy: { created_at: 'desc' },
+      take: 100
+    });
+    const data = rows.map((r) => ({
+      id: r.id.toString(),
+      offenderId: r.offender_id.toString(),
+      offenderName: r.offenders?.full_name || '—',
+      offenderAlias: r.offenders?.alias || '',
+      platform: r.platform,
+      sourceType: r.source_type,
+      disposition: r.disposition || '',
+      inputText: r.input_text,
+      createdByName: r.users?.full_name || '—',
+      createdAt: r.created_at
+    }));
+    res.json(successResponse(data));
+  } catch (error) {
+    console.error('listMessagingIntel error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

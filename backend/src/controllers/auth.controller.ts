@@ -16,6 +16,7 @@ if (!JWT_KEY) {
 }
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES = 15;
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 function generateRefreshToken() {
   return crypto.randomBytes(40).toString('hex');
@@ -95,8 +96,8 @@ export const login = async (req: Request, res: Response) => {
     // ── SECURITY FIX #12: Store JWTs in HttpOnly cookies to prevent XSS theft
     const cookieOptions = {
       httpOnly: true,
-      secure: true, // Requires HTTPS (or localhost)
-      sameSite: 'none' as const, // Allows cross-origin requests
+      secure: IS_PROD,
+      sameSite: IS_PROD ? ('none' as const) : ('lax' as const),
       path: '/', // EXPLICITLY set path to root so it applies to all routes
     };
 
@@ -177,8 +178,9 @@ export const refresh = async (req: Request, res: Response) => {
     // ── SECURITY FIX #12: Store JWTs in HttpOnly cookies
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none' as const,
+      secure: IS_PROD,
+      sameSite: IS_PROD ? ('none' as const) : ('lax' as const),
+      path: '/',
     };
 
     res.cookie('garuda_access_token', newAccessToken, {
@@ -225,8 +227,9 @@ export const logout = async (req: Request, res: Response) => {
     // ── SECURITY FIX #12: Clear HttpOnly cookies on logout
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none' as const,
+      secure: IS_PROD,
+      sameSite: IS_PROD ? ('none' as const) : ('lax' as const),
+      path: '/',
     };
     res.clearCookie('garuda_access_token', cookieOptions);
     res.clearCookie('garuda_refresh_token', cookieOptions);

@@ -700,3 +700,36 @@ export const rerunAnalysis = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const updateTransaction = async (req: Request, res: Response) => {
+  try {
+    const user: ScopeUser = (req as any).user;
+    const txnId = paramId(req, 'id');
+    const { notes, isFlagged } = req.body;
+
+    const existing = await prisma.transaction_records.findUnique({
+      where: { id: txnId },
+      select: { offender_id: true }
+    });
+
+    if (!existing) return res.status(404).json({ message: 'Transaction not found' });
+    if (!(await offenderInScope(existing.offender_id, user))) {
+      return res.status(404).json({ message: 'Transaction not found or access denied' });
+    }
+
+    const updated = await prisma.transaction_records.update({
+      where: { id: txnId },
+      data: {
+        notes: notes !== undefined ? notes : undefined,
+        is_flagged: isFlagged !== undefined ? isFlagged : undefined,
+      },
+    });
+
+    await logAudit('UPDATE', 'FINANCE_TXN', txnId, req, `Updated transaction #${txnId} details`);
+
+    res.json(successResponse({ id: updated.id.toString() }, 'Transaction updated successfully'));
+  } catch (error: any) {
+    console.error('updateTransaction error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

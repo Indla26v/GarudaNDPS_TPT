@@ -11,7 +11,9 @@ import {
   listImeis,
   getMapLogs,
   addSocialIntel,
+  listSocialIntel,
   addMessagingIntel,
+  listMessagingIntel,
   getCorrelations,
   uploadTowerDump,
   getTowerIntersections,
@@ -29,6 +31,8 @@ router.get('/', requirePermission('TECH_VIEW_ALL'), listSurveillanceRecords);
 router.get('/dashboard', requirePermission('TECH_VIEW_ALL'), getSurveillanceDashboard);
 router.get('/mobiles', requirePermission('TECH_VIEW_ALL'), listMobiles);
 router.get('/imeis', requirePermission('TECH_VIEW_ALL'), listImeis);
+router.get('/social', requirePermission('TECH_VIEW_ALL'), listSocialIntel);
+router.get('/messaging', requirePermission('TECH_VIEW_ALL'), listMessagingIntel);
 router.get('/map-logs', requirePermission('TECH_VIEW_ALL'), getMapLogs);
 router.get('/correlations', requirePermission('TECH_VIEW_ALL'), getCorrelations);
 router.get('/tower-intersections', requirePermission('TECH_VIEW_ALL'), getTowerIntersections);
