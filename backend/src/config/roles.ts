@@ -116,6 +116,14 @@ export const PERMISSIONS = {
   INFORMER_VIEW:        { minRole: 'SHO', departments: ['POLICE', 'CYBER_ANALYTICS'] },
   INFORMER_CREATE:      { minRole: 'SHO', departments: ['POLICE', 'CYBER_ANALYTICS'] },
 
+  // Finance Intelligence (Page 6) — owned by the Cyber Analytics cell.
+  // NOTE: the spec references a `FIN_CELL` department, which does not exist in
+  // this codebase (departments are POLICE / CYBER_ANALYTICS / EXCISE). Finance
+  // is scoped to CYBER_ANALYTICS to match the existing FIN_VIEW_ALL/FIN_ADD gating.
+  FINANCE_VIEW:         { minRole: 'CONSTABLE', departments: ['CYBER_ANALYTICS'] },
+  FINANCE_UPLOAD:       { minRole: 'SHO', departments: ['CYBER_ANALYTICS'] },
+  FINANCE_ANALYZE:      { minRole: 'SHO', departments: ['CYBER_ANALYTICS'] },
+
   // Excise-specific (EXCISE department can access their own station's core pages)
   EXCISE_OFFENDER_VIEW: { minRole: 'CONSTABLE', departments: ['EXCISE'] },
   EXCISE_CASE_VIEW:     { minRole: 'CONSTABLE', departments: ['EXCISE'] },

@@ -81,3 +81,26 @@ export const uploadDocument = multer({
     cb(null, !!ok);
   }
 });
+
+// ── Finance statement upload (CSV / XLSX / PDF) ────────────────────────
+// Held in memory so the parser can read the buffer directly.
+export const uploadStatement = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const okExt = ['.csv', '.xlsx', '.xls', '.pdf'].includes(ext);
+    const okMime =
+      file.mimetype.includes('spreadsheet') ||
+      file.mimetype.includes('excel') ||
+      file.mimetype.includes('csv') ||
+      file.mimetype === 'text/csv' ||
+      file.mimetype === 'application/pdf' ||
+      file.mimetype === 'application/vnd.ms-excel';
+    if (okExt || okMime) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only CSV, XLSX, and PDF statements are allowed.') as any, false);
+    }
+  }
+});
